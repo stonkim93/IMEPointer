@@ -1,0 +1,2 @@
+D:\VSCODE\IMEPointer\bin\Release\net10.0-windows\win-x64\publish\IMEPointer.pdb
+D:\VSCODE\IMEPointer\bin\Release\net10.0-windows\win-x64\publish\IMEPointer.exe
