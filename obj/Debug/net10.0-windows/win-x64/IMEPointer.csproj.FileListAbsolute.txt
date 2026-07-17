@@ -12,3 +12,4 @@ D:\VSCODE\IMEPointer\obj\Debug\net10.0-windows\win-x64\refint\IMEPointer.dll
 D:\VSCODE\IMEPointer\obj\Debug\net10.0-windows\win-x64\IMEPointer.pdb
 D:\VSCODE\IMEPointer\obj\Debug\net10.0-windows\win-x64\IMEPointer.genruntimeconfig.cache
 D:\VSCODE\IMEPointer\obj\Debug\net10.0-windows\win-x64\ref\IMEPointer.dll
+D:\VSCODE\IMEPointer\obj\Debug\net10.0-windows\win-x64\IMEPointer.sourcelink.json

@@ -6,7 +6,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <UseWpf>true</UseWpf>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ApplicationIcon>IMEPointer.ico</ApplicationIcon>
+    <ApplicationIcon>images\IMEPointer.ico</ApplicationIcon>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>false</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -16,8 +16,8 @@
   <!-- [수정 부분 시작] 기능 활성화 스위치 (이 곳의 true/false를 변경하여 파일 사이즈와 메뉴를 최적화합니다) -->
   <PropertyGroup>
     <EnableKeyboardLayout>true</EnableKeyboardLayout>
-    <EnableCapsEngineer>true</EnableCapsEngineer>
-    <EnableCapsPali>true</EnableCapsPali>
+    <EnableCapsEngineer>false</EnableCapsEngineer>
+    <EnableCapsPali>false</EnableCapsPali>
     <EnableCapsJapanese1>true</EnableCapsJapanese1>
     <EnableCapsJapanese2>true</EnableCapsJapanese2>
   </PropertyGroup>
@@ -33,30 +33,30 @@
 
   <!-- 조건부 이미지 리소스 포함 (배열창 기능이 꺼지면 관련 이미지 전부 제외) -->
   <ItemGroup>
-    <EmbeddedResource Include="IMEPointer.ico" />
+    <EmbeddedResource Include="images\IMEPointer.ico" />
     
-    <EmbeddedResource Include="EnglishKey1.png" Condition="'$(EnableKeyboardLayout)' == 'true'" />
-    <EmbeddedResource Include="EnglishKey2.png" Condition="'$(EnableKeyboardLayout)' == 'true'" />
-    <EmbeddedResource Include="KoreanKey1.png" Condition="'$(EnableKeyboardLayout)' == 'true'" />
-    <EmbeddedResource Include="KoreanKey2.png" Condition="'$(EnableKeyboardLayout)' == 'true'" />
+    <EmbeddedResource Include="images\EnglishKey1.png" Condition="'$(EnableKeyboardLayout)' == 'true'" />
+    <EmbeddedResource Include="images\EnglishKey2.png" Condition="'$(EnableKeyboardLayout)' == 'true'" />
+    <EmbeddedResource Include="images\KoreanKey1.png" Condition="'$(EnableKeyboardLayout)' == 'true'" />
+    <EmbeddedResource Include="images\KoreanKey2.png" Condition="'$(EnableKeyboardLayout)' == 'true'" />
     
-    <EmbeddedResource Include="EngineerKey1.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsEngineer)' == 'true'" />
-    <EmbeddedResource Include="EngineerKey2.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsEngineer)' == 'true'" />
+    <EmbeddedResource Include="images\EngineerKey1.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsEngineer)' == 'true'" />
+    <EmbeddedResource Include="images\EngineerKey2.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsEngineer)' == 'true'" />
     
-    <EmbeddedResource Include="PaliKey1.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsPali)' == 'true'" />
-    <EmbeddedResource Include="PaliKey2.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsPali)' == 'true'" />
+    <EmbeddedResource Include="images\PaliKey1.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsPali)' == 'true'" />
+    <EmbeddedResource Include="images\PaliKey2.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsPali)' == 'true'" />
     
-    <EmbeddedResource Include="Japan1Layer1Key1.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese1)' == 'true'" />
-    <EmbeddedResource Include="Japan1Layer1Key2.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese1)' == 'true'" />
-    <EmbeddedResource Include="Japan1Layer2Key1.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese1)' == 'true'" />
-    <EmbeddedResource Include="Japan1Layer2Key2.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese1)' == 'true'" />
+    <EmbeddedResource Include="images\Japan1Layer1Key1.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese1)' == 'true'" />
+    <EmbeddedResource Include="images\Japan1Layer1Key2.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese1)' == 'true'" />
+    <EmbeddedResource Include="images\Japan1Layer2Key1.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese1)' == 'true'" />
+    <EmbeddedResource Include="images\Japan1Layer2Key2.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese1)' == 'true'" />
     
-    <EmbeddedResource Include="Japan2Layer1Key1.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese2)' == 'true'" />
-    <EmbeddedResource Include="Japan2Layer1Key2.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese2)' == 'true'" />
-    <EmbeddedResource Include="Japan2Layer2Key1.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese2)' == 'true'" />
-    <EmbeddedResource Include="Japan2Layer2Key2.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese2)' == 'true'" />
-    <EmbeddedResource Include="Japan2Layer3Key1.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese2)' == 'true'" />
-    <EmbeddedResource Include="Japan2Layer3Key2.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese2)' == 'true'" />
+    <EmbeddedResource Include="images\Japan2Layer1Key1.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese2)' == 'true'" />
+    <EmbeddedResource Include="images\Japan2Layer1Key2.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese2)' == 'true'" />
+    <EmbeddedResource Include="images\Japan2Layer2Key1.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese2)' == 'true'" />
+    <EmbeddedResource Include="images\Japan2Layer2Key2.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese2)' == 'true'" />
+    <EmbeddedResource Include="images\Japan2Layer3Key1.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese2)' == 'true'" />
+    <EmbeddedResource Include="images\Japan2Layer3Key2.png" Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese2)' == 'true'" />
   </ItemGroup>
   <!-- [수정 부분 끝] -->
 
