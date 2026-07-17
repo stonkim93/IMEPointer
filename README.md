@@ -102,7 +102,7 @@
 
 ### 5️⃣ 아래한글(hwp)과 엑셀(excel)에서 포인터 하단에 작은원(mini indicator) 표시
 
-- 마우스 포인터를 자체적으로 관리하는 앱(한글,엑셀)에서는 포인터 우측 하단에 **'작은 원'**을 생성하고 입력 상태에 따라 색상을 변경합니다.
+- 마우스 포인터를 자체적으로 관리하는 앱(한글,엑셀)에서는 포인터 우측 하단에 **'작은원'**을 생성하고 입력 상태에 따라 색상을 변경합니다.
 
   ⚠️ Microsoft Excel (`excel.exe`)의 셀 위에서는 포인터가 흰색 십자가 형태로 바뀐다.
   
@@ -184,7 +184,7 @@
 * Pali-Sanskrit(Unicode) 키보드 설치 : [palisans_unicode.zip](https://github.com/stonkim93/IMEPointer/palisans_unicode.zip)
 
 * 기존 Pali어 문자에 Sanskrit 전용 문자(**ṝ**, **ḹ**)를 추가함.
-* 직관적인 위치로 문자를 재배치함.
+* 유사한 문자끼리 직관적인 위치로 문자를 재배치함.
 * US+Pali(Unicode) IME와 설치방법 및 사용방법은 동일함.
 
 <div align="center">
