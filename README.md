@@ -82,7 +82,7 @@
 
 <div align="center">
 
-![alt text](KoreanIME.png)
+![alt text](images/KoreanIME.png)
 
 </div>
 
@@ -112,7 +112,7 @@
 
 <div align="center">
 
-![alt text](TrayMenu.png)
+![alt text](images/TrayMenu.png)
 
 </div>
 
@@ -167,13 +167,13 @@
 
 <div align="center">
 
-![alt text](PaliKey_old.png)
+![alt text](images/PaliKey_old.png)
 
 </div>
 
 #### 📌 Pali-Sanskrit Unicode IME 사용 (수정자판)
 
-* Pali-Sanskrit(Unicode) 키보드 설치 : [palisans_unicode.zip](https://github.com/stonkim93/IMEPointer/releases/download/IMEPointer/palisans_unicode.zip)
+* Pali-Sanskrit(Unicode) 키보드 설치 : [palisans_unicode.zip](https://github.com/stonkim93/IMEPointer/palisans_unicode.zip)
 
 * 기존 Pali어 문자에 Sanskrit 전용 문자(ṝ, ḹ)를 추가함.
 * 직관적인 위치로 문자를 재배치함.
@@ -181,7 +181,7 @@
 
 <div align="center">
 
-![alt text](PaliKey_new.png)
+![alt text](images/PaliKey_new.png)
 
 </div>
 
@@ -190,6 +190,14 @@
 1. 트레이 메뉴에서 "한글CAPS Pali_Sanskrit" 선택 (한글 입력 모드 + CAPS Lock On)
 2. "한글CAPS 키보드 배열창" 메뉴 선택시 Pali/Sanskrit어 키보드 배열 그림을 보여줌
 3. 비어있는 문자에는 인문학 문서편집에 자주 사용되는 특수기호를 배치함
+
+<div align="center">
+
+![alt text](images/PaliKey1.png)
+![alt text](images/PaliKey2.png)
+
+</div>
+
 4. **PE키(P)** 전환기능 : 선택된 글자가 다음 순서로 순환한다.
 
 - 다수의 글자를 선택하고 PE키를 누르면, 첫번째 글자의 전환과 동일한 전환이 적용된다.
@@ -218,13 +226,6 @@
 - **한영키** (RAlt): 영어 대문자 ↔ Pali
 - **CAPS** : 한글 ↔ Pali
 
-<div align="center">
-
-![alt text](PaliKey1.png)
-![alt text](PaliKey2.png)
-
-</div>
-
 ### 3️⃣ 일본어 입력하기
 
 #### 일본어1_조합형(Layer1)
@@ -240,8 +241,8 @@
 
 <div align="center">
 
-![alt text](Japan1Layer1Key1.png)
-![alt text](Japan1Layer1Key2.png)
+![alt text](images/Japan1Layer1Key1.png)
+![alt text](images/Japan1Layer1Key2.png)
 
 </div>
 
@@ -249,8 +250,8 @@
 
 <div align="center">
 
-![alt text](Japan1Layer2Key1.png)
-![alt text](Japan1Layer2Key2.png)
+![alt text](images/Japan1Layer2Key1.png)
+![alt text](images/Japan1Layer2Key2.png)
 
 </div>
 
@@ -288,9 +289,9 @@
 - **Layer3**: 나머지 청음(な,ま,ら,な) + ん + 요음(ゃ,ゅ,ょ) + HK키 + YN키
 <div align="center">
 
-![alt text](Japan2Layer1Key1.png)
-![alt text](Japan2Layer2Key1.png)
-![alt text](Japan2Layer3Key1.png)
+![alt text](images/Japan2Layer1Key1.png)
+![alt text](images/Japan2Layer2Key1.png)
+![alt text](images/Japan2Layer3Key1.png)
 
 </div>
 
@@ -298,9 +299,9 @@
 
 <div align="center">
 
-![alt text](Japan2Layer1Key2.png)
-![alt text](Japan2Layer2Key2.png)
-![alt text](Japan2Layer3Key2.png)
+![alt text](images/Japan2Layer1Key2.png)
+![alt text](images/Japan2Layer2Key2.png)
+![alt text](images/Japan2Layer3Key2.png)
 
 </div>
 
@@ -456,7 +457,6 @@ dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=
 * **강제 종료 시 자동 복구**: 예기치 못한 에러나 업데이트로 프로그램이 강제 종료되더라도 **윈도우 원래의 하얀색 마우스 커서로 자동 복구**
 
 * **예외 처리**: 모든 주요 진입점에 try-catch 및 finally 블록으로 리소스 누수 방지
-
 
 ## 📜 라이선스 (License)
 
