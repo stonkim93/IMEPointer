@@ -37,7 +37,7 @@ namespace IMEPointer
         public static bool ShowPointerWinDefault = true;    // "WIN Default Pointer" 메뉴 표시 여부        
         public static bool ShowPointerWinColor = true;      // "WIN Color Pointer" 메뉴 표시 여부    
         public static bool ShowPointerNewColor = true;      // "NEW Color Pointer" 메뉴 표시 여부    
-        public static bool ShowCapsHangul = true;           // [0] "한글CAPS 한글" 메뉴 표시 여부    
+        public static bool ShowCapsHangul = false;           // [0] "한글CAPS 한글" 메뉴 표시 여부    
 
 #if ENABLE_CAPS_ENGINEER
         public static bool ShowCapsEngineer = true;         // [1] "한글CAPS 공학용_특수기호" 메뉴 표시 여부    
@@ -69,7 +69,7 @@ namespace IMEPointer
         public static bool ShowKeyboardlayoutMenu = false;
 #endif
 
-        public static bool ShowTextOverlayMenu = true;      // "한글CAPS 입력문자 표시창" 메뉴 표시 여부    
+        public static bool ShowTextOverlayMenu = false;      // "한글CAPS 입력문자 표시창" 메뉴 표시 여부    
         public static bool ShowSmallCircleMenu = true;      // "한글/엑셀 작은원 표시" 메뉴 표시 여부    
 
         // ---------------------------------------------------------
@@ -77,10 +77,10 @@ namespace IMEPointer
         // ---------------------------------------------------------
         /// 기본 포인터 모드 (0: WinDefault, 1: WinColor, 2: NewColor)
         public static int DefaultPointerMode = 2;           // Pointer 기본모드 지정
-        public static int DefaultCapsMode = 3;              // 한글CAPS 기본모드 지정
+        public static int DefaultCapsMode = 2;              // 한글CAPS 기본모드 지정
         
         public static bool DefaultShowKeyboardLayout = false; // "한글CAPS 키보드 배열창" 옵션 활성화 여부
-        public static bool DefaultShowTextOverlay = true;     // "한글CAPS 입력문자 표시창" 옵션 활성화 여부
+        public static bool DefaultShowTextOverlay = false;     // "한글CAPS 입력문자 표시창" 옵션 활성화 여부
         public static bool DefaultEnableMiniIndicator = true; // "한글/엑셀 작은원 표시" 활성화 여부
 
         public struct Theme
@@ -435,13 +435,13 @@ namespace IMEPointer
             this.StartPosition = FormStartPosition.Manual;
             this.Location = new Point(Math.Max(0, (screenWidth - this.Width) / 2), 50);
 
-            // [수정: EmbeddedResource에서 폼의 타이틀바 아이콘 로드]
-            // 기존 ExtractAssociatedIcon 방식 대신, 프로젝트 리소스에 포함된 IMEPointer.ico 파일을 직접 메모리로 로드합니다.
-            // 실행파일 주변에 ico 파일이 없거나 디렉터리가 달라도 완벽하게 알파 채널(투명도)이 유지된 상태로 아이콘이 로드됩니다.
+            // [수정: images 폴더 경로 반영 및 아이콘 로드]
             try 
             { 
                 var assembly = typeof(Program).Assembly;
-                using (Stream? stream = assembly.GetManifestResourceStream("IMEPointer.IMEPointer.ico"))
+                // 아이콘 파일이 images 폴더에 있다면 아래와 같이 ".images." 를 추가합니다.
+                // 만약 파일명이 다르면 "IMEPointer.images.파일명.ico" 로 수정하세요.
+                using (Stream? stream = assembly.GetManifestResourceStream("IMEPointer.images.IMEPointer.ico"))
                 {
                     if (stream != null)
                     {
@@ -485,8 +485,6 @@ namespace IMEPointer
             base.OnFormClosing(e);
         }
 
-        // [수정: 로컬 디스크 파일 대신 EmbeddedResource 리소스 스트림에서 이미지 로드]
-        // 실행 파일 내부에 내장된 PNG 자원을 Namespace(IMEPointer) 기반 스트림으로 찾아 Memory로 로드하도록 구현했습니다.
         public void UpdateImage(string imageName)
         {
             if (_currentImageName == imageName) return;
@@ -496,7 +494,8 @@ namespace IMEPointer
             try
             {
                 var assembly = typeof(Program).Assembly;
-                string resourceName = $"IMEPointer.{imageName}";
+                // [수정: images 폴더 내의 리소스를 찾도록 .images. 문자열을 추가]
+                string resourceName = $"IMEPointer.images.{imageName}";
                 using (Stream? stream = assembly.GetManifestResourceStream(resourceName))
                 {
                     if (stream != null)

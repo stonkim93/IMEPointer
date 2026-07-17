@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("IMEPointer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+78774d3d84cbebe8464b98c9203acb91535827f5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+947d5abcc8c68476a8651352de184f2865ed1acb")]
 [assembly: System.Reflection.AssemblyProductAttribute("IMEPointer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("IMEPointer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
