@@ -163,7 +163,7 @@
 - **한영키** (RAlt): 영어 대문자 ↔ Pali
 - **CAPS** : 한글 ↔ Pali
 
-#### 📌 US+Pali Unicode IME 사용 (기존자판)
+#### 📌 US+Pali Unicode IME 사용 (기존 자판)
 
 * US+Pali(Unicode) IME 설치 : `https://www.tipitaka.org/keyboard.html`
 
@@ -179,7 +179,7 @@
 
 </div>
 
-#### 📌 Pali-Sanskrit Unicode IME 사용 (수정자판)
+#### 📌 Pali-Sanskrit Unicode IME 사용 (수정 자판)
 
 * Pali-Sanskrit(Unicode) 키보드 설치 : [palisans_unicode.zip](https://github.com/stonkim93/IMEPointer/palisans_unicode.zip)
 
@@ -427,6 +427,7 @@ dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=
 
 * **컨텍스트 동기화**: 창 전환 시에도 입력 상태를 정확히 유지
 
+
 ### 2️⃣ 해상도 및 배율에 반응하는 반응형 시각화 (Dynamic Scaling)
 
 * **마우스 포인터 크기 동기화**: 사용자가 윈도우 설정에서 포인터 크기를 변경하거나 모니터 DPI를 변경하면 즉시 감지
@@ -434,8 +435,6 @@ dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=
 * **고해상도 렌더링**: 커서가 커져도 이미지를 단순 확대하지 않고, 변경된 배율에 맞춰 **기하학적 형태와 외곽선 두께를 고해상도로 다시 계산**하여 항상 선명한 커서 제공
 
 * **작은 원 위치 동기화**: 엑셀/한글의 작은 원도 포인터 크기에 비례하여 정확히 이동
-
-💡 접근성 설정의 포인터 크기 변경에 따라 포인터 크기 배율을 정확히 계산하고, 커진 포인터를 고해상도로 다시 그리는데 어려움이 있다. 현재는 고해상도로 포인터를 다시 그리기는 하지만, 윈도우 기본 포인터가 커지는 것보다 새로 그린 포인터가 2배 정도 더 크다.
 
 
 ### 3️⃣ 문맥을 놓치지 않는 스마트 입력 감지 (Smart Context Tracking)
@@ -450,7 +449,6 @@ dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=
 
 * **특수앱 최적화**: Excel, 아래한글, 게임 등 각 앱의 특성에 맞춘 별도의 감지 로직
 
-💡 "문자 입력창", "키보드 배열창", "작업표시줄", "트레이 아이콘"의 입력상태를 동기화 했으나, 트레이 메뉴를 선택하기 위해 마우스로 아이콘을 클릭하는 순간, 트레이 아이콘이 문자 입력창의 입력모드에서 영어 소문자(Caps Off일때) 또는 영어 대문자(Caps On일때)의 입력상태로 변한다. 
 
 ### 4️⃣ 메모리 낭비 제로, 극한의 성능 최적화 (Zero GC & Resource Management)
 
@@ -470,18 +468,32 @@ dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=
 
 * **예외 처리**: 모든 주요 진입점에 try-catch 및 finally 블록으로 리소스 누수 방지
 
-## 📜 라이선스 (License)
-
-이 프로젝트는 **MIT License**에 따라 자유롭게 수정 및 배포할 수 있습니다.
-
-Made with ❤️ for multilingual writers, scholars, engineers, and Pāḷi researchers
 
 <br>
 
----
 
-💬 **문의 및 기여**: GitHub Issues를 통해 버그 리포트, 기능 제안, 풀 리퀘스트를 환영합니다!
+## ❤️ 기술적 난제 및 도움 요청
+
+💬 GitHub Issues를 통해 버그 리포트, 기능 제안, 풀 리퀘스트를 환영합니다!
+
+💡 아래의 기술적 어려움에 대해 도움을 요청합니다.
+
+- 디스플레이 배율 설정과 접근성 설정의 포인터 크기 변경에 따라 포인터 크기 배율을 정확히 계산하고, 커진 포인터를 고해상도로 다시 그리는데 어려움이 있다. 현재는 고해상도로 포인터를 다시 그리기는 하지만, 윈도우 기본 포인터가 커지는 것보다 새로 그린 포인터가 2배 정도 더 크다.
+
+- "문자 입력창", "키보드 배열창", "작업표시줄", "트레이 아이콘"의 입력상태를 동기화 했으나, 트레이 메뉴를 선택하기 위해 마우스로 아이콘을 클릭하는 순간, 트레이 아이콘이 문자 입력창의 입력모드에서 영어 소문자(Caps Off일때) 또는 영어 대문자(Caps On일때)의 입력상태로 변한다. 
+
+
+## 📜 라이선스 (License) 및 감사의 글
+
+- 이 프로젝트는 **MIT License**에 따라 자유롭게 수정 및 배포할 수 있습니다.
+
+- Coding & Debugging에는 Gemini 3.1 Pro (무료)의 도움을 많이 받았습니다.
+
+- 키보드 배열 검토에는 Claude Haiku 4.5 (무료)를 활용했습니다. 
+
+- Made with ❤️ for multilingual writers, scholars, engineers, and Pāḷi researchers
+
 
 <br>
 
-❤️🌍✨⚡🚀💡🎯🆕🖥️💻⌨️🔤🎨🧩🐛🔹📐📝✅🏆
+❤️🌍✨⚡🚀💡🎯🆕🖥️💻⌨️🔤🎨🧩🐛🔹📐📝✅🏆ℹ️❓
