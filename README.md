@@ -155,36 +155,6 @@
 
 ### 2️⃣ Pali어 / Sanskrit 키보드 설치 및 사용
 
-#### 📌 US+Pali Unicode IME 사용 (기존자판)
-
-* US+Pali(Unicode) IME 설치 : `https://www.tipitaka.org/keyboard.html`
-
-* 한국어(MS IME) ↔ Pali 빠른 전환 : $\color{lime}\textbf{Ctrl}$ + $\color{lime}\textbf{Shift}$
-
-* 자판 목록에서 순환 선택 : $\color{deepskyblue}\textbf{WIN}$ + $\color{deepskyblue}\textbf{Space}$
-
-* Pali 문자 입력 : $\color{red}\textbf{한/영키}$ (Right Alt) + ($\color{red}\textbf{A, S, D, R, T, Y, U, I, G, H, L, M, N}$)
-
-<div align="center">
-
-![alt text](images/PaliKey_old.png)
-
-</div>
-
-#### 📌 Pali-Sanskrit Unicode IME 사용 (수정자판)
-
-* Pali-Sanskrit(Unicode) 키보드 설치 : [palisans_unicode.zip](https://github.com/stonkim93/IMEPointer/palisans_unicode.zip)
-
-* 기존 Pali어 문자에 Sanskrit 전용 문자(ṝ, ḹ)를 추가함.
-* 직관적인 위치로 문자를 재배치함.
-* US+Pali(Unicode) IME와 설치방법 및 사용방법은 동일함.
-
-<div align="center">
-
-![alt text](images/PaliKey_new.png)
-
-</div>
-
 #### 📌 한글CAPS Pali_Sanskrit 사용 (IMEPointer 앱 제공)
 
 1. 트레이 메뉴에서 "한글CAPS Pali_Sanskrit" 선택 (한글 입력 모드 + CAPS Lock On)
@@ -225,6 +195,36 @@
 - **한자키** (RCtrl): 영어 소문자 ↔ Pali
 - **한영키** (RAlt): 영어 대문자 ↔ Pali
 - **CAPS** : 한글 ↔ Pali
+
+#### 📌 US+Pali Unicode IME 사용 (기존자판)
+
+* US+Pali(Unicode) IME 설치 : `https://www.tipitaka.org/keyboard.html`
+
+* 한국어(MS IME) ↔ Pali 빠른 전환 : $\color{lime}\textbf{Ctrl}$ + $\color{lime}\textbf{Shift}$
+
+* 자판 목록에서 순환 선택 : $\color{deepskyblue}\textbf{WIN}$ + $\color{deepskyblue}\textbf{Space}$
+
+* Pali 문자 입력 : $\color{red}\textbf{한/영키}$ (Right Alt) + ($\color{red}\textbf{A, S, D, R, T, Y, U, I, G, H, L, M, N}$)
+
+<div align="center">
+
+![alt text](images/PaliKey_old.png)
+
+</div>
+
+#### 📌 Pali-Sanskrit Unicode IME 사용 (수정자판)
+
+* Pali-Sanskrit(Unicode) 키보드 설치 : [palisans_unicode.zip](https://github.com/stonkim93/IMEPointer/palisans_unicode.zip)
+
+* 기존 Pali어 문자에 Sanskrit 전용 문자(ṝ, ḹ)를 추가함.
+* 직관적인 위치로 문자를 재배치함.
+* US+Pali(Unicode) IME와 설치방법 및 사용방법은 동일함.
+
+<div align="center">
+
+![alt text](images/PaliKey_new.png)
+
+</div>
 
 ### 3️⃣ 일본어 입력하기
 
