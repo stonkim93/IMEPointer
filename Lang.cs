@@ -20,16 +20,16 @@ namespace IMEPointer
         public const int Right = 0x27;
         public const int Escape = 0x1B;
         public const int Backspace = 0x08;
-        public const int B = 0x42;
-        public const int C = 0x43;
-        public const int H = 0x48;
-        public const int J = 0x4A;
-        public const int K = 0x4B;
-        public const int L = 0x4C;
-        public const int M = 0x4D;
-        public const int N = 0x4E;
-        public const int P = 0x50;
-        public const int Y = 0x59;
+        public const int vk_B = 0x42;
+        public const int vk_C = 0x43;
+        public const int vk_H = 0x48;
+        public const int vk_J = 0x4A;
+        public const int vk_K = 0x4B;
+        public const int vk_L = 0x4C;
+        public const int vk_M = 0x4D;
+        public const int vk_N = 0x4E;
+        public const int vk_P = 0x50;
+        public const int vk_Y = 0x59;
         
         // 일본어 기호 매핑을 위한 가상 키 코드 상수 추가
         public const int OemYen = 0xDC;      // (\ |) → (¥ |)
@@ -84,8 +84,7 @@ namespace IMEPointer
             {
                 MainForm.Instance?.ClearOverlay();
             }
-            catch (ObjectDisposedException) { /* Overlay form already disposed; no action needed. */ }
-            catch (InvalidOperationException) { /* Overlay UI not ready or unavailable; safe to ignore. */ }
+            catch (Exception) { /* Overlay form already disposed or unavailable; safe to ignore. */ }
         }
     }
 
@@ -103,15 +102,18 @@ namespace IMEPointer
 
         public static void RunOnSTA(Action action)
         {
-            Thread thread = new Thread(() => action()) { IsBackground = true };
+            Thread thread = new Thread(() => {
+                try 
+                { 
+                    action(); 
+                }
+                // [이번 수정: 백그라운드 스레드에서 발생하는 처리되지 않은 예외로 인한 앱 비정상 종료를 원천 방지합니다.]
+                catch (Exception) { }
+            }) { IsBackground = true };
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
         }
 
-        // [수정사항 1] 중복된 텍스트 변환/교체 로직(HandleHK, HandleYN, HandlePE)을 통합 처리하는 공통 메서드 추가
-        /// <summary>
-        /// 마지막 입력 문자 또는 선택된 텍스트를 읽어 지정된 변환 함수(transformFunc)를 적용한 뒤 교체 송출합니다.
-        /// </summary>
         public static void TransformAndReplaceText(
             string lastOutputChar,
             Func<string, string> transformFunc,
@@ -154,8 +156,12 @@ namespace IMEPointer
                             CancelSelection();
                         }
                     }
+                    
+                    // [이번 수정: selected가 비어있고(선택한 글자가 없고), modeSwitchAction이 존재하면(HK 등) 호출하여 모드를 전환합니다.
+                    // YN이나 PE 전환키처럼 modeSwitchAction이 null인 경우 호출되지 않아 아무런 반응(에러 포함)을 보이지 않습니다.]
                     modeSwitchAction?.Invoke();
                 }
+                catch (Exception) { /* 예외 발생 시 비정상 종료 방지 */ }
                 finally { IsConverting = false; }
             });
         }
@@ -166,7 +172,6 @@ namespace IMEPointer
             {
                 IsConverting = true;
                 
-                // 1. UI Automation 우선 시도 (가장 빠르고 안정적인 리소스 사용)
                 try
                 {
                     var focusedElement = AutomationElement.FocusedElement;
@@ -180,9 +185,8 @@ namespace IMEPointer
                         }
                     }
                 }
-                catch { /* UI Automation 실패 시 Win32 Clipboard Fallback 진행 */ }
+                catch { }
 
-                // 2. Win32 클립보드 우회 시도
                 bool shiftHeld = (NativeMethods.GetKeyState(InputVk.Shift) & 0x8000) != 0;
                 string? saved = GetTextWin32();
                 try
@@ -208,7 +212,8 @@ namespace IMEPointer
                     }
                     return null;
                 }
-                catch (ExternalException) { return null; }
+                // [이번 수정: ExternalException 외의 예상치 못한 모든 접근 에러를 포괄적으로 무시하여 안전성 확보]
+                catch (Exception) { return null; } 
             }
             finally { IsConverting = false; }
         }
@@ -220,10 +225,10 @@ namespace IMEPointer
                 Thread.Sleep(ClipboardRestoreDelayMs);
                 RunOnSTA(() => {
                     try {
-                        if (savedText != null) Clipboard.SetText(savedText);
+                        // [이번 수정: savedText가 빈 문자열("")일 때 SetText 호출 시 발생하는 ArgumentNullException을 방지하여 강제 종료를 막습니다.]
+                        if (!string.IsNullOrEmpty(savedText)) Clipboard.SetText(savedText);
                         else Clipboard.Clear();
-                    } catch (ExternalException) { }
-                    catch (ThreadStateException) { }
+                    } catch (Exception) { } // 모든 클립보드 예외 무시
                 });
             });
         }
@@ -231,7 +236,7 @@ namespace IMEPointer
         public static void CancelSelection()
         {
             try { bool shiftHeld = (NativeMethods.GetKeyState(InputVk.Shift) & 0x8000) != 0; SendRight(shiftHeld); Thread.Sleep(SelectionCancelDelayMs); }
-            catch (InvalidOperationException) { }
+            catch (Exception) { }
         }
 
         private static void SendRight(bool shiftHeld)
@@ -247,8 +252,8 @@ namespace IMEPointer
         {
             var inputs = new List<NativeMethods.INPUT>();
             if (shiftHeld) inputs.Add(MakeKeyUp(InputVk.Shift));
-            inputs.Add(MakeKeyDown(InputVk.Ctrl)); inputs.Add(MakeKeyDown(InputVk.C));
-            inputs.Add(MakeKeyUp(InputVk.C)); inputs.Add(MakeKeyUp(InputVk.Ctrl));
+            inputs.Add(MakeKeyDown(InputVk.Ctrl)); inputs.Add(MakeKeyDown(InputVk.vk_C));
+            inputs.Add(MakeKeyUp(InputVk.vk_C)); inputs.Add(MakeKeyUp(InputVk.Ctrl));
             if (shiftHeld) inputs.Add(MakeKeyDown(InputVk.Shift));
             SendInputsSafe(inputs);
         }
@@ -286,14 +291,14 @@ namespace IMEPointer
                 NativeMethods.CloseClipboard();
                 return result;
             }
-            catch (ExternalException) { return null; }
+            catch (Exception) { return null; }
         }
 
         public static bool ClearWin32()
         {
             for (int i = 0; i < ClipboardOpenRetryCount; i++)
             {
-                try { if (NativeMethods.OpenClipboard(IntPtr.Zero)) { NativeMethods.EmptyClipboard(); NativeMethods.CloseClipboard(); return true; } } catch (ExternalException) { }
+                try { if (NativeMethods.OpenClipboard(IntPtr.Zero)) { NativeMethods.EmptyClipboard(); NativeMethods.CloseClipboard(); return true; } } catch (Exception) { }
                 Thread.Sleep(ClipboardOpenRetryDelayMs);
             }
             return false;
@@ -504,7 +509,7 @@ namespace IMEPointer
         {
             if (!capsOn || !isHangulMode) return false;
             if (vkCode is >= 0x21 and <= 0x28) { if (!isShift) PaliMap.SetLastOutputChar(""); return false; }
-            if (vkCode == InputVk.P) { PaliMap.HandlePaliTransformation(); return true; } // [수정사항 2] HandlePE -> HandlePaliTransformation
+            if (vkCode == InputVk.vk_P) { PaliMap.HandlePaliTransformation(); return true; }
             if (TextSelectionUtils.IsConverting) return true;
 
             string? keyResult = PaliMap.ProcessKey(vkCode, isShift ^ _isVirtualShift);
@@ -742,12 +747,12 @@ namespace IMEPointer
 
         public bool ProcessKeyDown(int vkCode, bool isShift, bool capsOn, IntPtr hFore, bool isHangulMode)
         {
-            bool isVowelKey = vkCode is InputVk.H or InputVk.J or InputVk.K or InputVk.L or InputVk.Y;
+            bool isVowelKey = vkCode is InputVk.vk_H or InputVk.vk_J or InputVk.vk_K or InputVk.vk_L or InputVk.vk_Y;
             // [수정사항 3, 4] 조합 대기 중 이탈(ESC, Backspace 등) 발생 시 잔상 소거 및 입력 취소 처리
             if (Japanese1Map.IsWaitingVowel && !isVowelKey)
             {
-                if (vkCode == InputVk.B) { Japanese1Map.TogglePendingHiraKata(); return true; }
-                if (vkCode == InputVk.P) { Japanese1Map.TogglePendingYn(); return true; }
+                if (vkCode == InputVk.vk_B) { Japanese1Map.TogglePendingHiraKata(); return true; }
+                if (vkCode == InputVk.vk_P) { Japanese1Map.TogglePendingYn(); return true; }
 
                 string pending = Japanese1Map.PendingChar;
                 
@@ -776,8 +781,8 @@ namespace IMEPointer
 
             // 방향키 등 처리 (최적화)
             if (vkCode is >= 0x21 and <= 0x28) { if (!isShift) Japanese1Map.SetLastOutputChar(""); return false; }
-            if (vkCode == InputVk.B && capsOn && isHangulMode) { Japanese1Map.HandleHiraganaKatakanaTransformation(); return true; }
-            if (vkCode == InputVk.P && capsOn && isHangulMode) { Japanese1Map.HandleYoonTransformation(); return true; }
+            if (vkCode == InputVk.vk_B && capsOn && isHangulMode) { Japanese1Map.HandleHiraganaKatakanaTransformation(); return true; }
+            if (vkCode == InputVk.vk_P && capsOn && isHangulMode) { Japanese1Map.HandleYoonTransformation(); return true; }
             if (!capsOn || !isHangulMode) return false;
             if (TextSelectionUtils.IsConverting) return true;
 
@@ -1127,8 +1132,8 @@ namespace IMEPointer
 
             if (Japanese2Map.CurrentLayer == 3)
             {
-                if (vkCode == InputVk.N) { if (!capsOn || !isHangulMode) return false; Japanese2Map.HandleHiraganaKatakanaTransformation(); return true; }
-                if (vkCode == InputVk.M) { if (!capsOn || !isHangulMode) return false; Japanese2Map.HandleYoonTransformation(); return true; }
+                if (vkCode == InputVk.vk_N) { if (!capsOn || !isHangulMode) return false; Japanese2Map.HandleHiraganaKatakanaTransformation(); return true; }
+                if (vkCode == InputVk.vk_M) { if (!capsOn || !isHangulMode) return false; Japanese2Map.HandleYoonTransformation(); return true; }
             }
 
             if (!capsOn || !isHangulMode) return false;
