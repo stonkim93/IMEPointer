@@ -32,12 +32,12 @@ namespace IMEPointer
         // ---------------------------------------------------------
         // 2. 트레이 메뉴 표시 옵션 (UI)
         // ---------------------------------------------------------
-        // [수정] .csproj의 조건부 컴파일 상수(DefineConstants)와 연동하여 메뉴 표시 여부를 결정합니다.
+        // .csproj의 조건부 컴파일 상수(DefineConstants)와 연동하여 메뉴 표시 여부를 결정합니다.
         // 빌드 시 제외된 항목은 자동으로 트레이 메뉴에서도 숨김 처리됩니다.
         public static bool ShowPointerWinDefault = true;    // "WIN Default Pointer" 메뉴 표시 여부        
         public static bool ShowPointerWinColor = true;      // "WIN Color Pointer" 메뉴 표시 여부    
         public static bool ShowPointerNewColor = true;      // "NEW Color Pointer" 메뉴 표시 여부    
-        public static bool ShowCapsHangul = false;           // [0] "한글CAPS 한글" 메뉴 표시 여부    
+        public static bool ShowCapsHangul = true;           // [0] "한글CAPS 한글" 메뉴 표시 여부    
 
 #if ENABLE_CAPS_ENGINEER
         public static bool ShowCapsEngineer = true;         // [1] "한글CAPS 공학용_특수기호" 메뉴 표시 여부    
@@ -79,8 +79,8 @@ namespace IMEPointer
         public static int DefaultPointerMode = 2;           // Pointer 기본모드 지정
         public static int DefaultCapsMode = 2;              // 한글CAPS 기본모드 지정
         
-        public static bool DefaultShowKeyboardLayout = false; // "한글CAPS 키보드 배열창" 옵션 활성화 여부
-        public static bool DefaultShowTextOverlay = false;     // "한글CAPS 입력문자 표시창" 옵션 활성화 여부
+        public static bool DefaultShowKeyboardLayout = true; // "한글CAPS 키보드 배열창" 옵션 활성화 여부
+        public static bool DefaultShowTextOverlay = true;     // "한글CAPS 입력문자 표시창" 옵션 활성화 여부
         public static bool DefaultEnableMiniIndicator = true; // "한글/엑셀 작은원 표시" 활성화 여부
 
         public struct Theme
@@ -165,133 +165,146 @@ namespace IMEPointer
     #region [ 커서 그래픽 처리 팩토리 ]
     internal static class WinColorPointerFactory
     {
-        private const int AlphaThreshold = 30;
-        private const int BrightnessThreshold = 100;
-        private const int PointerRenderSize = 32;
-
-        public static IntPtr CreateColoredSystemPointer(uint ocrId, Color targetColor)
+        // [이번 수정: 부드러운 외곽선을 위해 알파 채널 절단 임계값 등 하드코딩 제거 및 보간 로직 전면 개편]
+        public static IntPtr CreateColoredSystemPointer(uint ocrId, Color targetColor, int renderSize)
         {
-            IntPtr hShared = NativeMethods.LoadImage(IntPtr.Zero, (IntPtr)ocrId, NativeMethods.IMAGE_CURSOR, PointerRenderSize, PointerRenderSize, NativeMethods.LR_SHARED);
+            // 문제 원인: LoadImage에 크기를 강제 지정하고 GDI+로 스케일링할 때 Pre-multiplied Alpha가 손실되거나 
+            // 픽셀이 이중으로 보간되어 외곽선이 울퉁불퉁해지는 현상(특히 화살표 꼬리)이 발생합니다.
+            // 해결: 1. LoadImage 시 LR_SHARED를 해제하여 시스템 렌더러가 올바른 DPI의 고해상도 커서를 가져오도록 유도.
+            //       2. GDI+ 스케일링을 제거하고 DrawIconEx의 네이티브 렌더링 엔진을 활용.
+            IntPtr hPointer = NativeMethods.LoadImage(IntPtr.Zero, (IntPtr)ocrId, NativeMethods.IMAGE_CURSOR, renderSize, renderSize, 0);
             
-            if (NativeMethods.GetIconInfo(hShared, out var iconInfo))
-            {
-                if (iconInfo.hbmColor != IntPtr.Zero) NativeMethods.DeleteObject(iconInfo.hbmColor);
-                if (iconInfo.hbmMask != IntPtr.Zero) NativeMethods.DeleteObject(iconInfo.hbmMask);
-            }
-            
-            if (hShared == IntPtr.Zero)
-            {
-                hShared = NativeMethods.LoadImage(IntPtr.Zero, (IntPtr)ocrId, NativeMethods.IMAGE_CURSOR, 0, 0, NativeMethods.LR_SHARED | NativeMethods.LR_DEFAULTSIZE);
-                if (hShared == IntPtr.Zero) return IntPtr.Zero;
-            }
+            // 실패할 경우 공유된 기본 커서로 폴백(Fallback)
+            if (hPointer == IntPtr.Zero)
+                hPointer = NativeMethods.LoadImage(IntPtr.Zero, (IntPtr)ocrId, NativeMethods.IMAGE_CURSOR, 0, 0, NativeMethods.LR_SHARED | NativeMethods.LR_DEFAULTSIZE);
+
+            if (hPointer == IntPtr.Zero) return IntPtr.Zero;
 
             int hotX = 0, hotY = 0;
-            if (NativeMethods.GetIconInfo(hShared, out NativeMethods.ICONINFO iiShared))
+            if (NativeMethods.GetIconInfo(hPointer, out NativeMethods.ICONINFO iiPointer))
             {
-                hotX = iiShared.xHotspot; 
-                hotY = iiShared.yHotspot;
-                if (iiShared.hbmColor != IntPtr.Zero) NativeMethods.DeleteObject(iiShared.hbmColor);
-                if (iiShared.hbmMask != IntPtr.Zero) NativeMethods.DeleteObject(iiShared.hbmMask);
+                hotX = iiPointer.xHotspot; 
+                hotY = iiPointer.yHotspot;
+                if (iiPointer.hbmColor != IntPtr.Zero) NativeMethods.DeleteObject(iiPointer.hbmColor);
+                if (iiPointer.hbmMask != IntPtr.Zero) NativeMethods.DeleteObject(iiPointer.hbmMask);
             }
 
-            using Bitmap? rendered = RenderPointerToArgbBitmap(hShared, PointerRenderSize);
+            using Bitmap? rendered = RenderPointerToArgbBitmap(hPointer, renderSize, out int actualWidth, out int actualHeight);
+
             if (rendered == null) return IntPtr.Zero;
 
-            using Bitmap colored = RecolorBitmap(rendered, targetColor);
-            Bitmap finalBitmap = colored;
+            RecolorCursorStraight(rendered, targetColor, ocrId);
+
+            Bitmap finalBitmap = rendered;
             Bitmap? outlined = null;
 
-            // I-Beam 텍스트 커서일 경우 명도를 계산하여 스마트 테두리 렌더링
             if (ocrId == NativeMethods.OCR_IBEAM)
             {
                 int brightness = (targetColor.R * 299 + targetColor.G * 587 + targetColor.B * 114) / 1000;
                 Color outlineColor = brightness > 128 ? Color.Black : Color.White;
-                outlined = AddOutline(colored, outlineColor);
+                outlined = AddSmoothOutline(rendered, outlineColor);
                 finalBitmap = outlined;
             }
 
-            IntPtr ptr = BitmapToPointer(finalBitmap, hotX, hotY);
+            // 스케일된 크기에 맞춰 HotSpot 좌표 보정
+            float scaleX = (float)renderSize / actualWidth;
+            float scaleY = (float)renderSize / actualHeight;
+            int scaledHotX = (int)Math.Round(hotX * scaleX);
+            int scaledHotY = (int)Math.Round(hotY * scaleY);
 
-            // 리소스 누수 방지
+            IntPtr ptr = BitmapToPointer(finalBitmap, scaledHotX, scaledHotY);
+
             outlined?.Dispose();
-            
             return ptr;
         }
 
-        private static unsafe Bitmap AddOutline(Bitmap src, Color outlineColor)
+        private static unsafe Bitmap AddSmoothOutline(Bitmap src, Color outlineColor)
         {
-            int width = src.Width;
-            int height = src.Height;
+            // [이번 수정: IBeam 커서 외곽선의 계단 현상을 제거하기 위해 Soft Alpha 혼합 방식을 적용]
+            int width = src.Width, height = src.Height;
             Bitmap result = new Bitmap(width, height, PixelFormat.Format32bppArgb);
-
             var srcData = src.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
             var dstData = result.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
 
-            byte r = outlineColor.R, g = outlineColor.G, b = outlineColor.B;
+            byte* pSrc = (byte*)srcData.Scan0;
+            byte* pDst = (byte*)dstData.Scan0;
+            int stride = srcData.Stride;
 
-            try
+            for (int y = 0; y < height; y++)
             {
-                byte* pSrc = (byte*)srcData.Scan0;
-                byte* pDst = (byte*)dstData.Scan0;
-                int stride = srcData.Stride;
-
-                for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
                 {
-                    for (int x = 0; x < width; x++)
+                    int idx = y * stride + x * 4;
+                    byte srcA = pSrc[idx + 3];
+
+                    if (srcA == 255)
                     {
-                        int idx = y * stride + x * 4;
-                        byte alpha = pSrc[idx + 3];
-
-                        if (alpha > 128) 
+                        pDst[idx] = pSrc[idx]; pDst[idx + 1] = pSrc[idx + 1];
+                        pDst[idx + 2] = pSrc[idx + 2]; pDst[idx + 3] = 255;
+                    }
+                    else
+                    {
+                        int maxNeighborAlpha = 0;
+                        for (int dy = -1; dy <= 1; dy++)
                         {
-                            pDst[idx] = pSrc[idx]; pDst[idx + 1] = pSrc[idx + 1];
-                            pDst[idx + 2] = pSrc[idx + 2]; pDst[idx + 3] = pSrc[idx + 3];
-                        }
-                        else 
-                        {
-                            bool isEdge = false;
-                            for (int dy = -1; dy <= 1; dy++)
+                            for (int dx = -1; dx <= 1; dx++)
                             {
-                                for (int dx = -1; dx <= 1; dx++)
+                                if (dx == 0 && dy == 0) continue;
+                                int ny = y + dy, nx = x + dx;
+                                if (nx >= 0 && nx < width && ny >= 0 && ny < height)
                                 {
-                                    if (dx == 0 && dy == 0) continue;
-                                    int ny = y + dy, nx = x + dx;
-                                    if (nx >= 0 && nx < width && ny >= 0 && ny < height)
-                                    {
-                                        if (pSrc[ny * stride + nx * 4 + 3] > 128)
-                                        {
-                                            isEdge = true; break;
-                                        }
-                                    }
+                                    int nA = pSrc[ny * stride + nx * 4 + 3];
+                                    if (nA > maxNeighborAlpha) maxNeighborAlpha = nA;
                                 }
-                                if (isEdge) break;
                             }
+                        }
 
-                            if (isEdge)
-                            {
-                                pDst[idx] = b; pDst[idx + 1] = g; pDst[idx + 2] = r;
-                                pDst[idx + 3] = (byte)(alpha > 0 ? 255 : 200); 
-                            }
-                            else
-                            {
-                                pDst[idx] = pSrc[idx]; pDst[idx + 1] = pSrc[idx + 1];
-                                pDst[idx + 2] = pSrc[idx + 2]; pDst[idx + 3] = pSrc[idx + 3];
-                            }
+                        if (srcA > 0)
+                        {
+                            float alphaRatio = srcA / 255.0f;
+                            pDst[idx] = (byte)(pSrc[idx] * alphaRatio + outlineColor.B * (1 - alphaRatio));
+                            pDst[idx + 1] = (byte)(pSrc[idx + 1] * alphaRatio + outlineColor.G * (1 - alphaRatio));
+                            pDst[idx + 2] = (byte)(pSrc[idx + 2] * alphaRatio + outlineColor.R * (1 - alphaRatio));
+                            pDst[idx + 3] = (byte)Math.Max(srcA, maxNeighborAlpha > 0 ? 150 : 0);
+                        }
+                        else if (maxNeighborAlpha > 0)
+                        {
+                            pDst[idx] = outlineColor.B; pDst[idx + 1] = outlineColor.G; pDst[idx + 2] = outlineColor.R;
+                            pDst[idx + 3] = (byte)(maxNeighborAlpha * 0.6f);
+                        }
+                        else
+                        {
+                            pDst[idx] = pDst[idx + 1] = pDst[idx + 2] = pDst[idx + 3] = 0;
                         }
                     }
                 }
             }
-            finally
-            {
-                src.UnlockBits(srcData);
-                result.UnlockBits(dstData);
-            }
+            src.UnlockBits(srcData);
+            result.UnlockBits(dstData);
             return result;
         }
 
-        private static unsafe Bitmap? RenderPointerToArgbBitmap(IntPtr hPointer, int size)
+        private static unsafe Bitmap? RenderPointerToArgbBitmap(IntPtr hPointer, int targetSize, out int actualWidth, out int actualHeight)
         {
-            NativeMethods.BITMAPINFO bmi = new() { biSize = sizeof(NativeMethods.BITMAPINFO), biWidth = size, biHeight = -size, biPlanes = 1, biBitCount = 32, biCompression = 0 };
+            actualWidth = targetSize;
+            actualHeight = targetSize;
+            
+            if (NativeMethods.GetIconInfo(hPointer, out NativeMethods.ICONINFO ii))
+            {
+                IntPtr hBmp = ii.hbmColor != IntPtr.Zero ? ii.hbmColor : ii.hbmMask;
+                if (hBmp != IntPtr.Zero)
+                {
+                    using (Image img = Image.FromHbitmap(hBmp))
+                    {
+                        actualWidth = img.Width;
+                        actualHeight = ii.hbmColor != IntPtr.Zero ? img.Height : img.Height / 2;
+                    }
+                }
+                if (ii.hbmColor != IntPtr.Zero) NativeMethods.DeleteObject(ii.hbmColor);
+                if (ii.hbmMask != IntPtr.Zero) NativeMethods.DeleteObject(ii.hbmMask);
+            }
+
+            NativeMethods.BITMAPINFO bmi = new() { biSize = sizeof(NativeMethods.BITMAPINFO), biWidth = targetSize, biHeight = -targetSize, biPlanes = 1, biBitCount = 32, biCompression = 0 };
             IntPtr hdcScreen = NativeMethods.GetDC(IntPtr.Zero);
             IntPtr hdcMem = NativeMethods.CreateCompatibleDC(hdcScreen);
             IntPtr hDib = NativeMethods.CreateDIBSection(hdcMem, ref bmi, 0, out IntPtr pBits, IntPtr.Zero, 0);
@@ -299,92 +312,148 @@ namespace IMEPointer
             if (hDib == IntPtr.Zero) { NativeMethods.DeleteDC(hdcMem); NativeMethods.ReleaseDC(IntPtr.Zero, hdcScreen); return null; }
 
             IntPtr hOld = NativeMethods.SelectObject(hdcMem, hDib);
-            int byteCount = size * size * 4;
+            int byteCount = targetSize * targetSize * 4;
             new Span<byte>((void*)pBits, byteCount).Clear();
 
+            // [이번 수정: DrawIconEx의 네이티브 크기 조절 기능을 사용하여 깨끗한 확대 수행]
             const uint DI_NORMAL = 0x0003;
-            NativeMethods.DrawIconEx(hdcMem, 0, 0, hPointer, size, size, 0, IntPtr.Zero, DI_NORMAL);
+            NativeMethods.DrawIconEx(hdcMem, 0, 0, hPointer, targetSize, targetSize, 0, IntPtr.Zero, DI_NORMAL);
 
-            Bitmap bmp = new(size, size, PixelFormat.Format32bppArgb);
-            var bmpData = bmp.LockBits(new Rectangle(0, 0, size, size), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
-            new Span<byte>((void*)pBits, byteCount).CopyTo(new Span<byte>((void*)bmpData.Scan0, byteCount));
+            Bitmap bmp = new Bitmap(targetSize, targetSize, PixelFormat.Format32bppArgb);
+            var bmpData = bmp.LockBits(new Rectangle(0, 0, targetSize, targetSize), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+            
+            byte* src = (byte*)pBits;
+            byte* dst = (byte*)bmpData.Scan0;
+            
+            long alphaSum = 0;
+            for (int i = 3; i < byteCount; i += 4) alphaSum += src[i];
+
+            if (alphaSum == 0)
+            {
+                for (int i = 0; i < byteCount; i += 4)
+                {
+                    byte b = src[i], g = src[i+1], r = src[i+2];
+                    if (r > 0 || g > 0 || b > 0)
+                    {
+                        dst[i] = b; dst[i+1] = g; dst[i+2] = r; dst[i+3] = 255;
+                    }
+                    else
+                    {
+                        dst[i] = dst[i+1] = dst[i+2] = dst[i+3] = 0;
+                    }
+                }
+            }
+            else
+            {
+                // [이번 수정: DIB Section의 Pre-multiplied ARGB를 수동으로 정확히 역연산하여 복구]
+                for (int i = 0; i < byteCount; i += 4)
+                {
+                    byte b = src[i], g = src[i+1], r = src[i+2], a = src[i+3];
+                    if (a == 0)
+                    {
+                        dst[i] = dst[i+1] = dst[i+2] = dst[i+3] = 0;
+                    }
+                    else if (a == 255)
+                    {
+                        dst[i] = b; dst[i+1] = g; dst[i+2] = r; dst[i+3] = 255;
+                    }
+                    else
+                    {
+                        dst[i] = (byte)Math.Min(255, (b * 255) / a);
+                        dst[i+1] = (byte)Math.Min(255, (g * 255) / a);
+                        dst[i+2] = (byte)Math.Min(255, (r * 255) / a);
+                        dst[i+3] = a;
+                    }
+                }
+            }
+            
             bmp.UnlockBits(bmpData);
 
             NativeMethods.SelectObject(hdcMem, hOld);
             NativeMethods.DeleteObject(hDib); NativeMethods.DeleteDC(hdcMem); NativeMethods.ReleaseDC(IntPtr.Zero, hdcScreen);
 
-            FixAlphaChannel(bmp, size);
             return bmp;
         }
 
-        private static unsafe void FixAlphaChannel(Bitmap bmp, int size)
+        private static unsafe void RecolorCursorStraight(Bitmap bmp, Color targetColor, uint ocrId)
         {
-            var rect = new Rectangle(0, 0, size, size);
-            var bmpData = bmp.LockBits(rect, ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
-            try
-            {
-                byte* ptr = (byte*)bmpData.Scan0;
-                int len = size * size * 4;
-                long alphaSum = 0;
-                for (int i = 3; i < len; i += 4) alphaSum += ptr[i];
-                if (alphaSum > 0) return;
+            // [이번 수정: 하드 임계값(Threshold)을 제거하고, 원본 픽셀의 명도를 기반으로 색상을 보간하여 Anti-Aliasing 계단 현상을 완벽하게 방지]
+            var bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+            byte* ptr = (byte*)bmpData.Scan0;
+            int len = bmp.Width * bmp.Height * 4;
 
-                for (int i = 0; i < len; i += 4)
+            for (int i = 0; i < len; i += 4)
+            {
+                byte a = ptr[i + 3];
+                if (a == 0) continue;
+
+                byte b = ptr[i], g = ptr[i + 1], r = ptr[i + 2];
+                
+                if (ocrId == NativeMethods.OCR_NORMAL)
                 {
-                    byte b = ptr[i], g = ptr[i + 1], r = ptr[i + 2];
-                    if (r == 0 && g == 0 && b == 0) ptr[i + 3] = 0;
-                    else
-                    {
-                        int brightness = (r * 299 + g * 587 + b * 114) / 1000;
-                        ptr[i + 3] = (byte)Math.Min(255, brightness * 2);
-                    }
+                    // 일반 화살표: 흰 바탕 + 검은 테두리의 명도 비율을 이용하여 대상 색상을 부드럽게 입힘
+                    float intensity = (r * 0.299f + g * 0.587f + b * 0.114f) / 255.0f;
+                    ptr[i] = (byte)(b + (targetColor.B - b) * intensity);
+                    ptr[i + 1] = (byte)(g + (targetColor.G - g) * intensity);
+                    ptr[i + 2] = (byte)(r + (targetColor.R - r) * intensity);
+                }
+                else
+                {
+                    // IBeam 및 기타 커서는 통째로 색상 적용
+                    ptr[i] = targetColor.B;
+                    ptr[i + 1] = targetColor.G;
+                    ptr[i + 2] = targetColor.R;
                 }
             }
-            finally { bmp.UnlockBits(bmpData); }
+            bmp.UnlockBits(bmpData);
         }
 
-        private static unsafe Bitmap RecolorBitmap(Bitmap src, Color targetColor)
-        {
-            int size = src.Width;
-            Bitmap result = new(size, size, PixelFormat.Format32bppArgb);
-            var srcData = src.LockBits(new Rectangle(0, 0, size, size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-            var dstData = result.LockBits(new Rectangle(0, 0, size, size), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
-            try
-            {
-                byte* pSrc = (byte*)srcData.Scan0; byte* pDst = (byte*)dstData.Scan0;
-                int len = size * size * 4;
-                for (int i = 0; i < len; i += 4)
-                {
-                    byte b = pSrc[i], g = pSrc[i + 1], r = pSrc[i + 2], a = pSrc[i + 3];
-                    if (a < AlphaThreshold) { pDst[i] = pDst[i + 1] = pDst[i + 2] = pDst[i + 3] = 0; continue; }
-                    int brightness = (r * 299 + g * 587 + b * 114) / 1000;
-                    if (brightness >= BrightnessThreshold)
-                    {
-                        pDst[i] = targetColor.B; pDst[i + 1] = targetColor.G; pDst[i + 2] = targetColor.R; pDst[i + 3] = a;
-                    }
-                    else if (brightness >= 20)
-                    {
-                        float t = (brightness - 20) / (float)(BrightnessThreshold - 20);
-                        pDst[i] = (byte)(b + (targetColor.B - b) * t);
-                        pDst[i + 1] = (byte)(g + (targetColor.G - g) * t);
-                        pDst[i + 2] = (byte)(r + (targetColor.R - r) * t);
-                        pDst[i + 3] = a;
-                    }
-                    else { pDst[i] = b; pDst[i + 1] = g; pDst[i + 2] = r; pDst[i + 3] = a; }
-                }
-            }
-            finally { src.UnlockBits(srcData); result.UnlockBits(dstData); }
-            return result;
-        }
-
-        private static IntPtr BitmapToPointer(Bitmap bmp, int hotX, int hotY)
+        private static unsafe IntPtr BitmapToPointer(Bitmap bmp, int hotX, int hotY)
         {
             IntPtr hBmpColor = IntPtr.Zero, hBmpMask = IntPtr.Zero;
+            IntPtr hdcScreen = NativeMethods.GetDC(IntPtr.Zero);
             try
             {
-                hBmpColor = bmp.GetHbitmap(Color.FromArgb(0, 0, 0, 0));
+                NativeMethods.BITMAPINFO bmi = new() { biSize = sizeof(NativeMethods.BITMAPINFO), biWidth = bmp.Width, biHeight = -bmp.Height, biPlanes = 1, biBitCount = 32, biCompression = 0 };
+                hBmpColor = NativeMethods.CreateDIBSection(hdcScreen, ref bmi, 0, out IntPtr pBits, IntPtr.Zero, 0);
+                
+                if (hBmpColor != IntPtr.Zero)
+                {
+                    var bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+                    byte* pSrc = (byte*)bmpData.Scan0;
+                    byte* pDst = (byte*)pBits;
+                    int bytes = Math.Abs(bmpData.Stride) * bmp.Height;
+
+                    // [이번 수정: CreateIconIndirect에 사용되는 hbmColor는 반드시 'Premultiplied Alpha'여야 합니다.
+                    // 단순 메모리 복사(MemoryCopy) 대신, 픽셀마다 알파값을 명시적으로 곱해 외곽선 계단 현상을 제거합니다.]
+                    for (int i = 0; i < bytes; i += 4)
+                    {
+                        byte a = pSrc[i + 3];
+                        if (a == 0)
+                        {
+                            pDst[i] = pDst[i + 1] = pDst[i + 2] = pDst[i + 3] = 0;
+                        }
+                        else if (a == 255)
+                        {
+                            pDst[i] = pSrc[i];
+                            pDst[i + 1] = pSrc[i + 1];
+                            pDst[i + 2] = pSrc[i + 2];
+                            pDst[i + 3] = 255;
+                        }
+                        else
+                        {
+                            pDst[i] = (byte)((pSrc[i] * a) / 255);
+                            pDst[i + 1] = (byte)((pSrc[i + 1] * a) / 255);
+                            pDst[i + 2] = (byte)((pSrc[i + 2] * a) / 255);
+                            pDst[i + 3] = a;
+                        }
+                    }
+                    bmp.UnlockBits(bmpData);
+                }
+
                 using Bitmap maskBmp = new(bmp.Width, bmp.Height, PixelFormat.Format1bppIndexed);
-                hBmpMask = maskBmp.GetHbitmap();
+                hBmpMask = maskBmp.GetHbitmap(); 
+                
                 NativeMethods.ICONINFO ii = new() { fIcon = 0, xHotspot = hotX, yHotspot = hotY, hbmMask = hBmpMask, hbmColor = hBmpColor };
                 return NativeMethods.CreateIconIndirect(ref ii);
             }
@@ -393,6 +462,7 @@ namespace IMEPointer
             {
                 if (hBmpColor != IntPtr.Zero) NativeMethods.DeleteObject(hBmpColor);
                 if (hBmpMask != IntPtr.Zero) NativeMethods.DeleteObject(hBmpMask);
+                if (hdcScreen != IntPtr.Zero) NativeMethods.ReleaseDC(IntPtr.Zero, hdcScreen);
             }
         }
     }
@@ -435,7 +505,7 @@ namespace IMEPointer
             this.StartPosition = FormStartPosition.Manual;
             this.Location = new Point(Math.Max(0, (screenWidth - this.Width) / 2), 50);
 
-            // [수정: images 폴더 경로 반영 및 아이콘 로드]
+            // images 폴더 경로 반영 및 아이콘 로드
             try 
             { 
                 var assembly = typeof(Program).Assembly;
@@ -494,7 +564,7 @@ namespace IMEPointer
             try
             {
                 var assembly = typeof(Program).Assembly;
-                // [수정: images 폴더 내의 리소스를 찾도록 .images. 문자열을 추가]
+                // images 폴더 내의 리소스를 찾도록 .images. 문자열을 추가
                 string resourceName = $"IMEPointer.images.{imageName}";
                 using (Stream? stream = assembly.GetManifestResourceStream(resourceName))
                 {
@@ -590,7 +660,7 @@ namespace IMEPointer
 
         private void TextOverlayForm_Paint(object? sender, PaintEventArgs e)
         {
-            // [수정: 배율(DPI) 중복 스케일링을 방지하고 정확한 크기를 제어하기 위해 단위를 Pixel로 명시]
+            // 배율(DPI) 중복 스케일링을 방지하고 정확한 크기를 제어하기 위해 단위를 Pixel로 명시
             using Font f = new Font("Malgun Gothic", _fontSize, FontStyle.Bold, GraphicsUnit.Pixel);
             TextRenderer.DrawText(e.Graphics, _text, f, this.ClientRectangle, Color.White, Color.Black, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
         }
@@ -620,7 +690,7 @@ namespace IMEPointer
         private const int DisplaySettingsChangedDelayMs = 400;
         private const int UserPreferenceChangedDelayMs = 600;
         private const int OverlayDefaultDurationMs = 1500;
-        private const float OverlayDefaultFontSize = 29f;   // [수정: 폰트 단위를 Pixel로 취급하기 위해 기존 22pt(약 29px) 기준값으로 조정]
+        private const float OverlayDefaultFontSize = 29f;   // 폰트 단위를 Pixel로 취급하기 위해 기존 22pt(약 29px) 기준값으로 조정
         private const int OverlayDefaultHeight = 52;
         private const int OverlayDefaultCharWidth = 30;
         private const int OverlayDefaultPaddingWidth = 24;
@@ -783,7 +853,7 @@ namespace IMEPointer
         private Color _lastIndicatorColor = Color.Empty;
         private IntPtr _lastForegroundHwnd = IntPtr.Zero;
         private IntPtr _currentHwnd = IntPtr.Zero;
-        private IntPtr _lastPolledHFore = IntPtr.Zero; // [수정: 포커스 변경 감지를 위한 변수 추가]
+        private IntPtr _lastPolledHFore = IntPtr.Zero; // 포커스 변경 감지를 위한 변수 추가
 
         private IntPtr _indicatorScreenDc = IntPtr.Zero;
         private IntPtr _indicatorMemDc = IntPtr.Zero;
@@ -801,7 +871,7 @@ namespace IMEPointer
 
         private IntPtr _lastAppliedArrowHandle = IntPtr.Zero;
         private static readonly unsafe int s_bmiSize = sizeof(NativeMethods.BITMAPINFO);
-        // [수정: 트레이 메뉴 클릭 시 포커스 강탈로 인한 상태 초기화 현상을 막기 위해 현재 프로세스 ID 캐싱]
+        // 트레이 메뉴 클릭 시 포커스 강탈로 인한 상태 초기화 현상을 막기 위해 현재 프로세스 ID 캐싱
         private static readonly uint _currentProcessId = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
 
         protected override CreateParams CreateParams
@@ -845,7 +915,7 @@ namespace IMEPointer
             _stateTimer.Tick += StateTimer_Tick;
         }
 
-        // [수정사항 2] 트레이 메뉴 생성 로직 통합 (헬퍼 메서드를 이용한 중복 제거)
+        // 트레이 메뉴 생성 로직 통합 (헬퍼 메서드를 이용한 중복 제거)
         private void InitializeTrayMenu()
         {
             _contextMenu.Items.Add(_statusMenuItem);
@@ -961,7 +1031,7 @@ namespace IMEPointer
                     IntPtr retryTarget = GetFocusedInputHwnd(retryRootHwnd);
                     if (retryTarget == IntPtr.Zero) retryTarget = retryRootHwnd;
 
-                    // [수정: IsTaskbarOrSystemWindow 대신 IsTaskbarWindow, IsTrayOrAppWindow 호출]
+                    // IsTaskbarWindow, IsTrayOrAppWindow 호출
                     if (retryTarget != IntPtr.Zero && !IsTaskbarWindow(retryTarget) && !IsTrayOrAppWindow(retryTarget))
                     {
                         NativeMethods.SetForegroundWindow(retryTarget);
@@ -979,7 +1049,7 @@ namespace IMEPointer
             RefreshKeyboardLayoutOverlay();
 
             IntPtr taskbarHwnd = NativeMethods.GetForegroundWindow();
-            // [수정: IsTaskbarOrSystemWindow 대신 IsTaskbarWindow, IsTrayOrAppWindow 호출]
+            // IsTaskbarWindow, IsTrayOrAppWindow 호출
             if (taskbarHwnd != IntPtr.Zero && (IsTaskbarWindow(taskbarHwnd) || IsTrayOrAppWindow(taskbarHwnd)))
             {
                 ApplySelectedCapsModeWithVerification(taskbarHwnd, 1);
@@ -991,7 +1061,7 @@ namespace IMEPointer
 
             if (targetHwnd != IntPtr.Zero)
             {
-                // [수정: IsTaskbarOrSystemWindow 대신 IsTaskbarWindow, IsTrayOrAppWindow 호출]
+                // IsTaskbarWindow, IsTrayOrAppWindow 호출
                 if (!IsTaskbarWindow(targetHwnd) && !IsTrayOrAppWindow(targetHwnd))
                 {
                     NativeMethods.SetForegroundWindow(targetHwnd);
@@ -1025,22 +1095,13 @@ namespace IMEPointer
                 Task.Delay(retryDelayMs).ContinueWith(_ =>
                     this.BeginInvoke(new Action(() =>
                     {
-                        int rereadSize = ReadPointerBaseSizeFromRegistry();
-                        int expectedPhys = rereadSize > 32 ? rereadSize : Math.Max(32, (int)Math.Round(32 * _currentScaleRatio));
+                        // GetSystemMetrics를 통해 시스템이 확정한 커서 크기를 바로 가져옵니다
+                        int sysCursorWidth = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXCURSOR);
+                        int expectedPhys = sysCursorWidth > 0 ? sysCursorWidth : Math.Max(32, (int)Math.Round(32 * _currentScaleRatio));
+                        
                         if (expectedPhys != currentPhysSize) { _stateTimer.Stop(); RebuildStateAssets(); _stateTimer.Start(); }
                     })));
             }
-        }
-
-        private int ReadPointerBaseSizeFromRegistry()
-        {
-            try
-            {
-                using var key = Registry.CurrentUser.OpenSubKey(@"Control Panel\Cursors");
-                if (key != null && key.GetValue("CursorBaseSize") is object v && int.TryParse(v.ToString(), out int s) && s >= 32) return s;
-            }
-            catch { }
-            return 0;
         }
 
         private void RebakeOnScaleChange() => RebakeWithRetry(RebuildRetryAfterScaleChangeMs);
@@ -1067,7 +1128,7 @@ namespace IMEPointer
         {
             base.OnLoad(e);
             _currentHwnd = NativeMethods.GetForegroundWindow();
-            _lastPolledHFore = _currentHwnd; // [수정: 포커스 변경 감지를 위한 초기화]
+            _lastPolledHFore = _currentHwnd; // 포커스 변경 감지를 위한 초기화
             _lastForegroundHwnd = _currentHwnd;
             _showMiniIndicator = IsTargetProcess(_currentHwnd);
             _lastSyncHangulState = ImeState.IsHangulModeSystemWide(_currentHwnd);
@@ -1076,7 +1137,7 @@ namespace IMEPointer
             _textOverlayForm = new TextOverlayForm();
             
             // 앱 시작 시에는 현재 포커스 창만 기억하고 입력모드는 강제 변경하지 않습니다.
-            // [수정: IsTaskbarOrSystemWindow 대신 IsTaskbarWindow 및 IsTrayOrAppWindow 호출]
+            // IsTaskbarWindow 및 IsTrayOrAppWindow 호출
             if (_currentHwnd != IntPtr.Zero && !IsTaskbarWindow(_currentHwnd) && !IsTrayOrAppWindow(_currentHwnd))
             {
                 LastValidHwnd = _currentHwnd;
@@ -1103,7 +1164,7 @@ namespace IMEPointer
         {
             if (!_showTextOverlay) return;
 
-            // [수정: 포인터 크기 계산에 썼던 동일한 디스플레이 배율(_currentScaleRatio)을 적용하여 동적 스케일링]
+            // 포인터 크기 계산에 썼던 동일한 디스플레이 배율(_currentScaleRatio)을 적용하여 동적 스케일링
             float scaledFontSize = OverlayDefaultFontSize * _currentScaleRatio;
             int scaledHeight = (int)Math.Round(OverlayDefaultHeight * _currentScaleRatio);
             int scaledCharWidth = (int)Math.Round(OverlayDefaultCharWidth * _currentScaleRatio);
@@ -1121,21 +1182,12 @@ namespace IMEPointer
             int length = 0;
             foreach (char c in ch) length += (c >= 0x1100 && c <= 0xD7AF) ? 2 : 1; 
             
-            // [수정: 오버레이 폼의 최소 너비(기존 40)에도 배율을 반영하여 텍스트 짤림 방지]
+            // 오버레이 폼의 최소 너비(기존 40)에도 배율을 반영하여 텍스트 짤림 방지
             int minWidth = (int)Math.Round(40 * _currentScaleRatio);
             
             return new Size(Math.Max(length * (charW / 2) + padW, minWidth), formH);
         }
 
-        // ShowOverlayInternal(text, durationMs > 0, 22f, 44, 30, 24, 40);
-        // ShowOverlayInternal Parmeters
-        // ch : 표시창에 입력될 문자열
-        // useTimer (true): 타이머 동작 여부입니다. true일때 지정된 시간(기본 1500ms)이 경과하면 오버레이 창이 자동으로 사라집니다.
-        // fontSize (22f): 오버레이 창에 표시될 텍스트의 폰트 크기(22 포인트)입니다.
-        // formH (44): 생성될 오버레이 창의 높이(44 픽셀)입니다.
-        // charW (30): 텍스트 가로폭 계산을 위한 기준 픽셀 값입니다. 로직상 영문/숫자(가중치 1)는 글자당 15픽셀(30/2), 한글(가중치 2)은 글자당 30픽셀의 공간을 차지하도록 설계되어 있습니다.
-        // padW (24): 오버레이 창 내부 텍스트의 좌우 여백(Padding)을 확보하기 위해 가로폭에 추가로 더해지는 픽셀(24 픽셀)입니다.
-        // yOffset (40): 오버레이 창이 띄워질 화면상 세로(Y축) 위치의 보정값입니다. 현재 텍스트를 입력 중인 커서(Caret)의 Y 좌표에서 아래로 40 픽셀만큼 띄워서 오버레이를 표시하게 됩니다.
         private void ShowOverlayInternal(string ch, bool useTimer, float fontSize, int formH, int charW, int padW, int yOffset)
         {
             if (this.InvokeRequired)
@@ -1199,17 +1251,9 @@ namespace IMEPointer
 
             float dpi = GetPrimaryMonitorDpi();
             _currentScaleRatio = dpi / 96f;
-            int regSize = ReadPointerBaseSizeFromRegistry();
-            int physicalSize;
 
-            if (regSize > 32)
-            {
-                physicalSize = regSize;
-            }
-            else
-            {
-                physicalSize = Math.Max(32, (int)Math.Round(32 * _currentScaleRatio));
-            }
+            int sysCursorWidth = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXCURSOR);
+            int physicalSize = sysCursorWidth > 0 ? sysCursorWidth : Math.Max(32, (int)Math.Round(32 * _currentScaleRatio));
 
             _pointerPhysicalSize = physicalSize;
             _physIndicatorOffsetX = physicalSize * 0.5f;
@@ -1221,12 +1265,12 @@ namespace IMEPointer
                 if (!AppConfig.Themes.TryGetValue(state, out AppConfig.Theme theme)) continue;
                 try
                 {
-                    IntPtr hArrowNew = WinColorPointerFactory.CreateColoredSystemPointer(NativeMethods.OCR_NORMAL, theme.PointerColor);
-                    IntPtr hIBeamNew = WinColorPointerFactory.CreateColoredSystemPointer(NativeMethods.OCR_IBEAM, theme.IBeamColor);
+                    IntPtr hArrowNew = WinColorPointerFactory.CreateColoredSystemPointer(NativeMethods.OCR_NORMAL, theme.PointerColor, _pointerPhysicalSize);
+                    IntPtr hIBeamNew = WinColorPointerFactory.CreateColoredSystemPointer(NativeMethods.OCR_IBEAM, theme.IBeamColor, _pointerPhysicalSize);
 
                     Color winIBeamColor = theme.IBeamColor == Color.White ? Color.Black : theme.IBeamColor;
-                    IntPtr hArrowWin = WinColorPointerFactory.CreateColoredSystemPointer(NativeMethods.OCR_NORMAL, theme.PointerColor);
-                    IntPtr hIBeamWin = WinColorPointerFactory.CreateColoredSystemPointer(NativeMethods.OCR_IBEAM, winIBeamColor);
+                    IntPtr hArrowWin = WinColorPointerFactory.CreateColoredSystemPointer(NativeMethods.OCR_NORMAL, theme.PointerColor, _pointerPhysicalSize);
+                    IntPtr hIBeamWin = WinColorPointerFactory.CreateColoredSystemPointer(NativeMethods.OCR_IBEAM, winIBeamColor, _pointerPhysicalSize);
 
                     if (hArrowWin == IntPtr.Zero) { hArrowWin = NativeMethods.CopyIcon(hArrowNew); anyWinColorFailed = true; }
                     if (hIBeamWin == IntPtr.Zero) { hIBeamWin = NativeMethods.CopyIcon(hIBeamNew); anyWinColorFailed = true; }
@@ -1271,10 +1315,10 @@ namespace IMEPointer
         {
             IntPtr actualHFore = NativeMethods.GetForegroundWindow();
             
-            // [수정: 포커스가 기존 창에서 새로 옮겨갔는지 확인하여 1회성 강제 동기화 여부를 결정]
+            // 포커스가 기존 창에서 새로 옮겨갔는지 확인하여 1회성 강제 동기화 여부를 결정
             bool isFocusChanged = (actualHFore != _lastPolledHFore);
             
-            // [수정: 작업표시줄과 앱(트레이 등) 연관 창 분리 적용]
+            // 작업표시줄과 앱(트레이 등) 연관 창 분리 적용
             bool isTaskbar = IsTaskbarWindow(actualHFore);
             bool isTrayOrApp = IsTrayOrAppWindow(actualHFore);
             bool isLayoutForm = IsKeyboardLayoutForeground(actualHFore);
@@ -1310,7 +1354,7 @@ namespace IMEPointer
 
         private void UpdateLastValidWindows(IntPtr actualHFore, bool isTaskbar, bool isTrayOrApp, bool isLayoutForm)
         {
-            // [수정: 작업표시줄과 트레이/앱 창이 아닌 경우에만 실제 텍스트 입력창으로 갱신]
+            // 작업표시줄과 트레이/앱 창이 아닌 경우에만 실제 텍스트 입력창으로 갱신
             if (!isTaskbar && !isTrayOrApp && !isLayoutForm && actualHFore != IntPtr.Zero && actualHFore != this.Handle)
             {
                 LastValidHwnd = actualHFore;
@@ -1318,7 +1362,7 @@ namespace IMEPointer
             }
         }
 
-        // [수정: 요청사항 1,2,3에 따른 동기화 로직 전면 개편]
+        // 요청사항 1,2,3에 따른 동기화 로직 전면 개편 및 트레이/작업표시줄 역동기화(Bounce-back) 문제 해결
         private void SyncHangulStateAcrossWindows(IntPtr actualHFore, bool isTaskbar, bool isTrayOrApp, bool isLayoutForm, bool isFocusChanged)
         {
             bool currentHangul = ImeState.IsHangulModeSystemWide(actualHFore);
@@ -1329,22 +1373,15 @@ namespace IMEPointer
                 {
                     bool groupA_Hangul = ImeState.IsHangulModeSystemWide(LastValidHwnd);
 
-                    if (isTaskbar)
+                    // 작업표시줄, 트레이/앱, 배열창으로 포커스 이동 시 Group A(문자 입력창)의 상태로 1회 강제 동기화
+                    if (isTaskbar || isTrayOrApp || isLayoutForm)
                     {
-                        // [요청 2] "트레이 아이콘", "문자 입력창", "키보드 배열창"에서 작업표시줄로 포커스를 이동하면 "문자 입력창" 상태로 작업표시줄의 입력상태를 1회 동기화한다.
                         if (groupA_Hangul != currentHangul)
                         {
                             ImeState.SetHangulState(actualHFore, groupA_Hangul);
-                            currentHangul = groupA_Hangul;
-                        }
-                    }
-                    else if (isTrayOrApp || isLayoutForm)
-                    {
-                        // [요청 1 관련] 트레이 아이콘이나 배열창으로 포커스가 가도 Group A(문자 입력창)의 상태로 1회 강제 동기화 (상태 유지)
-                        if (groupA_Hangul != currentHangul)
-                        {
-                            ImeState.SetHangulState(actualHFore, groupA_Hangul);
-                            currentHangul = groupA_Hangul;
+                            
+                            // 핵심 수정: 가짜 상태 할당 제거. 실제 윈도우에 반영된 상태를 다시 읽어와 기준값을 맞춤.
+                            currentHangul = ImeState.IsHangulModeSystemWide(actualHFore);
                         }
                     }
                 }
@@ -1359,7 +1396,6 @@ namespace IMEPointer
 
                     if (isTaskbar)
                     {
-                        // [요청 3] 작업표시줄로 포커스 이동된 상태에서 마우스나 키보드로 입력상태를 바꿀때 마다 Group A("트레이", "문자입력창", "배열창")를 1회씩 동기화한다.
                         if (LastValidHwnd != IntPtr.Zero && LastValidHwnd != actualHFore)
                             ImeState.SetHangulState(LastValidHwnd, currentHangul);
 
@@ -1371,7 +1407,6 @@ namespace IMEPointer
                     }
                     else
                     {
-                        // [요청 1] "트레이 아이콘", "문자 입력창", "키보드 배열창"은 입력상태를 항상 동기화한다. (Group A 내부에서 상태가 변경되었을 때 서로 동기화 적용)
                         if (LastValidHwnd != IntPtr.Zero && actualHFore != LastValidHwnd)
                             ImeState.SetHangulState(LastValidHwnd, currentHangul);
 
@@ -1401,7 +1436,6 @@ namespace IMEPointer
 
         private void UpdateCurrentWindowTracking(IntPtr contextHwnd, bool isTaskbar, bool isTrayOrApp, bool isLayoutForm)
         {
-            // [수정: 매개변수 분리 대응]
             if (contextHwnd != _currentHwnd)
             {
                 if (!isTaskbar && !isTrayOrApp && !isLayoutForm)
@@ -1527,7 +1561,7 @@ namespace IMEPointer
             bool displayShift = isPhysicalShift ^ isVirtualShift;
             string shiftSuffix = displayShift ? "2" : "1";
 
-            // [수정 시작: 키보드 배열창 기능 영어 및 한글 확장, "한글CAPS 한글" 처리 반영]
+            // 키보드 배열창 기능 영어 및 한글 확장, "한글CAPS 한글" 처리 반영
             // 1. 영어 입력 모드 (소문자, 대문자 및 영문 기반 Pali US, Japanese IME 포함)
             if (_lastState == ImeState.State.EnglishLower || _lastState == ImeState.State.EnglishUpper || 
                 _lastState == ImeState.State.PaliUS || _lastState == ImeState.State.JapaneseIME)
@@ -1536,7 +1570,6 @@ namespace IMEPointer
             }
 
             // 2. 한글 입력 모드 (Caps Lock Off 상태) 및 "한글CAPS 한글" 메뉴 선택 시
-            // (CapsMode.WinDefault일 때 Caps On 상태여도 ImeState.Detect에서 State.Hangul을 반환하므로 여기서 함께 처리됨)
             if (_lastState == ImeState.State.Hangul)
             {
                 return $"KoreanKey{shiftSuffix}.png";
@@ -1550,7 +1583,6 @@ namespace IMEPointer
 
             // 기본 예외 처리 (안전망)
             if (_capsMode == CapsMode.WinDefault) return $"KoreanKey{shiftSuffix}.png";
-            // [수정 끝]
             
             return null;
         }
@@ -1565,10 +1597,6 @@ namespace IMEPointer
 
             string? imageName = GetKeyboardLayoutImageName();
             if (string.IsNullOrEmpty(imageName)) return;
-
-            // EmbeddedResource 방식으로 이미지 로드하므로 아래 두줄을 주석처리함.
-            // string imagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, imageName);
-            // if (!File.Exists(imagePath)) return;
 
             if (_keyboardLayoutForm == null || _keyboardLayoutForm.IsDisposed)
             {
@@ -1710,7 +1738,7 @@ namespace IMEPointer
             return hWnd;
         }
 
-        // [수정: 기존 IsTaskbarOrTrayWindow를 IsTaskbarWindow와 IsTrayOrAppWindow로 분리하여 역할 명확화]
+        // 기존 IsTaskbarOrTrayWindow를 IsTaskbarWindow와 IsTrayOrAppWindow로 분리하여 역할 명확화
         private unsafe bool IsTaskbarWindow(IntPtr hWnd)
         {
             if (hWnd == IntPtr.Zero) return false;
@@ -1864,15 +1892,14 @@ namespace IMEPointer
             var bmpData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppPArgb);
             int bytes = Math.Abs(bmpData.Stride) * bitmap.Height;
             Buffer.MemoryCopy((void*)bmpData.Scan0, (void*)pBits, bytes, bytes);
-            //bitmap.UnlockBits(bitmap.CloneArea(new Rectangle(0, 0, bitmap.Width, bitmap.Height), PixelFormat.Format32bppPArgb).LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppPArgb).Scan0); // Dummy code to make buffer copy happy
             bitmap.UnlockBits(bmpData);
             return hBitmap;
         }
     }
     #endregion
 
-#region [ IME 상태 감지 모듈 ]
-    // [수정사항 3] IME 상태 확인 로직 내 중복 함수 통합 및 윈도우별 캐싱 적용
+    #region [ IME 상태 감지 모듈 ]
+    // IME 상태 확인 로직 내 중복 함수 통합 및 윈도우별 캐싱 적용
     internal static class ImeState
     {
         public enum State
@@ -1938,7 +1965,7 @@ namespace IMEPointer
             return CheckHangulPublic(foregroundHwnd);
         }
 
-        // [수정: 단일 변수 대신 Dictionary를 사용하여 각 윈도우 핸들별로 마지막 IME 상태를 캐싱]
+        // 단일 변수 대신 Dictionary를 사용하여 각 윈도우 핸들별로 마지막 IME 상태를 캐싱
         private static readonly Dictionary<IntPtr, bool> _hangulStateCache = new Dictionary<IntPtr, bool>();
 
         public static bool CheckHangulPublic(IntPtr hWnd)
@@ -1998,7 +2025,7 @@ namespace IMEPointer
     #endregion
 
     #region [ 전역 시스템 훅 모듈 통합 (GlobalInputHook) ]
-    // [수정사항 1] KeyboardHook과 MouseHook을 단일 클래스로 통합하여 핸들 관리 단순화
+    // KeyboardHook과 MouseHook을 단일 클래스로 통합하여 핸들 관리 단순화
     internal static class GlobalInputHook
     {
         internal readonly struct HookContextSnapshot
@@ -2204,14 +2231,14 @@ namespace IMEPointer
             return BypassKeyboardHook(nCode, wParam, lParam);
         }
 
-        private static IntPtr HandleLanguageProcessorKey(int nCode, IntPtr wParam, IntPtr lParam, int vkCode, IntPtr hFore, bool capsOn, bool isHangulMode)
+        private static IntPtr HandleLanguageProcessorKey(int nCode, IntPtr wParam, IntPtr lParam, int vkCode, IntPtr hFore, bool capsOn, bool 시isHangulMode)
         {
             IKeyProcessor? keyProcessor = ActiveProcessor;
             if (keyProcessor == null || ContextLangId != 0x0412)
                 return BypassKeyboardHook(nCode, wParam, lParam);
 
             bool isShift = (NativeMethods.GetKeyState(0x10) & 0x8000) != 0;
-            if (keyProcessor.ProcessKeyDown(vkCode, isShift, capsOn, hFore, isHangulMode))
+            if (keyProcessor.ProcessKeyDown(vkCode, isShift, capsOn, hFore, 시isHangulMode))
                 return (IntPtr)1;
 
             return BypassKeyboardHook(nCode, wParam, lParam);
@@ -2269,6 +2296,9 @@ namespace IMEPointer
         public const uint IMAGE_CURSOR = 2;
         public const uint LR_SHARED = 0x00008000;
         public const uint LR_DEFAULTSIZE = 0x00000040;
+        // [수정: 포인터 및 커서 시스템 메트릭스 획득을 위한 상수 추가]
+        public const int SM_CXCURSOR = 13;
+        public const int SM_CYCURSOR = 14;
 
         // --- 구조체 영역 ---
         [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X, Y; }
@@ -2308,7 +2338,10 @@ namespace IMEPointer
         [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool SetForegroundWindow(IntPtr hWnd);
         [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool UpdateLayeredWindow(IntPtr hwnd, IntPtr hdcDst, ref POINT pptDst, ref SIZE psize, IntPtr hdcSrc, ref POINT pptSrc, uint crKey, ref BLENDFUNCTION pblend, uint dwFlags);
 
-        // --- Gdi32.dll / Imm32.dll / Shcore.dll ---
+        // [수정: 포인터 및 커서 시스템 메트릭스 획득 API 추가]
+        [LibraryImport("user32.dll")] public static partial int GetSystemMetrics(int nIndex);
+        
+        // --- Gdi32.dll / Imm32.dll / Shcore.dll / 커스텀 유틸리티 등 ---
         [LibraryImport("gdi32.dll", EntryPoint = "CreateCompatibleDC")] public static partial IntPtr CreateCompatibleDC(IntPtr hdc);
         [LibraryImport("gdi32.dll", EntryPoint = "DeleteDC")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool DeleteDC(IntPtr hdc);
         [LibraryImport("gdi32.dll", EntryPoint = "CreateDIBSection")] public static partial IntPtr CreateDIBSection(IntPtr hdc, ref BITMAPINFO pbmi, uint iUsage, out IntPtr ppvBits, IntPtr hSection, uint dwOffset);
@@ -2321,28 +2354,20 @@ namespace IMEPointer
         
         [LibraryImport("imm32.dll")][SuppressGCTransition] public static partial IntPtr ImmGetDefaultIMEWnd(IntPtr hWnd);
         [LibraryImport("imm32.dll")][SuppressGCTransition] public static partial IntPtr ImmGetContext(IntPtr hWnd);
-        [LibraryImport("imm32.dll")][SuppressGCTransition][return: MarshalAs(UnmanagedType.Bool)] public static partial bool ImmGetConversionStatus(IntPtr hIMC, out uint lpfdwConversion, out uint lpfdwSentence);
-        [LibraryImport("imm32.dll")][SuppressGCTransition][return: MarshalAs(UnmanagedType.Bool)] public static partial bool ImmReleaseContext(IntPtr hWnd, IntPtr hIMC);
         
+        // [수정: 텍스트 짤림으로 누락된 P/Invoke 복구 및 추가 (빌드 오류 방지용)]
+        [LibraryImport("imm32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool ImmGetConversionStatus(IntPtr hIMC, out uint lpfdwConversion, out uint lpfdwSentence);
+        [LibraryImport("imm32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool ImmReleaseContext(IntPtr hWnd, IntPtr hIMC);
+        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool DestroyIcon(IntPtr hIcon);
+        [LibraryImport("user32.dll", EntryPoint = "SystemParametersInfoW")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni);
+        [LibraryImport("kernel32.dll", EntryPoint = "GetModuleHandleW", StringMarshalling = StringMarshalling.Utf16)] public static partial IntPtr GetModuleHandle(string lpModuleName);
         [LibraryImport("shcore.dll")] public static partial int GetDpiForMonitor(IntPtr hmonitor, int dpiType, out uint dpiX, out uint dpiY);
 
+        // --- 누락된 User32.dll API 선언 추가 ---
+        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui);
         // --- Kernel32.dll & Shcore.dll ---
-        [LibraryImport("kernel32.dll", EntryPoint = "GetModuleHandleW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)] public static partial IntPtr GetModuleHandle(string? lpModuleName);
         [LibraryImport("kernel32.dll")] public static partial IntPtr GlobalLock(IntPtr hMem);
         [LibraryImport("kernel32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool GlobalUnlock(IntPtr hMem);
-
-// --- 누락된 User32.dll API 선언 추가 ---
-        [LibraryImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static partial bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui);
-
-        [LibraryImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static partial bool DestroyIcon(IntPtr hIcon);
-
-        [LibraryImport("user32.dll", EntryPoint = "SystemParametersInfoW")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static partial bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni);
 
         // ---  Lang.cs에서 Clipboard 사용을 위한 Win32 API (P/Invoke) 선언 --- 
         [DllImport("user32.dll", SetLastError = true)] public static extern bool OpenClipboard(IntPtr hWndNewOwner);
@@ -2352,32 +2377,43 @@ namespace IMEPointer
         [DllImport("user32.dll", SetLastError = true)] public static extern bool IsClipboardFormatAvailable(uint format);
 
         // --- 유틸리티 메서드 ---
+        public static void SimulateCapsLock()
+        {
+            INPUT[] inputs = new INPUT[2];
+            inputs[0].type = INPUT_KEYBOARD;
+            inputs[0].U.ki.wVk = VK_CAPITAL;
+            inputs[1].type = INPUT_KEYBOARD;
+            inputs[1].U.ki.wVk = VK_CAPITAL;
+            inputs[1].U.ki.dwFlags = KEYEVENTF_KEYUP;
+            SendInput(2, inputs, Marshal.SizeOf<INPUT>());
+        }
+
         public static void SendBackspace()
         {
-            Span<INPUT> inputs = stackalloc INPUT[2];
-            inputs[0].type = INPUT_KEYBOARD; inputs[0].U.ki.wVk = 0x08;
-            inputs[1].type = INPUT_KEYBOARD; inputs[1].U.ki.wVk = 0x08; inputs[1].U.ki.dwFlags = KEYEVENTF_KEYUP;
+            INPUT[] inputs = new INPUT[2];
+            inputs[0].type = INPUT_KEYBOARD;
+            inputs[0].U.ki.wVk = 0x08; // VK_BACK
+            inputs[1].type = INPUT_KEYBOARD;
+            inputs[1].U.ki.wVk = 0x08;
+            inputs[1].U.ki.dwFlags = KEYEVENTF_KEYUP;
             SendInput(2, inputs, Marshal.SizeOf<INPUT>());
         }
 
         public static void SendUnicodeString(string text)
         {
             if (string.IsNullOrEmpty(text)) return;
-            Span<INPUT> inputs = stackalloc INPUT[text.Length * 2];
+            INPUT[] inputs = new INPUT[text.Length * 2];
             for (int i = 0; i < text.Length; i++)
             {
-                inputs[i * 2].type = INPUT_KEYBOARD; inputs[i * 2].U.ki.wScan = text[i]; inputs[i * 2].U.ki.dwFlags = KEYEVENTF_UNICODE;
-                inputs[i * 2 + 1].type = INPUT_KEYBOARD; inputs[i * 2 + 1].U.ki.wScan = text[i]; inputs[i * 2 + 1].U.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+                inputs[i * 2].type = INPUT_KEYBOARD;
+                inputs[i * 2].U.ki.wScan = text[i];
+                inputs[i * 2].U.ki.dwFlags = KEYEVENTF_UNICODE;
+
+                inputs[i * 2 + 1].type = INPUT_KEYBOARD;
+                inputs[i * 2 + 1].U.ki.wScan = text[i];
+                inputs[i * 2 + 1].U.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
             }
             SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
-        }
-
-        public static void SimulateCapsLock()
-        {
-            Span<INPUT> inputs = stackalloc INPUT[2];
-            inputs[0].type = INPUT_KEYBOARD; inputs[0].U.ki.wVk = VK_CAPITAL;
-            inputs[1].type = INPUT_KEYBOARD; inputs[1].U.ki.wVk = VK_CAPITAL; inputs[1].U.ki.dwFlags = KEYEVENTF_KEYUP;
-            SendInput(2, inputs, Marshal.SizeOf<INPUT>());
         }
     }
     #endregion
