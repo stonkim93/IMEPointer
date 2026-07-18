@@ -69,7 +69,7 @@ namespace IMEPointer
         public static bool ShowKeyboardlayoutMenu = false;
 #endif
 
-        public static bool ShowTextOverlayMenu = false;      // "한글CAPS 입력문자 표시창" 메뉴 표시 여부    
+        public static bool ShowTextOverlayMenu = true;      // "한글CAPS 입력문자 표시창" 메뉴 표시 여부    
         public static bool ShowSmallCircleMenu = true;      // "한글/엑셀 작은원 표시" 메뉴 표시 여부    
 
         // ---------------------------------------------------------
@@ -77,7 +77,7 @@ namespace IMEPointer
         // ---------------------------------------------------------
         /// 기본 포인터 모드 (0: WinDefault, 1: WinColor, 2: NewColor)
         public static int DefaultPointerMode = 2;           // Pointer 기본모드 지정
-        public static int DefaultCapsMode = 2;              // 한글CAPS 기본모드 지정
+        public static int DefaultCapsMode = 3;              // 한글CAPS 기본모드 지정
         
         public static bool DefaultShowKeyboardLayout = true; // "한글CAPS 키보드 배열창" 옵션 활성화 여부
         public static bool DefaultShowTextOverlay = true;     // "한글CAPS 입력문자 표시창" 옵션 활성화 여부

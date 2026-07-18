@@ -20,8 +20,6 @@ namespace IMEPointer
         public const int Right = 0x27;
         public const int Escape = 0x1B;
         public const int Backspace = 0x08;
-        public const int Oem5 = 0xDC;
-        public const int Oem102 = 0xE2;
         public const int B = 0x42;
         public const int C = 0x43;
         public const int H = 0x48;
@@ -32,6 +30,14 @@ namespace IMEPointer
         public const int N = 0x4E;
         public const int P = 0x50;
         public const int Y = 0x59;
+        
+        // 일본어 기호 매핑을 위한 가상 키 코드 상수 추가
+        public const int OemYen = 0xDC;      // (\ |) → (¥ |)
+        public const int OemColon = 0xBA;    // (; :) → (・ :)
+        public const int OemComma = 0xBC;    // (, <) → (、 ,)
+        public const int OemPeriod = 0xBE;   // (. >) → (。 .)
+        public const int OemSlash = 0xBF;    // (/ ?) → (ー /)
+        // [이번 수정 부분 끝]
     }
 
     #region [ 1. 인터페이스 및 팩토리 (Interfaces & Factories) ]
@@ -809,7 +815,7 @@ namespace IMEPointer
             { (VK_Q, VK_H), ("ば","バ") }, { (VK_Q, VK_J), ("び","ビ") }, { (VK_Q, VK_K), ("ぶ","ブ") }, { (VK_Q, VK_Y), ("べ","ベ") }, { (VK_Q, VK_L), ("ぼ","ボ") },
             { (VK_W, VK_H), ("だ","ダ") }, { (VK_W, VK_J), ("ぢ","ヂ") }, { (VK_W, VK_K), ("づ","ヅ") }, { (VK_W, VK_Y), ("で","デ") }, { (VK_W, VK_L), ("ど","ド") },
             { (VK_E, VK_H), ("ざ","ザ") }, { (VK_E, VK_J), ("じ","ジ") }, { (VK_E, VK_K), ("ず","ズ") }, { (VK_E, VK_Y), ("ぜ","ゼ") }, { (VK_E, VK_L), ("ぞ","ゾ") },
-            { (VK_R, VK_H), ("が","ガ") }, { (VK_R, VK_J), ("ぎ","ギ") }, { (VK_R, VK_K), ("ぐ","グ") }, { (VK_R, VK_Y), ("げ","ゲ") }, { (VK_R, VK_L), ("ご","ゴ") },
+            { (VK_R, VK_H), ("가","ガ") }, { (VK_R, VK_J), ("ぎ","ギ") }, { (VK_R, VK_K), ("ぐ","グ") }, { (VK_R, VK_Y), ("げ","ゲ") }, { (VK_R, VK_L), ("ご","ゴ") },
             { (VK_A, VK_H), ("は","ハ") }, { (VK_A, VK_J), ("ひ","ヒ") }, { (VK_A, VK_K), ("ふ","フ") }, { (VK_A, VK_Y), ("へ","ヘ") }, { (VK_A, VK_L), ("ほ","ホ") },
             { (VK_S, VK_H), ("た","タ") }, { (VK_S, VK_J), ("ち","チ") }, { (VK_S, VK_K), ("つ","ツ") }, { (VK_S, VK_Y), ("て","テ") }, { (VK_S, VK_L), ("と","ト") },
             { (VK_D, VK_H), ("さ","サ") }, { (VK_D, VK_J), ("し","シ") }, { (VK_D, VK_K), ("す","ス") }, { (VK_D, VK_Y), ("せ","セ") }, { (VK_D, VK_L), ("そ","ソ") },
@@ -921,13 +927,16 @@ namespace IMEPointer
 	
         public static string? ProcessKey(int vkCode, bool isShift)
         {
-            if (vkCode == InputVk.Oem5 || vkCode == InputVk.Oem102)
+            // [이번 수정 부분 시작] - 일본어1 특수기호 매핑 추가
+            switch (vkCode)
             {
-                string ch = isShift ? "|" : "¥";
-                if (ch == "¥") MainForm.Instance?.ShowOverlay(ch);
-                _lastOutputChar = ch;
-                return ch;
+                case InputVk.OemYen: { string ch = isShift ? "|" : "¥"; MainForm.Instance?.ShowOverlay(ch); _lastOutputChar = ch; return ch; }
+                case InputVk.OemColon: { string ch = isShift ? ":" : "・"; MainForm.Instance?.ShowOverlay(ch); _lastOutputChar = ch; return ch; }
+                case InputVk.OemComma: { string ch = isShift ? "," : "、"; MainForm.Instance?.ShowOverlay(ch); _lastOutputChar = ch; return ch; }
+                case InputVk.OemPeriod: { string ch = isShift ? "." : "。"; MainForm.Instance?.ShowOverlay(ch); _lastOutputChar = ch; return ch; }
+                case InputVk.OemSlash: { string ch = isShift ? "/" : "ー"; MainForm.Instance?.ShowOverlay(ch); _lastOutputChar = ch; return ch; }
             }
+            // [이번 수정 부분 끝]
 
             if (vkCode == VK_B || vkCode == VK_P) return null;
 	
@@ -1037,13 +1046,16 @@ namespace IMEPointer
 
         public static string? ProcessKey(int vkCode, bool isShift)
         {
-            if (vkCode == InputVk.Oem5 || vkCode == InputVk.Oem102)
+            // [이번 수정 부분 시작] - 일본어2 특수기호 매핑 추가
+            switch (vkCode)
             {
-                string ch_jpy = isShift ? "|" : "¥";
-                if (ch_jpy == "¥") MainForm.Instance?.ShowOverlay(ch_jpy);
-                _lastOutputChar = ch_jpy;
-                return ch_jpy;
+                case InputVk.OemYen: { string ch_jpy = isShift ? "|" : "¥"; MainForm.Instance?.ShowOverlay(ch_jpy); _lastOutputChar = ch_jpy; return ch_jpy; }
+                case InputVk.OemColon: { string ch_jpy = isShift ? ":" : "・"; MainForm.Instance?.ShowOverlay(ch_jpy); _lastOutputChar = ch_jpy; return ch_jpy; }
+                case InputVk.OemComma: { string ch_jpy = isShift ? "," : "、"; MainForm.Instance?.ShowOverlay(ch_jpy); _lastOutputChar = ch_jpy; return ch_jpy; }
+                case InputVk.OemPeriod: { string ch_jpy = isShift ? "." : "。"; MainForm.Instance?.ShowOverlay(ch_jpy); _lastOutputChar = ch_jpy; return ch_jpy; }
+                case InputVk.OemSlash: { string ch_jpy = isShift ? "/" : "ー"; MainForm.Instance?.ShowOverlay(ch_jpy); _lastOutputChar = ch_jpy; return ch_jpy; }
             }
+            // [이번 수정 부분 끝]
 
             bool useKatakana = isShift ^ _isKatakana;
             string? ch = null;
