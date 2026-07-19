@@ -79,9 +79,10 @@ namespace IMEPointer
         public static int DefaultPointerMode = 2;           // Pointer 기본모드 지정
         public static int DefaultCapsMode = 3;              // 한글CAPS 기본모드 지정
         
-        public static bool DefaultShowKeyboardLayout = true; // "한글CAPS 키보드 배열창" 옵션 활성화 여부
-        public static bool DefaultShowTextOverlay = true;     // "한글CAPS 입력문자 표시창" 옵션 활성화 여부
-        public static bool DefaultEnableMiniIndicator = true; // "한글/엑셀 작은원 표시" 활성화 여부
+        public static bool DefaultShowKeyboardLayout = true;    // "한글CAPS 키보드 배열창" 옵션 활성화 여부
+        public static bool DefaultShowTextOverlay = true;       // "한글CAPS 입력문자 표시창" 옵션 활성화 여부
+        public static bool DefaultEnableMiniIndicator = true;   // "한글/엑셀 작은원 표시" 활성화 여부
+        public static bool IsOverlayKey2Mode = false;           // 입력문자 표시창 'Key2' 상태를 관리하기 위한 전역 변수 추가
 
         public struct Theme
         {

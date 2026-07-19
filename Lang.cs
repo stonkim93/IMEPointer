@@ -34,11 +34,136 @@ namespace IMEPointer
         // 일본어 기호 매핑을 위한 가상 키 코드 상수 추가
         public const int OemYen = 0xDC;      // (\ |) → (¥ |)
         public const int OemColon = 0xBA;    // (; :) → (・ :)
-        public const int OemComma = 0xBC;    // (, <) → (、 ,)
-        public const int OemPeriod = 0xBE;   // (. >) → (。 .)
-        public const int OemSlash = 0xBF;    // (/ ?) → (ー /)
-        // [이번 수정 부분 끝]
+        public const int OemComma = 0xBC;    // (, <) → (, 、)
+        public const int OemPeriod = 0xBE;   // (. >) → (. 。)
+        public const int OemSlash = 0xBF;    // (/ ?) → (/ ー)
     }
+
+    #region [ 0. 유틸리티: Win32 API 기반 동적 문자 확인 (KeyboardUtils) ]
+    // [이번 수정] 하드코딩 맵핑 없이 기호와 숫자에 대해 Shift 적용 여부를 동적으로 반환하는 클래스 구조 개선
+    internal static class KeyboardUtils
+    {
+        // [이번 수정] 현재 포커스된 창의 키보드 레이아웃(HKL)을 고려하여 정확도를 높이기 위해 ToUnicodeEx 및 관련 API 도입
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern int ToUnicodeEx(uint wVirtKey, uint wScanCode, byte[] lpKeyState, [Out, MarshalAs(UnmanagedType.LPWStr, SizeConst = 64)] StringBuilder pwszBuff, int cchBuff, uint wFlags, IntPtr dwhkl);
+        
+        [DllImport("user32.dll")]
+        private static extern uint MapVirtualKeyEx(uint uCode, uint uMapType, IntPtr dwhkl);
+
+        [DllImport("user32.dll")]
+        private static extern bool GetKeyboardState(byte[] lpKeyState);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetKeyboardLayout(uint idThread);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, IntPtr processId);
+
+        public static string? GetChar(int vkCode, bool isShift)
+        {
+            byte[] keyState = new byte[256];
+            
+            // [이번 수정] 현재 키보드 상태를 먼저 읽어온 후, 필요한 Shift 상태만 덮어씌움
+            GetKeyboardState(keyState);
+
+            if (isShift) 
+            {
+                keyState[InputVk.Shift] = 0x80;
+                keyState[0xA0] = 0x80; // VK_LSHIFT
+                keyState[0xA1] = 0x80; // VK_RSHIFT
+            }
+            else
+            {
+                keyState[InputVk.Shift] = 0;
+                keyState[0xA0] = 0;
+                keyState[0xA1] = 0;
+            }
+
+            // [이번 수정] 포커스된 대상 윈도우의 정확한 키보드 레이아웃(HKL) 확보
+            IntPtr hWnd = GetForegroundWindow();
+            uint threadId = GetWindowThreadProcessId(hWnd, IntPtr.Zero);
+            IntPtr hkl = GetKeyboardLayout(threadId);
+
+            uint scanCode = MapVirtualKeyEx((uint)vkCode, 0, hkl);
+            StringBuilder sb = new StringBuilder(5);
+            
+            // [이번 수정] wFlags에 0을 전달하여 가상 Shift 상태가 문자열 변환에 정상 반영되도록 옵션 변경
+            int result = ToUnicodeEx((uint)vkCode, scanCode, keyState, sb, sb.Capacity, 0, hkl);
+            
+            if (result > 0)
+            {
+                string ch = sb.ToString();
+                
+                // [이번 수정] 훅(Hook) 상태에서 API가 Shift를 무시하고 원래 숫자 등을 반환하는 현상 방지
+                if (isShift && ch.Length == 1 && IsSymbolOrNumber(vkCode))
+                {
+                    string? shiftedFallback = GetStandardShiftedSymbol(vkCode);
+                    // ToUnicodeEx 결과가 여전히 숫자라면 (즉, Shift가 적용되지 않았다면) 내부 매핑값 우선 사용
+                    if (shiftedFallback != null && char.IsDigit(ch[0]))
+                    {
+                        return shiftedFallback;
+                    }
+                }
+                return ch;
+            }
+
+            // [이번 수정] ToUnicodeEx 변환 실패 시 최후의 수단으로 표준 QWERTY 기호 매핑 반환
+            if (isShift && IsSymbolOrNumber(vkCode))
+            {
+                return GetStandardShiftedSymbol(vkCode);
+            }
+
+            return null;
+        }
+
+        // [이번 수정] ProcessKey 딕셔너리에 일일이 기호를 추가하지 않도록, Shift 적용 시의 표준 기호를 반환하는 중앙 헬퍼 추가
+        private static string? GetStandardShiftedSymbol(int vkCode)
+        {
+            return vkCode switch
+            {
+                0x31 => "!", 0x32 => "@", 0x33 => "#", 0x34 => "$", 0x35 => "%",
+                0x36 => "^", 0x37 => "&", 0x38 => "*", 0x39 => "(", 0x30 => ")",
+                0xC0 => "~", 0xBD => "_", 0xBB => "+", 0xDB => "{", 0xDD => "}",
+                0xDC => "|", 0xBA => ":", 0xDE => "\"", 0xBC => "<", 0xBE => ">", 0xBF => "?",
+                _ => null
+            };
+        }
+
+        public static bool IsSymbolOrNumber(int vkCode)
+        {
+            return (vkCode >= 0x30 && vkCode <= 0x39) || // 숫자열 (0-9)
+                   (vkCode >= 0xBA && vkCode <= 0xC0) || // ;, =, -, ., /, `
+                   (vkCode >= 0xDB && vkCode <= 0xDE);   // [, \, ], '
+        }
+
+        // [이번 수정] 문자와 기호(숫자열 포함) 모두를 판별하기 위한 확장 메서드
+        public static bool IsSymbolOrNumberOrLetter(int vkCode)
+        {
+            return IsSymbolOrNumber(vkCode) || (vkCode >= 0x41 && vkCode <= 0x5A);
+        }
+
+        // 글로벌 훅용: 한글, 영어 대/소문자 입력모드에서 Key2 상태일 때 Shift 강제 인식 처리
+        public static bool HandleGlobalKey2Mode(int vkCode, bool isShift)
+        {
+            // [이번 수정] IsSymbolOrNumberOrLetter를 사용하여 문자와 기호 모두 판별
+            if (AppConfig.IsOverlayKey2Mode && IsSymbolOrNumberOrLetter(vkCode))
+            {
+                string? ch = GetChar(vkCode, true);
+                if (!string.IsNullOrEmpty(ch))
+                {
+                    GlobalInputHook.IsSending = true; 
+                    NativeMethods.SendUnicodeString(ch); 
+                    GlobalInputHook.IsSending = false; 
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+    #endregion
 
     #region [ 1. 인터페이스 및 팩토리 (Interfaces & Factories) ]
     /// <summary>
@@ -482,7 +607,6 @@ namespace IMEPointer
             return sb.ToString();
         }
     }
-    
     #endregion
 
     #region [ 4. 언어 프로세서: Pali어 ]
@@ -507,12 +631,22 @@ namespace IMEPointer
 
         public bool ProcessKeyDown(int vkCode, bool isShift, bool capsOn, IntPtr hFore, bool isHangulMode)
         {
+            // [이번 수정] Key2 상태일 때 Shift 강제 적용
+            if (AppConfig.IsOverlayKey2Mode) isShift = true;
+
             if (!capsOn || !isHangulMode) return false;
             if (vkCode is >= 0x21 and <= 0x28) { if (!isShift) PaliMap.SetLastOutputChar(""); return false; }
             if (vkCode == InputVk.vk_P) { PaliMap.HandlePaliTransformation(); return true; }
             if (TextSelectionUtils.IsConverting) return true;
 
             string? keyResult = PaliMap.ProcessKey(vkCode, isShift ^ _isVirtualShift);
+            
+            // [이번 수정] 맵핑되지 않은 기호/숫자열 뿐만 아니라 문자도 Key2 등으로 Shift된 경우 동적 맵핑 활용
+            if (keyResult == null && isShift && KeyboardUtils.IsSymbolOrNumberOrLetter(vkCode))
+            {
+                keyResult = KeyboardUtils.GetChar(vkCode, true);
+            }
+
             if (keyResult == null) return (vkCode is >= 0x41 and <= 0x5A or >= 0x30 and <= 0x39);
             
             if (keyResult.Length > 0)
@@ -671,7 +805,6 @@ namespace IMEPointer
     #endregion
 
     #region [ 5. 언어 프로세서: 공학용 특수기호 (Engineer) ]
-    
     internal class EngineerProcessor : IKeyProcessor
     {
         private bool _isVirtualShift = false;
@@ -692,6 +825,9 @@ namespace IMEPointer
 
         public bool ProcessKeyDown(int vkCode, bool isShift, bool capsOn, IntPtr hFore, bool isHangulMode)
         {
+            // [이번 수정] Key2 상태일 때 Shift 강제 적용
+            if (AppConfig.IsOverlayKey2Mode) isShift = true;
+
             if (!capsOn || !isHangulMode) return false;
             if (vkCode is >= 0x21 and <= 0x28) return false;
             if (TextSelectionUtils.IsConverting) return true;
@@ -703,6 +839,19 @@ namespace IMEPointer
                 MainForm.Instance?.ShowOverlay(targetStr);
                 return true;
             }
+            
+            // [이번 수정] 맵핑되지 않은 기호 및 문자 강제 Shift 처리
+            if (isShift && KeyboardUtils.IsSymbolOrNumberOrLetter(vkCode))
+            {
+                string? ch = KeyboardUtils.GetChar(vkCode, true);
+                if (!string.IsNullOrEmpty(ch))
+                {
+                    GlobalInputHook.IsSending = true; NativeMethods.SendUnicodeString(ch); GlobalInputHook.IsSending = false;
+                    MainForm.Instance?.ShowOverlay(ch);
+                    return true;
+                }
+            }
+            
             return (vkCode is >= 0x41 and <= 0x5A or >= 0x30 and <= 0x39);
         }
 
@@ -747,12 +896,16 @@ namespace IMEPointer
 
         public bool ProcessKeyDown(int vkCode, bool isShift, bool capsOn, IntPtr hFore, bool isHangulMode)
         {
-            bool isVowelKey = vkCode is InputVk.vk_H or InputVk.vk_J or InputVk.vk_K or InputVk.vk_L or InputVk.vk_Y;
-            // [수정사항 3, 4] 조합 대기 중 이탈(ESC, Backspace 등) 발생 시 잔상 소거 및 입력 취소 처리
+            // [이번 수정] Key2 상태일 때 Shift 강제 적용
+            if (AppConfig.IsOverlayKey2Mode) isShift = true;
+
+            // 모음 키를 y에서 m으로 교체하여 입력 판정 범위 갱신
+            bool isVowelKey = vkCode is InputVk.vk_H or InputVk.vk_J or InputVk.vk_K or InputVk.vk_L or InputVk.vk_M;
             if (Japanese1Map.IsWaitingVowel && !isVowelKey)
             {
                 if (vkCode == InputVk.vk_B) { Japanese1Map.TogglePendingHiraKata(); return true; }
-                if (vkCode == InputVk.vk_P) { Japanese1Map.TogglePendingYn(); return true; }
+                // 조합 대기 중 YN 글자 전환 키를 기존 P에서 N으로 교체
+                if (vkCode == InputVk.vk_N) { Japanese1Map.TogglePendingYn(); return true; }
 
                 string pending = Japanese1Map.PendingChar;
                 
@@ -782,7 +935,8 @@ namespace IMEPointer
             // 방향키 등 처리 (최적화)
             if (vkCode is >= 0x21 and <= 0x28) { if (!isShift) Japanese1Map.SetLastOutputChar(""); return false; }
             if (vkCode == InputVk.vk_B && capsOn && isHangulMode) { Japanese1Map.HandleHiraganaKatakanaTransformation(); return true; }
-            if (vkCode == InputVk.vk_P && capsOn && isHangulMode) { Japanese1Map.HandleYoonTransformation(); return true; }
+            // 문자열 선택 상태 YN 글자 전환 단축키를 P에서 N으로 교체
+            if (vkCode == InputVk.vk_N && capsOn && isHangulMode) { Japanese1Map.HandleYoonTransformation(); return true; }
             if (!capsOn || !isHangulMode) return false;
             if (TextSelectionUtils.IsConverting) return true;
 
@@ -813,47 +967,62 @@ namespace IMEPointer
         private const int VK_Y = 0x59, VK_T = 0x54, VK_U = 0x55, VK_I = 0x49, VK_O = 0x4F, VK_G = 0x47, VK_N = 0x4E, VK_M = 0x4D, VK_B = 0x42, VK_P = 0x50;
 
         private static readonly HashSet<int> _consonantKeys = new() { VK_Q, VK_W, VK_E, VK_R, VK_A, VK_S, VK_D, VK_F, VK_Z, VK_X, VK_C, VK_V };
-        private static readonly HashSet<int> _vowelKeys = new() { VK_H, VK_J, VK_K, VK_L, VK_Y };
+        // 오른손 모음 배치를 H, J, K, L, M 구조로 갱신
+        private static readonly HashSet<int> _vowelKeys = new() { VK_H, VK_J, VK_K, VK_L, VK_M };
 
+        // Layer 1과 Layer 2 자음 재배치 대응을 위해 다차원 튜플 구조 맵 구축 (Layer 구분 제거)
         private static readonly Dictionary<(int Con, int Vow), (string Hira, string Kata)> _combineMap = new()
         {
-            { (VK_Q, VK_H), ("ば","バ") }, { (VK_Q, VK_J), ("び","ビ") }, { (VK_Q, VK_K), ("ぶ","ブ") }, { (VK_Q, VK_Y), ("べ","ベ") }, { (VK_Q, VK_L), ("ぼ","ボ") },
-            { (VK_W, VK_H), ("だ","ダ") }, { (VK_W, VK_J), ("ぢ","ヂ") }, { (VK_W, VK_K), ("づ","ヅ") }, { (VK_W, VK_Y), ("で","デ") }, { (VK_W, VK_L), ("ど","ド") },
-            { (VK_E, VK_H), ("ざ","ザ") }, { (VK_E, VK_J), ("じ","ジ") }, { (VK_E, VK_K), ("ず","ズ") }, { (VK_E, VK_Y), ("ぜ","ゼ") }, { (VK_E, VK_L), ("ぞ","ゾ") },
-            { (VK_R, VK_H), ("가","ガ") }, { (VK_R, VK_J), ("ぎ","ギ") }, { (VK_R, VK_K), ("ぐ","グ") }, { (VK_R, VK_Y), ("げ","ゲ") }, { (VK_R, VK_L), ("ご","ゴ") },
-            { (VK_A, VK_H), ("は","ハ") }, { (VK_A, VK_J), ("ひ","ヒ") }, { (VK_A, VK_K), ("ふ","フ") }, { (VK_A, VK_Y), ("へ","ヘ") }, { (VK_A, VK_L), ("ほ","ホ") },
-            { (VK_S, VK_H), ("た","タ") }, { (VK_S, VK_J), ("ち","チ") }, { (VK_S, VK_K), ("つ","ツ") }, { (VK_S, VK_Y), ("て","テ") }, { (VK_S, VK_L), ("と","ト") },
-            { (VK_D, VK_H), ("さ","サ") }, { (VK_D, VK_J), ("し","シ") }, { (VK_D, VK_K), ("す","ス") }, { (VK_D, VK_Y), ("せ","セ") }, { (VK_D, VK_L), ("そ","ソ") },
-            { (VK_F, VK_H), ("か","カ") }, { (VK_F, VK_J), ("き","キ") }, { (VK_F, VK_K), ("く","ク") }, { (VK_F, VK_Y), ("け","ケ") }, { (VK_F, VK_L), ("こ","コ") },
-            { (VK_Z, VK_H), ("ぱ","パ") }, { (VK_Z, VK_J), ("ぴ","ピ") }, { (VK_Z, VK_K), ("ぷ","プ") }, { (VK_Z, VK_Y), ("ぺ","ペ") }, { (VK_Z, VK_L), ("ぽ","ポ") },
-            { (VK_X, VK_H), ("ま","マ") }, { (VK_X, VK_J), ("み","ミ") }, { (VK_X, VK_K), ("む","ム") }, { (VK_X, VK_Y), ("め","メ") }, { (VK_X, VK_L), ("も","モ") },
-            { (VK_C, VK_H), ("な","ナ") }, { (VK_C, VK_J), ("に","ニ") }, { (VK_C, VK_K), ("ぬ","ヌ") }, { (VK_C, VK_Y), ("ね","ネ") }, { (VK_C, VK_L), ("の","ノ") },
-            { (VK_V, VK_H), ("ら","ラ") }, { (VK_V, VK_J), ("り","リ") }, { (VK_V, VK_K), ("る","ル") }, { (VK_V, VK_Y), ("れ","レ") }, { (VK_V, VK_L), ("ろ","ロ") },
+            // B Family (Q)
+            { (VK_Q, VK_H), ("ば","バ") }, { (VK_Q, VK_J), ("び","ビ") }, { (VK_Q, VK_K), ("ぶ","ブ") }, { (VK_Q, VK_M), ("べ","ベ") }, { (VK_Q, VK_L), ("ぼ","ボ") },
+            // Z Family (W)
+            { (VK_W, VK_H), ("ざ","ザ") }, { (VK_W, VK_J), ("じ","ジ") }, { (VK_W, VK_K), ("ず","ズ") }, { (VK_W, VK_M), ("ぜ","ゼ") }, { (VK_W, VK_L), ("ぞ","ゾ") },
+            // G Family (E)
+            { (VK_E, VK_H), ("が","ガ") }, { (VK_E, VK_J), ("ぎ","ギ") }, { (VK_E, VK_K), ("ぐ","グ") }, { (VK_E, VK_M), ("げ","ゲ") }, { (VK_E, VK_L), ("ご","ゴ") },
+            // D Family (R)
+            { (VK_R, VK_H), ("だ","ダ") }, { (VK_R, VK_J), ("ぢ","ヂ") }, { (VK_R, VK_K), ("づ","ヅ") }, { (VK_R, VK_M), ("で","デ") }, { (VK_R, VK_L), ("ど","ド") },
+            // H Family (A)
+            { (VK_A, VK_H), ("は","ハ") }, { (VK_A, VK_J), ("ひ","ヒ") }, { (VK_A, VK_K), ("ふ","フ") }, { (VK_A, VK_M), ("へ","ヘ") }, { (VK_A, VK_L), ("ほ","ホ") },
+            // S Family (S)
+            { (VK_S, VK_H), ("さ","サ") }, { (VK_S, VK_J), ("し","シ") }, { (VK_S, VK_K), ("す","ス") }, { (VK_S, VK_M), ("せ","セ") }, { (VK_S, VK_L), ("そ","ソ") },
+            // K Family (D)
+            { (VK_D, VK_H), ("か","カ") }, { (VK_D, VK_J), ("き","キ") }, { (VK_D, VK_K), ("く","ク") }, { (VK_D, VK_M), ("け","ケ") }, { (VK_D, VK_L), ("こ","コ") },
+            // T Family (F)
+            { (VK_F, VK_H), ("た","タ") }, { (VK_F, VK_J), ("ち","チ") }, { (VK_F, VK_K), ("つ","ツ") }, { (VK_F, VK_M), ("て","テ") }, { (VK_F, VK_L), ("と","ト") },
+            // P Family (Z)
+            { (VK_Z, VK_H), ("ぱ","パ") }, { (VK_Z, VK_J), ("ぴ","ピ") }, { (VK_Z, VK_K), ("ぷ","プ") }, { (VK_Z, VK_M), ("ぺ","ペ") }, { (VK_Z, VK_L), ("ぽ","ポ") },
+            // M Family (X)
+            { (VK_X, VK_H), ("ま","マ") }, { (VK_X, VK_J), ("み","ミ") }, { (VK_X, VK_K), ("む","ム") }, { (VK_X, VK_M), ("め","メ") }, { (VK_X, VK_L), ("も","モ") },
+            // R Family (C)
+            { (VK_C, VK_H), ("ら","ラ") }, { (VK_C, VK_J), ("り","リ") }, { (VK_C, VK_K), ("る","ル") }, { (VK_C, VK_M), ("れ","レ") }, { (VK_C, VK_L), ("ろ","ロ") },
+            // N Family (V)
+            { (VK_V, VK_H), ("な","ナ") }, { (VK_V, VK_J), ("に","ニ") }, { (VK_V, VK_K), ("ぬ","ヌ") }, { (VK_V, VK_M), ("ね","ネ") }, { (VK_V, VK_L), ("の","ノ") },
         };
 
+        // 단독 입력 문자 및 모음 배열 갱신 (오른손 전용 레이아웃 분리)
         private static readonly Dictionary<int, (string Hira, string Kata)> _soloMap = new()
         {
-            { VK_T, ("っ","ッ") }, { VK_U, ("や","ヤ") }, { VK_I, ("ゆ","ユ") }, { VK_O, ("よ","ヨ") }, 
-            { VK_G, ("ん","ン") }, { VK_N, ("を","ヲ") }, { VK_M, ("わ","ワ") },
-            // { VK_H, ("あ","ア") }, { VK_J, ("い","イ") }, { VK_K, ("う","ウ") }, { VK_Y, ("え","エ") }, { VK_L, ("お","オ") },
+            { VK_T, ("っ","ッ") }, { VK_G, ("ん","ン") },
+            { VK_Y, ("わ","ワ") }, { VK_U, ("を","ヲ") }, { VK_I, ("よ","ヨ") }, { VK_O, ("ゆ","ユ") }, { VK_P, ("や","ヤ") },
+            { VK_H, ("あ","ア") }, { VK_J, ("い","イ") }, { VK_K, ("う","ウ") }, { VK_M, ("え","エ") }, { VK_L, ("お","オ") }
         };
 
+        // 자음 키별 대표자음 화면 표시 이름 갱신
         private static readonly Dictionary<int, (string Hira, string Kata)> _previewMapL1 = new()
         {
-            { VK_Q, ("ぼ","ボ") }, { VK_W, ("ど","ド") }, { VK_E, ("ぞ","ゾ") }, { VK_R, ("ご","ゴ") }, 
-            { VK_A, ("は","ハ") }, { VK_S, ("た","タ") }, { VK_D, ("さ","サ") }, { VK_F, ("か","カ") }, 
-            { VK_Z, ("ぷ","プ") }, { VK_X, ("ま","マ") }, { VK_C, ("な","ナ") }, { VK_V, ("ら","ラ") },
+            { VK_Q, ("ば","バ") }, { VK_W, ("ざ","ザ") }, { VK_E, ("が","ガ") }, { VK_R, ("だ","ダ") }, 
+            { VK_A, ("は","ハ") }, { VK_S, ("さ","サ") }, { VK_D, ("か","カ") }, { VK_F, ("た","タ") }, 
+            { VK_Z, ("ぱ","パ") }, { VK_X, ("ま","マ") }, { VK_C, ("ら","ラ") }, { VK_V, ("な","ナ") },
         };
 
         private static readonly Dictionary<int, (string Hira, string Kata)> _previewMapL2 = new()
         {
-            { VK_Q, ("ぶ","ブ") }, { VK_W, ("で","デ") }, { VK_E, ("ず","ズ") }, { VK_R, ("ご","ゴ") }, 
-            { VK_A, ("は","ハ") }, { VK_S, ("た","タ") }, { VK_D, ("し","シ") }, { VK_F, ("か","カ") }, 
-            { VK_Z, ("ぽ","ポ") }, { VK_X, ("ま","マ") }, { VK_C, ("の","ノ") }, { VK_V, ("る","ル") },
+            { VK_Q, ("ば","バ") }, { VK_W, ("じ","ジ") }, { VK_E, ("が","ガ") }, { VK_R, ("で","デ") },
+            { VK_A, ("は","ハ") }, { VK_S, ("し","シ") }, { VK_D, ("か","カ") }, { VK_F, ("て","テ") }, 
+            { VK_Z, ("ぱ","パ") }, { VK_X, ("も","モ") }, { VK_C, ("る","ル") }, { VK_V, ("の","ノ") },
         };
 
         private static bool _isKatakana = false;
-        private static bool _isYouonMode = false;
         private static bool _waitingVowel = false;
         private static int _pendingConsonant = 0;
         private static string _pendingChar = "";
@@ -905,7 +1074,7 @@ namespace IMEPointer
             MainForm.Instance?.ShowOverlay(_pendingChar, 0);    // 타이머 없이 유지
         }
 	
-        // [수정사항 1] 공용 헬퍼를 사용하도록 로직 단순화
+        // 공용 헬퍼를 사용하도록 로직 단순화
         public static void HandleHiraganaKatakanaTransformation()
         {
             TextSelectionUtils.TransformAndReplaceText(
@@ -920,7 +1089,7 @@ namespace IMEPointer
             );
         }
 	
-        // [수정사항 1] 공용 헬퍼를 사용하도록 로직 단순화
+        // 공용 헬퍼를 사용하도록 로직 단순화
         public static void HandleYoonTransformation()
 	    {
             TextSelectionUtils.TransformAndReplaceText(
@@ -932,23 +1101,39 @@ namespace IMEPointer
 	
         public static string? ProcessKey(int vkCode, bool isShift)
         {
-            // [이번 수정 부분 시작] - 일본어1 특수기호 매핑 추가
+            // 가타카나 모드일 때 기호가 shift 누른 상태로 입력되도록 useKatakana 판별을 최상단으로 이동
+            bool useKatakana = isShift ^ _isKatakana;
+
+            // - 일본어1 특수기호 및 숫자열 포함 모든 기호에 대해 가타카나 모드 시 Shift 값 적용
             switch (vkCode)
             {
-                case InputVk.OemYen: { string ch = isShift ? "|" : "¥"; MainForm.Instance?.ShowOverlay(ch); _lastOutputChar = ch; return ch; }
-                case InputVk.OemColon: { string ch = isShift ? ":" : "・"; MainForm.Instance?.ShowOverlay(ch); _lastOutputChar = ch; return ch; }
-                case InputVk.OemComma: { string ch = isShift ? "," : "、"; MainForm.Instance?.ShowOverlay(ch); _lastOutputChar = ch; return ch; }
-                case InputVk.OemPeriod: { string ch = isShift ? "." : "。"; MainForm.Instance?.ShowOverlay(ch); _lastOutputChar = ch; return ch; }
-                case InputVk.OemSlash: { string ch = isShift ? "/" : "ー"; MainForm.Instance?.ShowOverlay(ch); _lastOutputChar = ch; return ch; }
+                case InputVk.OemYen: { string ch = useKatakana ? "|" : "¥"; MainForm.Instance?.ShowOverlay(ch); _lastOutputChar = ch; return ch; }
+                case InputVk.OemColon: { string ch = useKatakana ? ":" : "・"; MainForm.Instance?.ShowOverlay(ch); _lastOutputChar = ch; return ch; }
+                case InputVk.OemComma: { string ch = useKatakana ? "、" : ","; MainForm.Instance?.ShowOverlay(ch); _lastOutputChar = ch; return ch; }
+                case InputVk.OemPeriod: { string ch = useKatakana ? "。" : "."; MainForm.Instance?.ShowOverlay(ch); _lastOutputChar = ch; return ch; }
+                case InputVk.OemSlash: { string ch = useKatakana ? "ー" : "/"; MainForm.Instance?.ShowOverlay(ch); _lastOutputChar = ch; return ch; }
             }
-            // [이번 수정 부분 끝]
 
-            if (vkCode == VK_B || vkCode == VK_P) return null;
-	
+            // [이번 수정] 하드코딩된 기호 맵핑을 제거하고 동적으로 Shift를 변환하는 코드로 교체
+            if (KeyboardUtils.IsSymbolOrNumber(vkCode))
+            {
+                string? ch = KeyboardUtils.GetChar(vkCode, useKatakana);
+                if (!string.IsNullOrEmpty(ch))
+                {
+                    MainForm.Instance?.ShowOverlay(ch);
+                    _lastOutputChar = ch;
+                    return ch;
+                }
+            }
+
+            // YN 기동 키가 N으로 변경됨에 따라 분기 차단 조건 동기화
+            if (vkCode == VK_B || vkCode == VK_N) return null;
+
             if (_waitingVowel)
             {
                 if (_vowelKeys.Contains(vkCode))
                 {
+                    // CurrentLayer 정보 제거 및 튜플 단일화
                     var key = (_pendingConsonant, vkCode);
                     if (_combineMap.TryGetValue(key, out var combined))
                     {
@@ -956,7 +1141,7 @@ namespace IMEPointer
                         for (int i = 0; i < _ynToggleCount; i++) if (JapaneseShared.TransformMap.TryGetValue(result, out string? toggled)) result = toggled;
 
                         string currentPending = _pendingChar;
-                        string previewVow = vkCode switch { VK_H => _isKatakana ? "ア" : "あ", VK_J => _isKatakana ? "イ" : "い", VK_K => _isKatakana ? "ウ" : "う", VK_L => _isKatakana ? "オ" : "お", VK_Y => _isKatakana ? "エ" : "え", _ => "?" };
+                        string previewVow = vkCode switch { VK_H => _isKatakana ? "ア" : "あ", VK_J => _isKatakana ? "イ" : "い", VK_K => _isKatakana ? "ウ" : "う", VK_M => _isKatakana ? "エ" : "え", VK_L => _isKatakana ? "オ" : "お", _ => "?" };
                         
                         MainForm.Instance?.ShowOverlay($"{currentPending}+{previewVow}={result}");
 
@@ -965,8 +1150,6 @@ namespace IMEPointer
                     }
                 }
             }
-	
-            bool useKatakana = isShift ^ _isKatakana;
 	
             // 조합 자음 입력 시작
             if (_consonantKeys.Contains(vkCode))
@@ -980,20 +1163,8 @@ namespace IMEPointer
             if (_soloMap.TryGetValue(vkCode, out var solo))
             {
                 string ch = useKatakana ? solo.Kata : solo.Hira;
-                if (_isYouonMode && JapaneseShared.TransformMap.TryGetValue(ch, out string? toggled)) ch = toggled;
-	                
                 MainForm.Instance?.ShowOverlay(ch); 
                 _lastOutputChar = ch; return ch;
-            }
-	
-            if (_vowelKeys.Contains(vkCode))
-            {
-                string ch = vkCode switch { VK_H => useKatakana ? "ア" : "あ", VK_J => useKatakana ? "イ" : "い", VK_K => useKatakana ? "ウ" : "う", VK_L => useKatakana ? "オ" : "お", VK_Y => useKatakana ? "エ" : "え", _ => "", };
-                if (ch.Length > 0) 
-                { 
-                    MainForm.Instance?.ShowOverlay(ch); 
-                    _lastOutputChar = ch; return ch; 
-                }
             }
 	
             _lastOutputChar = ""; return null;
@@ -1024,7 +1195,7 @@ namespace IMEPointer
 
         public static void TogglePendingHiraKataModeOnly() => _isKatakana = !_isKatakana;
 
-        // [수정사항 1] 공용 헬퍼를 사용하도록 로직 단순화
+        // 공용 헬퍼를 사용하도록 로직 단순화
         public static void HandleHiraganaKatakanaTransformation()
         {
             TextSelectionUtils.TransformAndReplaceText(
@@ -1039,7 +1210,7 @@ namespace IMEPointer
             );
         }
 
-        // [수정사항 1] 공용 헬퍼를 사용하도록 로직 단순화
+        // 공용 헬퍼를 사용하도록 로직 단순화
         public static void HandleYoonTransformation()
         {
             TextSelectionUtils.TransformAndReplaceText(
@@ -1049,57 +1220,83 @@ namespace IMEPointer
             );
         }
 
+        // 일본어2(3Layer) 전체 자판 요구 명세 전면 교체
         public static string? ProcessKey(int vkCode, bool isShift)
         {
-            // [이번 수정 부분 시작] - 일본어2 특수기호 매핑 추가
+            // 가타카나 모드일 때 기호가 shift 누른 상태로 입력되도록 useKatakana를 상단으로 이동
+            bool useKatakana = isShift ^ _isKatakana;
+
+            // - 일본어2 특수기호 및 숫자열 포함 모든 기호 매핑에 가타카나 모드시 shift 값 적용
             switch (vkCode)
             {
-                case InputVk.OemYen: { string ch_jpy = isShift ? "|" : "¥"; MainForm.Instance?.ShowOverlay(ch_jpy); _lastOutputChar = ch_jpy; return ch_jpy; }
-                case InputVk.OemColon: { string ch_jpy = isShift ? ":" : "・"; MainForm.Instance?.ShowOverlay(ch_jpy); _lastOutputChar = ch_jpy; return ch_jpy; }
-                case InputVk.OemComma: { string ch_jpy = isShift ? "," : "、"; MainForm.Instance?.ShowOverlay(ch_jpy); _lastOutputChar = ch_jpy; return ch_jpy; }
-                case InputVk.OemPeriod: { string ch_jpy = isShift ? "." : "。"; MainForm.Instance?.ShowOverlay(ch_jpy); _lastOutputChar = ch_jpy; return ch_jpy; }
-                case InputVk.OemSlash: { string ch_jpy = isShift ? "/" : "ー"; MainForm.Instance?.ShowOverlay(ch_jpy); _lastOutputChar = ch_jpy; return ch_jpy; }
-            }
-            // [이번 수정 부분 끝]
+                case InputVk.OemYen: { string ch_jpy = useKatakana ? "|" : "¥"; MainForm.Instance?.ShowOverlay(ch_jpy); _lastOutputChar = ch_jpy; return ch_jpy; }
+                case InputVk.OemColon: { string ch_jpy = useKatakana ? ":" : "・"; MainForm.Instance?.ShowOverlay(ch_jpy); _lastOutputChar = ch_jpy; return ch_jpy; }
+                case InputVk.OemComma: { string ch_jpy = useKatakana ? "、" : ","; MainForm.Instance?.ShowOverlay(ch_jpy); _lastOutputChar = ch_jpy; return ch_jpy; }
+                case InputVk.OemPeriod: { string ch_jpy = useKatakana ? "。" : "."; MainForm.Instance?.ShowOverlay(ch_jpy); _lastOutputChar = ch_jpy; return ch_jpy; }
+                case InputVk.OemSlash: { string ch_jpy = useKatakana ? "ー" : "/"; MainForm.Instance?.ShowOverlay(ch_jpy); _lastOutputChar = ch_jpy; return ch_jpy; }
+          }
 
-            bool useKatakana = isShift ^ _isKatakana;
+            // [이번 수정] 하드코딩된 기호 맵핑을 제거하고 동적 반환 유틸리티 적용
+            if (KeyboardUtils.IsSymbolOrNumber(vkCode))
+            {
+                string? ch_jpy = KeyboardUtils.GetChar(vkCode, useKatakana);
+                if (!string.IsNullOrEmpty(ch_jpy))
+                {
+                    MainForm.Instance?.ShowOverlay(ch_jpy);
+                    _lastOutputChar = ch_jpy;
+                    return ch_jpy;
+                }
+            }
+
             string? ch = null;
 
             if (CurrentLayer == 1)
             {
+                // Layer1 키배열 전체 재할당 (요청된 1-1, 1-2, 1-3 레이아웃)
                 ch = vkCode switch
                 {
-                    0x51 => useKatakana ? "ケ" : "け", 0x57 => useKatakana ? "コ" : "こ", 0x45 => useKatakana ? "ク" : "く", 0x52 => useKatakana ? "キ" : "き", 0x54 => useKatakana ? "カ" : "か", 
-                    0x41 => useKatakana ? "セ" : "せ", 0x53 => useKatakana ? "ソ" : "そ", 0x44 => useKatakana ? "ス" : "す", 0x46 => useKatakana ? "シ" : "し", 0x47 => useKatakana ? "サ" : "さ",
-                    0x5A => useKatakana ? "テ" : "て", 0x58 => useKatakana ? "ト" : "と", 0x43 => useKatakana ? "ツ" : "つ", 0x56 => useKatakana ? "チ" : "ち", 0x42 => useKatakana ? "タ" : "た",
-                    0x59 => useKatakana ? "パ" : "ぱ", 0x55 => useKatakana ? "ピ" : "ぴ", 0x49 => useKatakana ? "プ" : "ぷ", 0x4F => useKatakana ? "ポ" : "ぽ", 0x50 => useKatakana ? "ペ" : "ぺ", 
+                    // Layer 1-1 (q~p)
+                    0x51 => useKatakana ? "レ" : "れ", 0x57 => useKatakana ? "ロ" : "ろ", 0x45 => useKatakana ? "ル" : "る", 0x52 => useKatakana ? "リ" : "り", 0x54 => useKatakana ? "ラ" : "ら", 
+                    0x59 => useKatakana ? "ハ" : "は", 0x55 => useKatakana ? "ヒ" : "ひ", 0x49 => useKatakana ? "フ" : "ふ", 0x4F => useKatakana ? "ホ" : "ほ", 0x50 => useKatakana ? "ヘ" : "へ", 
+                    // Layer 1-2 (a~l)
+                    0x41 => useKatakana ? "ネ" : "ね", 0x53 => useKatakana ? "ノ" : "の", 0x44 => useKatakana ? "ヌ" : "ぬ", 0x46 => useKatakana ? "ニ" : "に", 0x47 => useKatakana ? "ナ" : "な",
                     0x48 => useKatakana ? "ア" : "あ", 0x4A => useKatakana ? "イ" : "い", 0x4B => useKatakana ? "ウ" : "う", 0x4C => useKatakana ? "オ" : "お", 
-                    0x4E => useKatakana ? "ッ" : "っ", 0x4D => useKatakana ? "エ" : "え", 
+                    // Layer 1-3 (z~m)
+                    0x5A => useKatakana ? "メ" : "め", 0x58 => useKatakana ? "モ" : "も", 0x43 => useKatakana ? "ム" : "む", 0x56 => useKatakana ? "ミ" : "み", 0x42 => useKatakana ? "マ" : "ま",
+                    0x4E => useKatakana ? "ン" : "ん", 0x4D => useKatakana ? "エ" : "え", 
                     _ => null
                 };
             }
             else if (CurrentLayer == 2)
             {
+                // Layer2 키배열 전체 재할당 (요청된 2-1, 2-2, 2-3 레이아웃)
                 ch = vkCode switch
                 {
-                    0x51 => useKatakana ? "ゲ" : "げ", 0x57 => useKatakana ? "ゴ" : "ご", 0x45 => useKatakana ? "グ" : "ぐ", 0x52 => useKatakana ? "ギ" : "ぎ", 0x54 => useKatakana ? "ガ" : "が",
-                    0x5A => useKatakana ? "デ" : "で", 0x58 => useKatakana ? "ド" : "ど", 0x43 => useKatakana ? "ヅ" : "づ", 0x56 => useKatakana ? "ヂ" : "ぢ", 0x42 => useKatakana ? "ダ" : "だ",
-                    0x41 => useKatakana ? "ゼ" : "ぜ", 0x53 => useKatakana ? "ゾ" : "ぞ", 0x44 => useKatakana ? "ズ" : "ず", 0x46 => useKatakana ? "ジ" : "じ", 0x47 => useKatakana ? "ザ" : "ざ",
-                    0x59 => useKatakana ? "バ" : "ば", 0x55 => useKatakana ? "ビ" : "び", 0x49 => useKatakana ? "ブ" : "ぶ", 0x4F => useKatakana ? "ボ" : "ぼ", 0x50 => useKatakana ? "ベ" : "べ", 
-                    0x48 => useKatakana ? "ヴ" : "ゔ", 0x4A => useKatakana ? "ヤ" : "や", 0x4B => useKatakana ? "ユ" : "ゆ", 0x4C => useKatakana ? "ヨ" : "よ", 
+                    // Layer 2-1 (q~p)
+                    0x51 => useKatakana ? "ケ" : "け", 0x57 => useKatakana ? "コ" : "こ", 0x45 => useKatakana ? "ク" : "く", 0x52 => useKatakana ? "キ" : "き", 0x54 => useKatakana ? "カ" : "か",
+                    0x59 => useKatakana ? "パ" : "ぱ", 0x55 => useKatakana ? "ピ" : "ぴ", 0x49 => useKatakana ? "プ" : "ぷ", 0x4F => useKatakana ? "ポ" : "ぽ", 0x50 => useKatakana ? "ペ" : "ぺ", 
+                    // Layer 2-2 (a~l)
+                    0x41 => useKatakana ? "テ" : "て", 0x53 => useKatakana ? "ト" : "と", 0x44 => useKatakana ? "ツ" : "つ", 0x46 => useKatakana ? "チ" : "ち", 0x47 => useKatakana ? "タ" : "た",
+                    0x48 => useKatakana ? "ッ" : "っ", 0x4A => useKatakana ? "ヨ" : "よ", 0x4B => useKatakana ? "ユ" : "ゆ", 0x4C => useKatakana ? "ヤ" : "や", 
+                    // Layer 2-3 (z~m)
+                    0x5A => useKatakana ? "セ" : "せ", 0x58 => useKatakana ? "ソ" : "そ", 0x43 => useKatakana ? "ス" : "す", 0x56 => useKatakana ? "シ" : "し", 0x42 => useKatakana ? "サ" : "さ",
                     0x4E => useKatakana ? "ヲ" : "を", 0x4D => useKatakana ? "ワ" : "わ", 
                     _ => null
                 };
             }
             else if (CurrentLayer == 3)
             {
+                // Layer3 키배열 전체 재할당 (요청된 3-1, 3-2, 3-3 레이아웃)
                 ch = vkCode switch
                 {
-                    0x51 => useKatakana ? "メ" : "め", 0x57 => useKatakana ? "モ" : "も", 0x45 => useKatakana ? "ム" : "む", 0x52 => useKatakana ? "ミ" : "み", 0x54 => useKatakana ? "マ" : "ま", 
-                    0x41 => useKatakana ? "ネ" : "ね", 0x53 => useKatakana ? "ノ" : "の", 0x44 => useKatakana ? "ヌ" : "ぬ", 0x46 => useKatakana ? "ニ" : "に", 0x47 => useKatakana ? "ナ" : "な",
-                    0x5A => useKatakana ? "レ" : "れ", 0x58 => useKatakana ? "ロ" : "ろ", 0x43 => useKatakana ? "ル" : "る", 0x56 => useKatakana ? "リ" : "り", 0x42 => useKatakana ? "ラ" : "ら", 
-                    0x59 => useKatakana ? "ハ" : "は", 0x55 => useKatakana ? "ヒ" : "ひ", 0x49 => useKatakana ? "フ" : "ふ", 0x4F => useKatakana ? "ホ" : "ほ", 0x50 => useKatakana ? "ヘ" : "へ", 
-                    0x48 => useKatakana ? "ン" : "ん", 0x4A => useKatakana ? "ャ" : "ゃ", 0x4B => useKatakana ? "ュ" : "ゅ", 0x4C => useKatakana ? "ョ" : "ょ", 
+                    // Layer 3-1 (q~p)
+                    0x51 => useKatakana ? "ゲ" : "げ", 0x57 => useKatakana ? "ゴ" : "ご", 0x45 => useKatakana ? "グ" : "ぐ", 0x52 => useKatakana ? "ギ" : "ぎ", 0x54 => useKatakana ? "ガ" : "が", 
+                    0x59 => useKatakana ? "バ" : "ば", 0x55 => useKatakana ? "ビ" : "び", 0x49 => useKatakana ? "ブ" : "ぶ", 0x4F => useKatakana ? "ボ" : "ぼ", 0x50 => useKatakana ? "ベ" : "べ", 
+                    // Layer 3-2 (a~l)
+                    0x41 => useKatakana ? "デ" : "で", 0x53 => useKatakana ? "ド" : "ど", 0x44 => useKatakana ? "ヅ" : "づ", 0x46 => useKatakana ? "ヂ" : "ぢ", 0x47 => useKatakana ? "ダ" : "だ",
+                    0x48 => useKatakana ? "ヴ" : "ゔ", 0x4A => useKatakana ? "ョ" : "ょ", 0x4B => useKatakana ? "ュ" : "ゅ", 0x4C => useKatakana ? "ャ" : "ゃ", 
+                    // Layer 3-3 (z~b) - n과 m은 단축키 처리기에서 별도 가로챔
+                    0x5A => useKatakana ? "ゼ" : "ぜ", 0x58 => useKatakana ? "ゾ" : "ぞ", 0x43 => useKatakana ? "ズ" : "ず", 0x56 => useKatakana ? "ジ" : "じ", 0x42 => useKatakana ? "ザ" : "ざ", 
                     _ => null
                 };
             }
@@ -1128,6 +1325,9 @@ namespace IMEPointer
 
         public bool ProcessKeyDown(int vkCode, bool isShift, bool capsOn, IntPtr hFore, bool isHangulMode)
         {
+            // [이번 수정] Key2 상태일 때 Shift 강제 적용
+            if (AppConfig.IsOverlayKey2Mode) isShift = true;
+
             if (vkCode is >= 0x21 and <= 0x28) { if (!isShift) Japanese2Map.SetLastOutputChar(""); return false; }
 
             if (Japanese2Map.CurrentLayer == 3)
