@@ -37,7 +37,7 @@ namespace IMEPointer
         public static bool ShowPointerWinDefault = true;    // "WIN Default Pointer" 메뉴 표시 여부        
         public static bool ShowPointerWinColor = true;      // "WIN Color Pointer" 메뉴 표시 여부    
         public static bool ShowPointerNewColor = true;      // "NEW Color Pointer" 메뉴 표시 여부    
-        public static bool ShowCapsHangul = true;           // [0] "한글CAPS 한글" 메뉴 표시 여부    
+        public static bool ShowCapsHangul = false;           // [0] "한글CAPS 한글" 메뉴 표시 여부    
 
 #if ENABLE_CAPS_ENGINEER
         public static bool ShowCapsEngineer = true;         // [1] "한글CAPS 공학용_특수기호" 메뉴 표시 여부    
@@ -69,7 +69,7 @@ namespace IMEPointer
         public static bool ShowKeyboardlayoutMenu = false;
 #endif
 
-        public static bool ShowTextOverlayMenu = true;      // "한글CAPS 입력문자 표시창" 메뉴 표시 여부    
+        public static bool ShowTextOverlayMenu = false;      // "한글CAPS 입력문자 표시창" 메뉴 표시 여부    
         public static bool ShowSmallCircleMenu = true;      // "한글/엑셀 작은원 표시" 메뉴 표시 여부    
 
         // ---------------------------------------------------------
@@ -77,10 +77,10 @@ namespace IMEPointer
         // ---------------------------------------------------------
         /// 기본 포인터 모드 (0: WinDefault, 1: WinColor, 2: NewColor)
         public static int DefaultPointerMode = 2;           // Pointer 기본모드 지정
-        public static int DefaultCapsMode = 3;              // 한글CAPS 기본모드 지정
+        public static int DefaultCapsMode = 0;              // 한글CAPS 기본모드 지정
         
-        public static bool DefaultShowKeyboardLayout = true;    // "한글CAPS 키보드 배열창" 옵션 활성화 여부
-        public static bool DefaultShowTextOverlay = true;       // "한글CAPS 입력문자 표시창" 옵션 활성화 여부
+        public static bool DefaultShowKeyboardLayout = false;    // "한글CAPS 키보드 배열창" 옵션 활성화 여부
+        public static bool DefaultShowTextOverlay = false;       // "한글CAPS 입력문자 표시창" 옵션 활성화 여부
         public static bool DefaultEnableMiniIndicator = true;   // "한글/엑셀 작은원 표시" 활성화 여부
         public static bool IsOverlayKey2Mode = false;           // 입력문자 표시창 'Key2' 상태를 관리하기 위한 전역 변수 추가
 
