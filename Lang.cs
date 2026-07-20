@@ -769,8 +769,7 @@ namespace IMEPointer
 
             string first = text[0].ToString();
             
-            // 첫 번째 글자의 원본 카테고리와 타겟 변환 정보 가져오기
-            if (!_paliCategoryMap.TryGetValue(first, out int fromCat)) return text;
+            // [이번 수정] 첫 번째 글자의 변환 결과와 절대적인 목표 카테고리(toCat) 획득
             if (!TransformationRules.TryGetValue(first, out string? firstConverted)) return text;
             if (!_paliCategoryMap.TryGetValue(firstConverted, out int toCat)) return text; 
 
@@ -781,21 +780,15 @@ namespace IMEPointer
             {
                 string c = text[i].ToString();
                 
-                // 나머지 글자가 첫 번째 글자와 동일한 유형(Category)인지 확인 후 일괄 전환
-                if (_paliCategoryMap.TryGetValue(c, out int cCat) && cCat == fromCat)
+                // [이번 수정] 원래 유형과 관계없이, Pāḷi어 체인에 존재하는 글자이고 
+                // 해당 타겟 인덱스(toCat)에 변환될 문자가 할당되어 있다면 일괄 변환 수행
+                if (_paliReverseChainMap.TryGetValue(c, out string?[]? chain) && chain[toCat] != null)
                 {
-                    if (_paliReverseChainMap.TryGetValue(c, out string?[]? chain) && chain[toCat] != null)
-                    {
-                        sb.Append(chain[toCat]);
-                    }
-                    else
-                    {
-                        sb.Append(c);   // 타겟 카테고리에 해당하는 글자가 없으면 원본 유지
-                    }
+                    sb.Append(chain[toCat]);
                 }
                 else
                 {
-                    sb.Append(c);
+                    sb.Append(c);   // 타겟 카테고리에 해당하는 글자가 없거나 변환 대상이 아니면 원본 유지
                 }
             }
             return sb.ToString();
