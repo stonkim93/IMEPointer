@@ -37,7 +37,7 @@ namespace IMEPointer
         public static bool ShowPointerWinDefault = true;    // "WIN Default Pointer" 메뉴 표시 여부        
         public static bool ShowPointerWinColor = true;      // "WIN Color Pointer" 메뉴 표시 여부    
         public static bool ShowPointerNewColor = true;      // "NEW Color Pointer" 메뉴 표시 여부    
-        public static bool ShowCapsHangul = true;           // [0] "한글CAPS 한글" 메뉴 표시 여부    
+        public static bool ShowCapsHangul = false;           // [0] "한글CAPS 한글" 메뉴 표시 여부    
 
 #if ENABLE_CAPS_ENGINEER
         public static bool ShowCapsEngineer = true;         // [1] "한글CAPS 공학용_특수기호" 메뉴 표시 여부    
@@ -69,18 +69,18 @@ namespace IMEPointer
         public static bool ShowKeyboardlayoutMenu = false;
 #endif
 
-        public static bool ShowTextOverlayMenu = true;      // "한글CAPS 입력문자 표시창" 메뉴 표시 여부    
+        public static bool ShowTextOverlayMenu = false;      // "한글CAPS 입력문자 표시창" 메뉴 표시 여부    
         public static bool ShowSmallCircleMenu = true;      // "한글/엑셀 작은원 표시" 메뉴 표시 여부    
 
         // ---------------------------------------------------------
         // 3. 프로그램 시작 시 초기 모드 설정
         // ---------------------------------------------------------
         /// 기본 포인터 모드 (0: WinDefault, 1: WinColor, 2: NewColor)
-        public static int DefaultPointerMode = 2;           // Pointer 기본모드 지정
-        public static int DefaultCapsMode = 3;              // 한글CAPS 기본모드 지정
+        public static int DefaultPointerMode = 0;           // Pointer 기본모드 지정
+        public static int DefaultCapsMode = 0;              // 한글CAPS 기본모드 지정
         
-        public static bool DefaultShowKeyboardLayout = true;    // "한글CAPS 키보드 배열창" 옵션 활성화 여부
-        public static bool DefaultShowTextOverlay = true;       // "한글CAPS 입력문자 표시창" 옵션 활성화 여부
+        public static bool DefaultShowKeyboardLayout = false;    // "한글CAPS 키보드 배열창" 옵션 활성화 여부
+        public static bool DefaultShowTextOverlay = false;       // "한글CAPS 입력문자 표시창" 옵션 활성화 여부
         public static bool DefaultEnableMiniIndicator = true;   // "한글/엑셀 작은원 표시" 활성화 여부
         public static bool IsOverlayKey2Mode = false;           // 입력문자 표시창 'Key2' 상태를 관리하기 위한 전역 변수 추가
 
@@ -919,6 +919,27 @@ namespace IMEPointer
         // 트레이 메뉴 생성 로직 통합 (헬퍼 메서드를 이용한 중복 제거)
         private void InitializeTrayMenu()
         {
+            // [수정 시작: 트레이 메뉴 첫줄에 제목("IMEPointer") 표시 및 깃허브 페이지 이동 기능 추가]
+            var titleMenuItem = new ToolStripMenuItem(UiText.AppName, null, (s, e) =>
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "https://github.com/stonkim93/IMEPointer",
+                        UseShellExecute = true // .NET 환경에서 외부 URL 호출 시 필수 설정
+                    });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"웹페이지를 열 수 없습니다.\n{ex.Message}", UiText.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            });
+            // 다른 메뉴와 구분되도록 글꼴을 굵게(Bold) 처리
+            titleMenuItem.Font = new Font(titleMenuItem.Font, FontStyle.Bold); 
+            _contextMenu.Items.Add(titleMenuItem);
+            // [수정 끝]
+
             _contextMenu.Items.Add(_statusMenuItem);
             _contextMenu.Items.Add(new ToolStripSeparator());
 
