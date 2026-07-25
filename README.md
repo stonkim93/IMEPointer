@@ -191,6 +191,17 @@
 
 </div>
 
+#### 📌 Pali어 입력 전용앱 IMEPali (수정 Pali 자판)
+
+* Pali어 입력 전용앱은 [IMEPali](https://github.com/stonkim93/IMEPali)를 참고하세요.
+
+* Color Pointer 기능과 한글CAPS 입력모드 기능을 사용하지 않습니다.
+
+* Pali어와 Sanskrit어 문자 이외에 특수기호 기능을 제공하지 않습니다.
+
+* 영어 입력 모드에서 한자키(RCtrl)를 이용하여 Pali어를 빠르게 입력하고, 한자키로 글자전환을 합니다.
+
+
 ### 2️⃣ 일본어 입력하기
 
 #### 일본어1_조합형
@@ -412,6 +423,9 @@ dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=
 | [IMEPointer_full.zip](https://github.com/stonkim93/IMEPointer/releases/download/IMEPointer/IMEPointer_full.zip) | Color Pointer + 4가지 Key-layout | 2975 |
 | [IMEPointer_Japanese.zip](https://github.com/stonkim93/IMEPointer/releases/download/IMEPointer/IMEPointer_Japanese.zip) | Color Pointer + 일본어1, 일본어2 | 2,435 |
 | [IMEPointer_only.zip](https://github.com/stonkim93/IMEPointer/releases/download/IMEPointer/IMEPointer_only.zip) | Color Pointer 기능만 | 489 |
+| [IMEPali](https://github.com/stonkim93/IMEPali/releases/download/IMEPali/IMEPali.zip) | Pali어 입력 전용앱 | 481 |
+
+** Pali어 입력 전용앱은 [IMEPali](https://github.com/stonkim93/IMEPali)를 참고하세요.
 
 ### 4️⃣ 실행하기
 
@@ -501,6 +515,8 @@ dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=
 - Coding & Debugging에는 Gemini 3.1 Pro (무료)의 도움을 많이 받았습니다.
 
 - 키보드 배열 검토에는 Claude Haiku 4.5 (무료)를 활용했습니다. 
+
+- Colr 마우스 포인터나 한글CAPS 입력모드를 사용하지 않고, 한자키를 Pali어 입력/전환 기능으로 사용하는 Pali어 입력 전용앱(IMEPali)을 개발했어요.
 
 - Made with ❤️ for multilingual writers, scholars, engineers, and Pāḷi researchers
 
