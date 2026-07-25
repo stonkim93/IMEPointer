@@ -15,11 +15,11 @@
 
   <!-- [수정 부분 시작] 기능 활성화 스위치 (이 곳의 true/false를 변경하여 파일 사이즈와 메뉴를 최적화합니다) -->
   <PropertyGroup>
-    <EnableKeyboardLayout>false</EnableKeyboardLayout>
-    <EnableCapsEngineer>false</EnableCapsEngineer>
-    <EnableCapsPali>false</EnableCapsPali>
-    <EnableCapsJapanese1>false</EnableCapsJapanese1>
-    <EnableCapsJapanese2>false</EnableCapsJapanese2>
+    <EnableKeyboardLayout>true</EnableKeyboardLayout>
+    <EnableCapsEngineer>true</EnableCapsEngineer>
+    <EnableCapsPali>true</EnableCapsPali>
+    <EnableCapsJapanese1>true</EnableCapsJapanese1>
+    <EnableCapsJapanese2>true</EnableCapsJapanese2>
   </PropertyGroup>
 
   <!-- 설정된 스위치에 따라 C# 코드용 조건부 상수(DefineConstants) 정의 -->

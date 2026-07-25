@@ -23,8 +23,8 @@ namespace IMEPointer
         // 1. 성능 및 기본 설정
         // ---------------------------------------------------------
         /// IME 상태 감지 주기 (단위: ms). 기본값 15ms. 
-        /// ※ CPU 점유율이 높을 경우 30~50으로 상향 조정하세요.
-        public const int PollingInterval = 30;
+        /// ※ CPU 점유율이 높을 경우 30~150으로 상향 조정하세요.
+        public const int PollingInterval = 60;
         public static readonly string[] IndicatorTargetApps = { "excel", "hwp" };
         public const float IndicatorSize = 8.0f;
         public const float IndicatorOffset = 20.0f;
@@ -34,10 +34,10 @@ namespace IMEPointer
         // ---------------------------------------------------------
         // .csproj의 조건부 컴파일 상수(DefineConstants)와 연동하여 메뉴 표시 여부를 결정합니다.
         // 빌드 시 제외된 항목은 자동으로 트레이 메뉴에서도 숨김 처리됩니다.
-        public static bool ShowPointerWinDefault = true;    // "WIN Default Pointer" 메뉴 표시 여부        
-        public static bool ShowPointerWinColor = true;      // "WIN Color Pointer" 메뉴 표시 여부    
-        public static bool ShowPointerNewColor = true;      // "NEW Color Pointer" 메뉴 표시 여부    
-        public static bool ShowCapsHangul = false;           // [0] "한글CAPS 한글" 메뉴 표시 여부    
+        public static bool ShowPointerWinDefault = true;    // [0] "WIN Default Pointer" 메뉴 표시 여부        
+        public static bool ShowPointerWinColor = true;      // [1] "WIN Color Pointer" 메뉴 표시 여부    
+        public static bool ShowPointerNewColor = true;      // [2] "NEW Color Pointer" 메뉴 표시 여부    
+        public static bool ShowCapsHangul = true;           // [0] "한글CAPS 한글" 메뉴 표시 여부    
 
 #if ENABLE_CAPS_ENGINEER
         public static bool ShowCapsEngineer = true;         // [1] "한글CAPS 공학용_특수기호" 메뉴 표시 여부    
@@ -69,18 +69,18 @@ namespace IMEPointer
         public static bool ShowKeyboardlayoutMenu = false;
 #endif
 
-        public static bool ShowTextOverlayMenu = false;      // "한글CAPS 입력문자 표시창" 메뉴 표시 여부    
+        public static bool ShowTextOverlayMenu = true;      // "한글CAPS 입력문자 표시창" 메뉴 표시 여부    
         public static bool ShowSmallCircleMenu = true;      // "한글/엑셀 작은원 표시" 메뉴 표시 여부    
 
         // ---------------------------------------------------------
         // 3. 프로그램 시작 시 초기 모드 설정
         // ---------------------------------------------------------
         /// 기본 포인터 모드 (0: WinDefault, 1: WinColor, 2: NewColor)
-        public static int DefaultPointerMode = 0;           // Pointer 기본모드 지정
-        public static int DefaultCapsMode = 0;              // 한글CAPS 기본모드 지정
+        public static int DefaultPointerMode = 2;           // [0~2] Pointer 기본모드 지정
+        public static int DefaultCapsMode = 3;              // [0~4] 한글CAPS 기본모드 지정
         
-        public static bool DefaultShowKeyboardLayout = false;    // "한글CAPS 키보드 배열창" 옵션 활성화 여부
-        public static bool DefaultShowTextOverlay = false;       // "한글CAPS 입력문자 표시창" 옵션 활성화 여부
+        public static bool DefaultShowKeyboardLayout = true;    // "한글CAPS 키보드 배열창" 옵션 활성화 여부
+        public static bool DefaultShowTextOverlay = true;       // "한글CAPS 입력문자 표시창" 옵션 활성화 여부
         public static bool DefaultEnableMiniIndicator = true;   // "한글/엑셀 작은원 표시" 활성화 여부
         public static bool IsOverlayKey2Mode = false;           // 입력문자 표시창 'Key2' 상태를 관리하기 위한 전역 변수 추가
 
@@ -2146,12 +2146,20 @@ namespace IMEPointer
             IsSending = false;
         }
 
-        [System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvStdcall) })]
+[System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvStdcall) })]
         private static IntPtr MouseHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode >= 0 && wParam.ToInt32() == 0x0201)
+            // 대응책 1: UnmanagedCallersOnly 메서드 내 예외가 외부로 전파되는 것을 차단하는 try-catch 추가
+            try
             {
-                ActiveProcessor?.OnMouseClick();
+                if (nCode >= 0 && wParam.ToInt32() == 0x0201)
+                {
+                    ActiveProcessor?.OnMouseClick();
+                }
+            }
+            catch
+            {
+                // 후킹 콜백 내부에서의 예외는 조용히 무시하고 다음 훅으로 넘겨 시스템 멈춤을 방지합니다.
             }
             return NativeMethods.CallNextHookEx(_mouseHookId, nCode, wParam, lParam);
         }
