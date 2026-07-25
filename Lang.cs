@@ -587,6 +587,7 @@ namespace IMEPointer
             int fromCat = GetYoonCategory(first);
             if (fromCat < 0) return text;
 
+            // 첫 번째 글자가 변환되는 절대적인 목표 카테고리(인덱스)를 구함
             string firstConverted = GetNextYoonChar(first);
             int toCat = GetYoonCategory(firstConverted);
             if (firstConverted == first) return text;
@@ -602,7 +603,9 @@ namespace IMEPointer
                 int cCat = GetYoonCategory(c);
                 if (cCat < 0) { sb.Append(c); continue; }
 
-                sb.Append((cCat == fromCat) ? ConvertYoonToCategory(c, toCat) : c);
+                // [이번 수정] 기존의 (cCat == fromCat) 조건 검사를 제거하여,
+                // 첫 번째 글자의 변환 유형(toCat)이 다른 글자에도 존재하기만 한다면 무조건 해당 유형으로 변환하도록 변경합니다.
+                sb.Append(ConvertYoonToCategory(c, toCat));
             }
             return sb.ToString();
         }
