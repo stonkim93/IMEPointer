@@ -16,8 +16,8 @@
   <!-- [수정 부분 시작] 기능 활성화 스위치 (이 곳의 true/false를 변경하여 파일 사이즈와 메뉴를 최적화합니다) -->
   <PropertyGroup>
     <EnableKeyboardLayout>true</EnableKeyboardLayout>
-    <EnableCapsEngineer>false</EnableCapsEngineer>
-    <EnableCapsPali>false</EnableCapsPali>
+    <EnableCapsEngineer>true</EnableCapsEngineer>
+    <EnableCapsPali>true</EnableCapsPali>
     <EnableCapsJapanese1>true</EnableCapsJapanese1>
     <EnableCapsJapanese2>true</EnableCapsJapanese2>
   </PropertyGroup>
