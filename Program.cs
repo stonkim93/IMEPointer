@@ -24,7 +24,7 @@ namespace IMEPointer
         // ---------------------------------------------------------
         /// IME 상태 감지 주기 (단위: ms). 기본값 15ms. 
         /// ※ CPU 점유율이 높을 경우 30~150으로 상향 조정하세요.
-        public const int PollingInterval = 60;
+        public const int PollingInterval = 100;
         public static readonly string[] IndicatorTargetApps = { "excel", "hwp" };
         public const float IndicatorSize = 8.0f;
         public const float IndicatorOffset = 20.0f;
@@ -117,14 +117,11 @@ namespace IMEPointer
         public const string FatalErrorPrefix = "치명적 오류:\n";
         public const string StatusChecking = "현재 상태: 확인 중...";
         public const string HangulCapsMode = "한글CAPS 모드";
-        public const string EnglishLowerMode = "영어 소문자 모드";
-        public const string Hiragana = "Hiragana";
-        public const string Katakana = "Katakana";
         public const string ExitMenu = "종료(Exit)";
+        public const string GithubUrl = "https://github.com/stonkim93/IMEPointer";
 
         public static string TrayTooltip(string description) => $"{AppName}: {description}";
         public static string StatusLabel(string description) => $"현재 상태: {description}";
-        public static string LayerLabel(int layer) => $"Layer{layer}";
     }
 
     #region [ 진입점 (Main) ]
@@ -134,7 +131,7 @@ namespace IMEPointer
         static void Main()
         {
             // 중복 실행 방지 (IMEPali, IMEPointer)
-            using Mutex mutexPali = new Mutex(true, "IMEPali_SingleInstance", out bool firstPali);
+            using Mutex mutexPali = new Mutex(true, "IMEPali_SingleInstance", out _);
             using Mutex mutex = new Mutex(true, "IMEPointer_SingleInstance", out bool first);
             if (!first)
             {
@@ -163,7 +160,7 @@ namespace IMEPointer
     }
     #endregion
 
-    #region [ 커서 그래픽 처리 팩토리 ]
+    #region [ 6. 그래픽 및 포인터 생성 (WinColorPointerFactory) ]
     internal static class WinColorPointerFactory
     {
         // [이번 수정: 부드러운 외곽선을 위해 알파 채널 절단 임계값 등 하드코딩 제거 및 보간 로직 전면 개편]
@@ -926,7 +923,7 @@ namespace IMEPointer
                 {
                     System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                     {
-                        FileName = "https://github.com/stonkim93/IMEPointer",
+                        FileName = UiText.GithubUrl,
                         UseShellExecute = true // .NET 환경에서 외부 URL 호출 시 필수 설정
                     });
                 }
@@ -1920,8 +1917,8 @@ namespace IMEPointer
     }
     #endregion
 
-    #region [ IME 상태 감지 모듈 ]
-    // IME 상태 확인 로직 내 중복 함수 통합 및 윈도우별 캐싱 적용
+    #region [ 5. 감지 및 입력 훅 모듈 (ImeState, GlobalInputHook) ]
+    /// 대상 창의 현재 입력 상태(IME 모드)를 감지하고 상태를 변경하는 모듈입니다.
     internal static class ImeState
     {
         public enum State
@@ -2301,7 +2298,7 @@ namespace IMEPointer
     }
     #endregion
 
-    #region [ Win32 P/Invoke API 선언부 (NativeMethods) ]
+    #region [ 7. Win32 P/Invoke API 선언부 (NativeMethods) ]
     internal static unsafe partial class NativeMethods
     {
         // --- 상수 영역 ---
