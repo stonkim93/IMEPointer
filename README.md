@@ -135,7 +135,7 @@
 
 4. **PE키(P)** 전환기능 : 선택된 글자가 다음 순서로 순환한다.
 
-- 다수의 글자를 선택하고 PE키를 누르면, 첫번째 글자의 전환과 동일한 전환이 적용된다.
+- 다수의 글자를 선택하고 PE키를 누르면, 첫번째 글자가 전환되는 글자와 동일한 유형으로 글자들이 전환된다.
 - None(영어) → Dot below → Macron → Dot below+Macron → Dot above → Accent → Tilde  → None (영어)
 
 <div align="center">
@@ -242,7 +242,7 @@
 - **한자키** (RCtrl): Layer1 ↔ Layer2
 - **HK** 전환키(B): 히라가나(H) ↔ 가타카나(K)
 - **YN** 전환키(P): 청음 → 탁음 → 반탁음 → 작은글자 → 청음
-** 다수의 글자를 선택하고 HK/YN키를 누르면, 첫번째 글자의 전환과 동일한 전환이 적용된다.
+** 다수의 글자를 선택하고 HK/YN키를 누르면, 첫번째 글자가 전환되는 글자와 동일한 유형으로 글자들이 전환된다.
 
 <div align="center">
 
@@ -291,7 +291,7 @@
 - **한자키** (RCtrl): Layer1 → Layer2 → Layer3 → Layer1 
 - **HK** 전환키(B): 히라가나(H) ↔ 가타카나(K)
 - **YN** 전환키(P): 청음 → 탁음 → 반탁음 → 작은글자 → 청음
-** 다수의 글자를 선택하고 HK/YN키를 누르면, 첫번째 글자의 전환과 동일한 전환이 적용된다.
+** 다수의 글자를 선택하고 HK/YN키를 누르면, 첫번째 글자가 전환되는 글자와 동일한 유형으로 글자들이 전환된다.
 
 6. 일본어 한자 입력방법
 - 일본어 IME 설치후, 일본어 글자를 1개 선택하고 Spacebar를 누르면 일본어 한자 변환이 가능하다.
@@ -409,9 +409,8 @@ dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=
 
 | 파일명 | 용도 | 파일크기(KB) |
 |:---|:---|---:|
-| [IMEPointer_full.zip](https://github.com/stonkim93/IMEPointer/releases/download/IMEPointer/IMEPointer_full.zip) | Color Pointer + 4가지 Key-layout | 3,190 |
-| [IMEPointer_Pali.zip](https://github.com/stonkim93/IMEPointer/releases/download/IMEPointer/IMEPointer_Pali.zip) | Color Pointer + Pali_Sanskrit | 1,357 |
-| [IMEPointer_Japanese.zip](https://github.com/stonkim93/IMEPointer/releases/download/IMEPointer/IMEPointer_Japanese.zip) | Color Pointer + 일본어1, 일본어2 | 2,618 |
+| [IMEPointer_full.zip](https://github.com/stonkim93/IMEPointer/releases/download/IMEPointer/IMEPointer_full.zip) | Color Pointer + 4가지 Key-layout | 2975 |
+| [IMEPointer_Japanese.zip](https://github.com/stonkim93/IMEPointer/releases/download/IMEPointer/IMEPointer_Japanese.zip) | Color Pointer + 일본어1, 일본어2 | 2,435 |
 | [IMEPointer_only.zip](https://github.com/stonkim93/IMEPointer/releases/download/IMEPointer/IMEPointer_only.zip) | Color Pointer 기능만 | 489 |
 
 ### 4️⃣ 실행하기
