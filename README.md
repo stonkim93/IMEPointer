@@ -57,7 +57,7 @@
 
 - **일본어 응용**: 대표자음(12자) + あ행모음(5자) → 조합글자(60자)
 
-- **결과**: **일본어1 (조합형)** 및 **일본어2 (3-Layer)** 입력 모드 개발
+- **결과**: **일본어1 (조합형)** 및 **일본어3 (3-Layer)** 입력 모드 개발
 
 - **효과**: 일본어에 정통하지 않은 사용자도 직관적인 입력 가능
 
@@ -84,7 +84,7 @@
 | **공학 특수기호** | $\color{orange}\Large\blacktriangle$ Orange | $\color{orange}\large\textbf{S}$ | **한글CAPS** + 그리스문자, 수학기호 |
 | **Pali/Sanskrit** | $\color{orange}\Large\blacktriangle$ Orange | $\color{orange}\large\textbf{P}$ | **한글CAPS** + 빨리/산스크리트 문자 |
 | **Pali Unicode** | $\color{orange}\Large\blacktriangle$ Orange | $\color{orange}\large\textbf{p}$ | Us + Pali unicode 설치시 || **일본어1** (조합형) | $\color{lime}\Large\blacktriangle$ Lime | $\color{lime}\large\textbf{J}$ | **한글CAPS** + 자음/모음 조합 |
-| **일본어2** (3-Layer) | $\color{lime}\Large\blacktriangle$ Lime | $\color{lime}\large\textbf{J}$ | **한글CAPS** + 3Layer에 76자 배치 |
+| **일본어3** (3-Layer) | $\color{lime}\Large\blacktriangle$ Lime | $\color{lime}\large\textbf{J}$ | **한글CAPS** + 3Layer에 76자 배치 |
 | **Japanese IME** | $\color{lime}\Large\blacktriangle$ Lime | $\color{lime}\large\textbf{j}$ | 일본어 IME 설치시 |
 
 </div>
@@ -122,7 +122,9 @@
   
   ⚠️ 한글과컴퓨터 아래한글 (`hwp.exe`)의 텍스트 입력창 안에서는 포인터가 검은색 I자로 바뀐다.
 
-### 6️⃣ 트레이 아이콘 **클릭**하여 메뉴 선택하고, 옵션 On/Off
+### 6️⃣ 삼성전자 갤럭시북5 Copilot키의 한자키 적용/복원 키맵핑 기능 제공
+
+### 7️⃣ 트레이 아이콘 **클릭**하여 메뉴 선택하고, 옵션 On/Off
 
 <div align="center">
 
@@ -226,6 +228,49 @@
 * 영어 입력 모드에서 한자키(RCtrl)를 이용하여 Pali어를 빠르게 입력하고, 한자키로 글자전환을 합니다.
 
 
+### 📱 안드로이드 스마트폰에서 Pali어 입력하기
+
+**1. 삼성 키보드: 굿락(Good Lock) 'Keys Cafe' 활용 (가장 추천)**
+
+- Galaxy Store에서 Good Lock 설치 후 Keys Cafe 모듈 다운로드
+
+- 나만의 키보드 만들기 메뉴 진입, 기존에 사용하던 영문 QWERTY 레이아웃 선택 및 편집 모드 진입
+
+- 각 알파벳 키(a, i, u, d, t, l, n, m) 길게 누르기(팝업) 레이아웃에 Pali어 기호(ā, ī, ū, ḍ, ṭ, ḷ, ṅ, ṇ, ñ, ṃ)를 지정 [EngPali1, EngPali2, EngPali3]
+
+- 숫자키 배열처럼 Pali어 특수문자 키들을 배치하는 것도 가능 [EngPali1, EngPali2]
+
+
+* [key_cafe_EngPali1.kcf](https://github.com/stonkim93/IMEPali/releases/download/IMEPali/keys_cafe_EngPali1.kcf) : 숫자열 아래에 Pali어 전용키 10자 배치 (대문자는 Long Press)
+
+* [key_cafe_EngPali2.kcf](https://github.com/stonkim93/IMEPali/releases/download/IMEPali/keys_cafe_EngPali2.kcf) : 숫자열 제외하고 위쪽에 Pali어 전용키 10자 배치 (대문자는 Long Press)
+
+* [key_cafe_EngPali3.kcf](https://github.com/stonkim93/IMEPali/releases/download/IMEPali/keys_cafe_EngPali3.kcf) : Pali어 전용키 없이 영어키 Long Press로 Pali어 소문자/대문자 입력
+
+<div align="center">
+
+![alt text](images/keys_cafe_EngPali.png)
+
+</div>
+
+
+**2. Gboard (구글 키보드): 개인 사전(단축키) 및 언어 설정**
+
+- 개인 사전(Personal Dictionary) 단축어 활용 방법 : Gboard 설정 > 사전 > 개인 사전 > 영어 선택후, + 버튼을 눌러 Pali어 문자와 치환 단축어 등록
+
+- 영문 자판 기본 롱프레스 활용 방법 : a, i, u 키를 길게 누르면 기본 알파벳 모음 장음(ā, ī, ū) 및 ñ이 기본 팝업으로 제공
+
+**3. 네이버 스마트보드: 자주 쓰는 문구 / 기호 바 커스텀**
+
+- 네이버 스마트보드 설정 > 기본 > 자주 쓰는 문구 항목 선택
+
+- 자주 사용하는 팔리어 문자를 목록에 추가 (ā, ī, ū, ṁ, ṅ, ñ, ṭ, ḍ, ṇ, ḷ)
+
+- 키보드 상단 툴바에 자주 쓰는 문구 아이콘을 배치하면, 클릭 한 번으로 팔리어 기호 모음 패널을 열어 입력 가능
+
+- 또는 단축키 기능을 사용해 a. 입력 시 ā로 자동 변환되도록 설정
+
+
 ### 2️⃣ 일본어 입력하기
 
 #### 일본어1_조합형
@@ -306,9 +351,9 @@
 
 </div>
 
-#### 일본어2 (3-Layer)
+#### 일본어3 (3-Layer)
 
-1. 트레이 메뉴에서 "한글CAPS 일본어2_3Layer" 선택 (한글 입력 모드 + CAPS Lock On)
+1. 트레이 메뉴에서 "한글CAPS 일본어3_3Layer" 선택 (한글 입력 모드 + CAPS Lock On)
 
 2. 인체공학적 자판 배치
 
@@ -444,7 +489,23 @@
 - ㅌ + 한자키 : 훈민정음 자음/모음 (ㅸ,ㆆ,ㅿ,ㆎ,ㆇ)
 - ㅎ + 한자키 : 그리스 문자 (Δ, Ω, α, β 등)
 
-### 4️⃣ 아래한글에서 윈도우 MS IME 사용하기
+### 4️⃣ 한자키 적용/복원 키맵핑 기능 제공
+
+- 삼성전자 갤럭시북5은 다음과 같이 copilot키를 한자키와 겸용으로 사용한다.
+
+  * 그냥 눌렀을 때: Copilot 실행 매크로 신호 (Win + Shift + F23)
+
+  * Fn + 눌렀을 때: 한자키 신호 (IME Kanji)
+
+- Sharpkeys 앱을 사용하면 다음의 키맵핑으로 Registry를 수정하여 한자키를 사용할 수 있다.
+
+  * 기존 Copilot 키 선택: "Function : F23 (00_6E)"
+
+  * 한자키로 키맵핑 : "Unknown: 0xE071 (E0_71)"
+
+- 이 앱의 트레이 메뉴에서 한자키 적용/복원 키맵핑 기능을 제공한다.
+
+### 5️⃣ 아래한글에서 윈도우 MS IME 사용하기
 
 > 📌 [TIP]
 > 한글과컴퓨터의 자체 입력기 대신 Microsoft IME를 사용하도록 전환하면, 아래한글에서도 IMEPointer가 입력 상태를 정확히 표시합니다.
@@ -454,7 +515,7 @@
 * **글자판 자동 변경** 해제하여 항상 윈도우 설정을 따르도록 저장
 * 트레이 아이콘을 클릭하여 **엑셀/한글 작은원 표시**가 체크되면, 입력 상태를 시각적으로 구분하기 쉬움
 
-### 5️⃣ 윈도우 시작 프로그램에 추가하기
+### 6️⃣ 윈도우 시작 프로그램에 추가하기
 
 * 윈도우 실행창(run)을 띄운다 : <kbd>WIN</kbd> + <kbd>R</kbd>
 * 윈도우 시작프로그램 폴더를 연다 : `shell:startup`
@@ -494,7 +555,8 @@ Visual Studio에서 `IMEPointer.csproj`를 열고 빌드합니다.
     <EnableCapsEngineer>true</EnableCapsEngineer>     <!-- 공학용 특수기호 -->
     <EnableCapsPali>true</EnableCapsPali>             <!-- Pali/Sanskrit -->
     <EnableCapsJapanese1>true</EnableCapsJapanese1>   <!-- 일본어1 조합형 -->
-    <EnableCapsJapanese2>true</EnableCapsJapanese2>   <!-- 일본어2 3Layer -->
+    <EnableCapsJapanese2>true</EnableCapsJapanese2>   <!-- 일본어1 조합형 -->
+    <EnableCapsJapanese3>true</EnableCapsJapanese3>   <!-- 일본어3 3Layer -->
   </PropertyGroup>
 ```
 
@@ -517,7 +579,7 @@ dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=
 | 파일명 | 용도 | 파일크기(KB) |
 |:---|:---|---:|
 | [IMEPointer_full.zip](https://github.com/stonkim93/IMEPointer/releases/download/IMEPointer/IMEPointer_full.zip) | Color Pointer + 4가지 Key-layout | 2976 |
-| [IMEPointer_Japanese.zip](https://github.com/stonkim93/IMEPointer/releases/download/IMEPointer/IMEPointer_Japanese.zip) | Color Pointer + 일본어1, 일본어2 | 2,436 |
+| [IMEPointer_Japanese.zip](https://github.com/stonkim93/IMEPointer/releases/download/IMEPointer/IMEPointer_Japanese.zip) | Color Pointer + 일본어1, 일본어3 | 2,436 |
 | [IMEPointer_only.zip](https://github.com/stonkim93/IMEPointer/releases/download/IMEPointer/IMEPointer_only.zip) | Color Pointer 기능만 | 492 |
 | [IMEPali](https://github.com/stonkim93/IMEPali/releases/download/IMEPali/IMEPali.zip) | Pali어 입력 전용앱 | 481 |
 
@@ -541,7 +603,7 @@ dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=
 
 * **9가지 입력 상태 추적**: 기존의 5가지 상태(영어/한글/Pali)에서 9가지로 확장
   - 기본 상태: 영어 소/대문자, 한글, Pali IME, 일본어 IME
-  - 한글CAPS 모드: 공학용, Pali/Sanskrit, 일본어1, 일본어2
+  - 한글CAPS 모드: 공학용, Pali/Sanskrit, 일본어1, 일본어3
 
 * **상태 전환 엔진**: 언어 변경, Caps Lock, 한자키 입력을 감지하여 자동 상태 전환
 

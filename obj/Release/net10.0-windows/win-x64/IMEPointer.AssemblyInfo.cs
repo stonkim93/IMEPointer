@@ -10,10 +10,12 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("IMEPointer")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("stonkim93")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
+[assembly: System.Reflection.AssemblyCopyrightAttribute("Copyright (c) 2024 stonkim93")]
+[assembly: System.Reflection.AssemblyDescriptionAttribute("Mouse Pointer and IME state indicator for Windows")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ec0fdfb8dcffafca642ef5b17c636118f12329c5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0.0+7d624d547a9258ced22618057c59bb1f6b75efdc")]
 [assembly: System.Reflection.AssemblyProductAttribute("IMEPointer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("IMEPointer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

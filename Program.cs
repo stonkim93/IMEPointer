@@ -17,84 +17,105 @@ using Microsoft.Win32;
 namespace IMEPointer
 {
     #region [ 사용자 설정 영역 (AppConfig) ]
+    /// <summary>
+    /// [수정: 역할 분리] 사용자가 변경할 수 있는 앱의 전반적인 환경설정 값들을 모아둔 클래스입니다.
+    /// 기존 MainForm에 하드코딩되어 있던 오버레이 폰트 크기, 트레이 아이콘 크기 등을 이곳으로 이동하여 유지관리를 용이하게 했습니다.
+    /// </summary>
     internal static class AppConfig
     {
         // ---------------------------------------------------------
         // 1. 성능 및 기본 설정
         // ---------------------------------------------------------
-        /// IME 상태 감지 주기 (단위: ms). 기본값 15ms. 
-        /// ※ CPU 점유율이 높을 경우 30~150으로 상향 조정하세요.
+        /// IME 상태 감지 주기 (단위: ms). 기본값 100ms. 
         public const int PollingInterval = 100;
         public static readonly string[] IndicatorTargetApps = { "excel", "hwp" };
         public const float IndicatorSize = 8.0f;
         public const float IndicatorOffset = 20.0f;
 
         // ---------------------------------------------------------
-        // 2. 트레이 메뉴 표시 옵션 (UI)
+        // 2. 오버레이 및 트레이 UI 세부 설정 (수정 추가됨)
         // ---------------------------------------------------------
-        // .csproj의 조건부 컴파일 상수(DefineConstants)와 연동하여 메뉴 표시 여부를 결정합니다.
-        // 빌드 시 제외된 항목은 자동으로 트레이 메뉴에서도 숨김 처리됩니다.
-        public static bool ShowPointerWinDefault = true;    // [0] "WIN Default Pointer" 메뉴 표시 여부        
-        public static bool ShowPointerWinColor = true;      // [1] "WIN Color Pointer" 메뉴 표시 여부    
-        public static bool ShowPointerNewColor = true;      // [2] "NEW Color Pointer" 메뉴 표시 여부    
-        public static bool ShowCapsHangul = true;           // [0] "한글CAPS 한글" 메뉴 표시 여부    
+        public const int OverlayDefaultDurationMs = 1500;
+        public const float OverlayDefaultFontSize = 29f;   
+        public const int OverlayDefaultHeight = 52;
+        public const int OverlayDefaultCharWidth = 30;
+        public const int OverlayDefaultPaddingWidth = 24;
+        public const int OverlayDefaultYOffset = 40;
+        public const int TrayIconSize = 32;
+        public const float TrayLowercaseFontSize = 31F;
+        public const float TrayUppercaseFontSize = 32F;
+
+        // ---------------------------------------------------------
+        // 3. 트레이 메뉴 표시 옵션 (UI)
+        // ---------------------------------------------------------
+        public static bool ShowPointerWinDefault = true;           
+        public static bool ShowPointerWinColor = true;          
+        public static bool ShowPointerNewColor = true;          
+        public static bool ShowCapsHangul = true;               
 
 #if ENABLE_CAPS_ENGINEER
-        public static bool ShowCapsEngineer = true;         // [1] "한글CAPS 공학용_특수기호" 메뉴 표시 여부    
+        public static bool ShowCapsEngineer = true;             
 #else
         public static bool ShowCapsEngineer = false;
 #endif
 
 #if ENABLE_CAPS_PALI
-        public static bool ShowCapsPali = true;             // [2] "한글CAPS Pali_Sanskrit" 메뉴 표시 여부    
+        public static bool ShowCapsPali = true;                 
 #else
         public static bool ShowCapsPali = false;
 #endif
 
-#if ENABLE_CAPS_JAPANESE1
-        public static bool ShowCapsJapanese1 = true;        // [3] "한글CAPS 일본어1_조합형" 메뉴 표시 여부    
+#if ENABLE_CAPS_Japanese1
+        public static bool ShowCapsJapanese1 = true;            
 #else
         public static bool ShowCapsJapanese1 = false;
 #endif
 
-#if ENABLE_CAPS_JAPANESE2
-        public static bool ShowCapsJapanese2 = true;        // [4] "한글CAPS 일본어2_3Layer" 메뉴 표시 여부    
+#if ENABLE_CAPS_Japanese2
+        public static bool ShowCapsJapanese2 = true;            
 #else
         public static bool ShowCapsJapanese2 = false;
 #endif
 
+#if ENABLE_CAPS_Japanese3
+        public static bool ShowCapsJapanese3 = true;            
+#else
+        public static bool ShowCapsJapanese3 = false;
+#endif
+
 #if ENABLE_KEYBOARD_LAYOUT
-        public static bool ShowKeyboardlayoutMenu = true;       // "한글CAPS 키보드 배열창" 메뉴 표시 여부    
+        public static bool ShowKeyboardlayoutMenu = true;           
 #else
         public static bool ShowKeyboardlayoutMenu = false;
 #endif
 
-        public static bool ShowTextOverlayMenu = true;      // "한글CAPS 입력문자 표시창" 메뉴 표시 여부    
-        public static bool ShowSmallCircleMenu = true;      // "한글/엑셀 작은원 표시" 메뉴 표시 여부    
+        public static bool ShowCopilotMapMenu = true;  
+        public static bool ShowTextOverlayMenu = true;          
+        public static bool ShowSmallCircleMenu = true;          
 
         // ---------------------------------------------------------
-        // 3. 프로그램 시작 시 초기 모드 설정
+        // 4. 프로그램 시작 시 초기 모드 설정
         // ---------------------------------------------------------
-        /// 기본 포인터 모드 (0: WinDefault, 1: WinColor, 2: NewColor)
-        public static int DefaultPointerMode = 2;           // [0~2] Pointer 기본모드 지정
-        public static int DefaultCapsMode = 3;              // [0~4] 한글CAPS 기본모드 지정
+        public static int DefaultPointerMode = 2;           
+        public static int DefaultCapsMode = 3;              
         
-        public static bool DefaultShowKeyboardLayout = true;    // "한글CAPS 키보드 배열창" 옵션 활성화 여부
-        public static bool DefaultShowTextOverlay = true;       // "한글CAPS 입력문자 표시창" 옵션 활성화 여부
-        public static bool DefaultEnableMiniIndicator = true;   // "한글/엑셀 작은원 표시" 활성화 여부
-        public static bool IsOverlayKey2Mode = false;           // 입력문자 표시창 'Key2' 상태를 관리하기 위한 전역 변수 추가
+        public static bool DefaultShowKeyboardLayout = true;    
+        public static bool DefaultShowTextOverlay = true;       
+        public static bool DefaultEnableCopilotMap = false;     
+        public static bool EnableCopilotMap = DefaultEnableCopilotMap;       
+        public static bool DefaultEnableMiniIndicator = true;   
+        public static bool IsOverlayKey2Mode = false;           
 
         public struct Theme
         {
-            public Color PointerColor;   // 마우스 포인터 색상
-            public Color TrayBgColor;    // 트레이 아이콘 배경색
-            public Color TrayTextColor;  // 트레이 아이콘 글자색
-            public string TrayText;      // 트레이 아이콘에 표시될 글자
-            public string Description;   // 상태 설명 텍스트
-            public Color IBeamColor;     // 텍스트 커서(I-Beam) 색상
+            public Color PointerColor;   
+            public Color TrayBgColor;    
+            public Color TrayTextColor;  
+            public string TrayText;      
+            public string Description;   
+            public Color IBeamColor;     
         }
 
-        /// 각 언어 및 입력 상태별 테마 매핑 딕셔너리입니다. 색상 커스터마이징 시 아래 Color 값을 수정하세요.
         public static readonly Dictionary<ImeState.State, Theme> Themes = new()
         {
             [ImeState.State.EnglishLower] = new Theme { PointerColor = Color.White, TrayBgColor = Color.Black, TrayTextColor = Color.White, TrayText = "e", Description = "영어 소문자 [e]", IBeamColor = Color.Black },
@@ -104,25 +125,28 @@ namespace IMEPointer
             [ImeState.State.Engineer] = new Theme { PointerColor = Color.Orange, TrayBgColor = Color.Black, TrayTextColor = Color.Orange, TrayText = "S", Description = "한글CAPS 공학용 특수기호 [S]", IBeamColor = Color.Orange },
             [ImeState.State.PaliHangul] = new Theme { PointerColor = Color.Orange, TrayBgColor = Color.Black, TrayTextColor = Color.Orange, TrayText = "P", Description = "한글CAPS Pali어 [P]", IBeamColor = Color.Orange },
             [ImeState.State.JapaneseIME] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "j", Description = "Japanese IME [j]", IBeamColor = Color.Lime },
-            [ImeState.State.JapaneseHangul1] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "한글CAPS 일본어1 [J]", IBeamColor = Color.Lime },
-            [ImeState.State.JapaneseHangul2] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "한글CAPS 일본어2 [J]", IBeamColor = Color.Lime }
+            [ImeState.State.JapaneseHangul1A] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "한글CAPS 일본어1 [J]", IBeamColor = Color.Lime },
+            [ImeState.State.JapaneseHangul1B] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "한글CAPS 일본어2 [J]", IBeamColor = Color.Lime },
+            [ImeState.State.JapaneseHangul2] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "한글CAPS 일본어3 [J]", IBeamColor = Color.Lime }
         };
     }
     #endregion
 
+    #region [ 문자열 리소스 (UiText) ]
     internal static class UiText
     {
         public const string AppName = "IMEPointer";
         public const string AlreadyRunningMessage = "이미 실행 중입니다.";
         public const string FatalErrorPrefix = "치명적 오류:\n";
         public const string StatusChecking = "현재 상태: 확인 중...";
-        public const string HangulCapsMode = "한글CAPS 모드";
+        public static string HangulCapsMode => MainForm.Instance?.GetCapsModeOverlayText() ?? "한글CAPS 모드";        
         public const string ExitMenu = "종료(Exit)";
         public const string GithubUrl = "https://github.com/stonkim93/IMEPointer";
 
         public static string TrayTooltip(string description) => $"{AppName}: {description}";
         public static string StatusLabel(string description) => $"현재 상태: {description}";
     }
+    #endregion
 
     #region [ 진입점 (Main) ]
     internal static class Program
@@ -130,7 +154,6 @@ namespace IMEPointer
         [STAThread]
         static void Main()
         {
-            // 중복 실행 방지 (IMEPali, IMEPointer)
             using Mutex mutexPali = new Mutex(true, "IMEPali_SingleInstance", out _);
             using Mutex mutex = new Mutex(true, "IMEPointer_SingleInstance", out bool first);
             if (!first)
@@ -139,7 +162,6 @@ namespace IMEPointer
                 return;
             }
 
-            // 예외 발생 및 종료 시 커서 원래대로 복구
             AppDomain.CurrentDomain.UnhandledException += (s, e) => MainForm.RestoreDefaults();
             AppDomain.CurrentDomain.ProcessExit += (s, e) => MainForm.RestoreDefaults();
             Application.ThreadException += (s, e) => MainForm.RestoreDefaults();
@@ -160,19 +182,16 @@ namespace IMEPointer
     }
     #endregion
 
-    #region [ 6. 그래픽 및 포인터 생성 (WinColorPointerFactory) ]
-    internal static class WinColorPointerFactory
+    #region [ 6. 그래픽 및 포인터 팩토리 (PointerGraphicsFactory) ]
+    /// <summary>
+    /// [수정: 이름 변경 및 구조 개선] WinColorPointerFactory -> PointerGraphicsFactory로 변경하여 그래픽 생성 역할을 명확히 하였습니다.
+    /// </summary>
+    internal static class PointerGraphicsFactory
     {
-        // [이번 수정: 부드러운 외곽선을 위해 알파 채널 절단 임계값 등 하드코딩 제거 및 보간 로직 전면 개편]
         public static IntPtr CreateColoredSystemPointer(uint ocrId, Color targetColor, int renderSize)
         {
-            // 문제 원인: LoadImage에 크기를 강제 지정하고 GDI+로 스케일링할 때 Pre-multiplied Alpha가 손실되거나 
-            // 픽셀이 이중으로 보간되어 외곽선이 울퉁불퉁해지는 현상(특히 화살표 꼬리)이 발생합니다.
-            // 해결: 1. LoadImage 시 LR_SHARED를 해제하여 시스템 렌더러가 올바른 DPI의 고해상도 커서를 가져오도록 유도.
-            //       2. GDI+ 스케일링을 제거하고 DrawIconEx의 네이티브 렌더링 엔진을 활용.
             IntPtr hPointer = NativeMethods.LoadImage(IntPtr.Zero, (IntPtr)ocrId, NativeMethods.IMAGE_CURSOR, renderSize, renderSize, 0);
             
-            // 실패할 경우 공유된 기본 커서로 폴백(Fallback)
             if (hPointer == IntPtr.Zero)
                 hPointer = NativeMethods.LoadImage(IntPtr.Zero, (IntPtr)ocrId, NativeMethods.IMAGE_CURSOR, 0, 0, NativeMethods.LR_SHARED | NativeMethods.LR_DEFAULTSIZE);
 
@@ -188,7 +207,6 @@ namespace IMEPointer
             }
 
             using Bitmap? rendered = RenderPointerToArgbBitmap(hPointer, renderSize, out int actualWidth, out int actualHeight);
-
             if (rendered == null) return IntPtr.Zero;
 
             RecolorCursorStraight(rendered, targetColor, ocrId);
@@ -204,21 +222,18 @@ namespace IMEPointer
                 finalBitmap = outlined;
             }
 
-            // 스케일된 크기에 맞춰 HotSpot 좌표 보정
             float scaleX = (float)renderSize / actualWidth;
             float scaleY = (float)renderSize / actualHeight;
             int scaledHotX = (int)Math.Round(hotX * scaleX);
             int scaledHotY = (int)Math.Round(hotY * scaleY);
 
             IntPtr ptr = BitmapToPointer(finalBitmap, scaledHotX, scaledHotY);
-
             outlined?.Dispose();
             return ptr;
         }
 
         private static unsafe Bitmap AddSmoothOutline(Bitmap src, Color outlineColor)
         {
-            // [이번 수정: IBeam 커서 외곽선의 계단 현상을 제거하기 위해 Soft Alpha 혼합 방식을 적용]
             int width = src.Width, height = src.Height;
             Bitmap result = new Bitmap(width, height, PixelFormat.Format32bppArgb);
             var srcData = src.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
@@ -313,7 +328,6 @@ namespace IMEPointer
             int byteCount = targetSize * targetSize * 4;
             new Span<byte>((void*)pBits, byteCount).Clear();
 
-            // [이번 수정: DrawIconEx의 네이티브 크기 조절 기능을 사용하여 깨끗한 확대 수행]
             const uint DI_NORMAL = 0x0003;
             NativeMethods.DrawIconEx(hdcMem, 0, 0, hPointer, targetSize, targetSize, 0, IntPtr.Zero, DI_NORMAL);
 
@@ -343,7 +357,6 @@ namespace IMEPointer
             }
             else
             {
-                // [이번 수정: DIB Section의 Pre-multiplied ARGB를 수동으로 정확히 역연산하여 복구]
                 for (int i = 0; i < byteCount; i += 4)
                 {
                     byte b = src[i], g = src[i+1], r = src[i+2], a = src[i+3];
@@ -375,7 +388,6 @@ namespace IMEPointer
 
         private static unsafe void RecolorCursorStraight(Bitmap bmp, Color targetColor, uint ocrId)
         {
-            // [이번 수정: 하드 임계값(Threshold)을 제거하고, 원본 픽셀의 명도를 기반으로 색상을 보간하여 Anti-Aliasing 계단 현상을 완벽하게 방지]
             var bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
             byte* ptr = (byte*)bmpData.Scan0;
             int len = bmp.Width * bmp.Height * 4;
@@ -389,7 +401,6 @@ namespace IMEPointer
                 
                 if (ocrId == NativeMethods.OCR_NORMAL)
                 {
-                    // 일반 화살표: 흰 바탕 + 검은 테두리의 명도 비율을 이용하여 대상 색상을 부드럽게 입힘
                     float intensity = (r * 0.299f + g * 0.587f + b * 0.114f) / 255.0f;
                     ptr[i] = (byte)(b + (targetColor.B - b) * intensity);
                     ptr[i + 1] = (byte)(g + (targetColor.G - g) * intensity);
@@ -397,7 +408,6 @@ namespace IMEPointer
                 }
                 else
                 {
-                    // IBeam 및 기타 커서는 통째로 색상 적용
                     ptr[i] = targetColor.B;
                     ptr[i + 1] = targetColor.G;
                     ptr[i + 2] = targetColor.R;
@@ -422,8 +432,6 @@ namespace IMEPointer
                     byte* pDst = (byte*)pBits;
                     int bytes = Math.Abs(bmpData.Stride) * bmp.Height;
 
-                    // [이번 수정: CreateIconIndirect에 사용되는 hbmColor는 반드시 'Premultiplied Alpha'여야 합니다.
-                    // 단순 메모리 복사(MemoryCopy) 대신, 픽셀마다 알파값을 명시적으로 곱해 외곽선 계단 현상을 제거합니다.]
                     for (int i = 0; i < bytes; i += 4)
                     {
                         byte a = pSrc[i + 3];
@@ -469,7 +477,7 @@ namespace IMEPointer
     #region [ 자판 배열창 폼 ]
     public class KeyboardLayoutForm : Form
     {
-        private readonly PictureBox _pictureBox;
+        private readonly PictureBox _pbLayoutImage;
         public event EventHandler? OnLayoutDoubleClicked;
         public event EventHandler? OnClosedByUser;
         private string _currentImageName = "";
@@ -480,10 +488,10 @@ namespace IMEPointer
             get
             {
                 CreateParams cp = base.CreateParams;
-                cp.Style |= 0x00020000;   // WS_MINIMIZEBOX
-                cp.Style |= 0x00080000;   // WS_SYSMENU
-                cp.ExStyle |= 0x00040000; // WS_EX_APPWINDOW
-                cp.ExStyle |= 0x08000000; // WS_EX_NOACTIVATE (입력 포커스 유지)
+                cp.Style |= 0x00020000;   
+                cp.Style |= 0x00080000;   
+                cp.ExStyle |= 0x00040000; 
+                cp.ExStyle |= 0x08000000; 
                 return cp;
             }
         }
@@ -503,31 +511,25 @@ namespace IMEPointer
             this.StartPosition = FormStartPosition.Manual;
             this.Location = new Point(Math.Max(0, (screenWidth - this.Width) / 2), 50);
 
-            // images 폴더 경로 반영 및 아이콘 로드
             try 
             { 
                 var assembly = typeof(Program).Assembly;
-                // 아이콘 파일이 images 폴더에 있다면 아래와 같이 ".images." 를 추가합니다.
-                // 만약 파일명이 다르면 "IMEPointer.images.파일명.ico" 로 수정하세요.
                 using (Stream? stream = assembly.GetManifestResourceStream("IMEPointer.images.IMEPointer.ico"))
                 {
-                    if (stream != null)
-                    {
-                        this.Icon = new Icon(stream);
-                    }
+                    if (stream != null) this.Icon = new Icon(stream);
                 }
             } 
             catch { }
 
-            _pictureBox = new PictureBox
+            _pbLayoutImage = new PictureBox
             {
                 Dock = DockStyle.Fill,
                 SizeMode = PictureBoxSizeMode.Zoom,
                 BackColor = Color.White
             };
 
-            _pictureBox.DoubleClick += (s, e) => OnLayoutDoubleClicked?.Invoke(this, EventArgs.Empty);
-            this.Controls.Add(_pictureBox);
+            _pbLayoutImage.DoubleClick += (s, e) => OnLayoutDoubleClicked?.Invoke(this, EventArgs.Empty);
+            this.Controls.Add(_pbLayoutImage);
         }
 
         protected override void OnResize(EventArgs e)
@@ -562,34 +564,30 @@ namespace IMEPointer
             try
             {
                 var assembly = typeof(Program).Assembly;
-                // images 폴더 내의 리소스를 찾도록 .images. 문자열을 추가
                 string resourceName = $"IMEPointer.images.{imageName}";
-                using (Stream? stream = assembly.GetManifestResourceStream(resourceName))
+                using Stream? stream = assembly.GetManifestResourceStream(resourceName);
+                
+                Image? oldImg = _pbLayoutImage.Image;
+                if (stream != null)
                 {
-                    if (stream != null)
+                    Image newImg = Image.FromStream(stream);
+                    _pbLayoutImage.Image = newImg;
+                    _currentImageSize = newImg.Size;
+                    if (this.WindowState == FormWindowState.Normal)
                     {
-                        Image? oldImg = _pictureBox.Image;
-                        Image newImg = Image.FromStream(stream);
-                        _pictureBox.Image = newImg;
-                        _currentImageSize = newImg.Size;
-                        if (this.WindowState == FormWindowState.Normal)
-                        {
-                            this.ClientSize = _currentImageSize;
-                        }
-                        oldImg?.Dispose();
-                    }
-                    else
-                    {
-                        Image? oldImg = _pictureBox.Image;
-                        _pictureBox.Image = null;
-                        oldImg?.Dispose();
+                        this.ClientSize = _currentImageSize;
                     }
                 }
+                else
+                {
+                    _pbLayoutImage.Image = null;
+                }
+                oldImg?.Dispose();
             }
             catch
             {
-                Image? oldImg = _pictureBox.Image;
-                _pictureBox.Image = null;
+                Image? oldImg = _pbLayoutImage.Image;
+                _pbLayoutImage.Image = null;
                 oldImg?.Dispose();
             }
         }
@@ -600,17 +598,17 @@ namespace IMEPointer
     public class TextOverlayForm : Form
     {
         private readonly System.Windows.Forms.Timer _hideTimer;
-        private string _text = "";
-        private float _fontSize = 22f;
+        private string _displayText = "";
+        private float _displayFontSize = 22f;
 
         protected override CreateParams CreateParams
         {
             get
             {
                 CreateParams cp = base.CreateParams;
-                cp.ExStyle |= 0x08000000; // WS_EX_NOACTIVATE
-                cp.ExStyle |= 0x00000080; // WS_EX_TOOLWINDOW
-                cp.ExStyle |= 0x00000008; // WS_EX_TOPMOST
+                cp.ExStyle |= 0x08000000; 
+                cp.ExStyle |= 0x00000080; 
+                cp.ExStyle |= 0x00000008; 
                 return cp;
             }
         }
@@ -625,16 +623,16 @@ namespace IMEPointer
             this.TopMost = true;
             this.ShowInTaskbar = false;
 
-            _hideTimer = new System.Windows.Forms.Timer { Interval = 1500 };
+            _hideTimer = new System.Windows.Forms.Timer { Interval = AppConfig.OverlayDefaultDurationMs };
             _hideTimer.Tick += (s, e) => this.Hide();
             
-            this.Paint += TextOverlayForm_Paint;
+            this.Paint += RenderOverlayText;
         }
 
         public void ShowOverlay(string text, bool useTimer, float fontSize, int width, int height, int x, int y)
         {
-            _text = text;
-            _fontSize = fontSize;
+            _displayText = text;
+            _displayFontSize = fontSize;
             
             this.Size = new Size(width, height);
             this.Location = new Point(x, y);
@@ -649,18 +647,14 @@ namespace IMEPointer
                 _hideTimer.Stop();
             }
             
-            if (!this.Visible) 
-            {
-                this.Show(); 
-            }
+            if (!this.Visible) this.Show(); 
             this.Invalidate();
         }
 
-        private void TextOverlayForm_Paint(object? sender, PaintEventArgs e)
+        private void RenderOverlayText(object? sender, PaintEventArgs e)
         {
-            // 배율(DPI) 중복 스케일링을 방지하고 정확한 크기를 제어하기 위해 단위를 Pixel로 명시
-            using Font f = new Font("Malgun Gothic", _fontSize, FontStyle.Bold, GraphicsUnit.Pixel);
-            TextRenderer.DrawText(e.Graphics, _text, f, this.ClientRectangle, Color.White, Color.Black, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            using Font f = new Font("Malgun Gothic", _displayFontSize, FontStyle.Bold, GraphicsUnit.Pixel);
+            TextRenderer.DrawText(e.Graphics, _displayText, f, this.ClientRectangle, Color.White, Color.Black, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
         }
         
         public void Clear()
@@ -671,13 +665,150 @@ namespace IMEPointer
     }
     #endregion
 
+    #region [ 레지스트리 키맵핑 도구 (RegistryManager) ]
+    /// <summary>
+    /// [수정: 이름 변경 및 역할 명확화] RegistryHelper -> RegistryManager
+    /// </summary>
+    internal static class RegistryManager
+    {
+        private const string RegPath = @"SYSTEM\CurrentControlSet\Control\Keyboard Layout";
+        private const string RegValue = "Scancode Map";
+        private static readonly byte[] MappingBytes = { 0x71, 0xE0, 0x6E, 0x00 };
+
+        public static bool IsAdmin()
+        {
+            using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+            var principal = new System.Security.Principal.WindowsPrincipal(identity);
+            return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+        }
+
+        public static bool IsMappingApplied()
+        {
+            try
+            {
+                using var key = Registry.LocalMachine.OpenSubKey(RegPath, false);
+                if (key?.GetValue(RegValue) is byte[] data && data.Length >= 20)
+                {
+                    int count = BitConverter.ToInt32(data, 8);
+                    for (int i = 0; i < count - 1; i++)
+                    {
+                        int offset = 12 + (i * 4);
+                        if (offset + 4 <= data.Length)
+                        {
+                            if (data[offset] == MappingBytes[0] && data[offset + 1] == MappingBytes[1] &&
+                                data[offset + 2] == MappingBytes[2] && data[offset + 3] == MappingBytes[3])
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+            catch { return false; }
+        }
+
+        public static bool ToggleMapping(bool apply)
+        {
+            if (!IsAdmin())
+            {
+                MessageBox.Show("레지스트리 수정을 위해 앱을 '관리자 권한'으로 실행해주세요.", "권한 필요", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            try
+            {
+                using var key = Registry.LocalMachine.OpenSubKey(RegPath, true);
+                if (key == null) return false;
+
+                byte[]? currentData = key.GetValue(RegValue) as byte[];
+
+                if (apply)
+                {
+                    if (IsMappingApplied()) return true;
+
+                    byte[] newData;
+                    if (currentData == null || currentData.Length < 20)
+                    {
+                        newData = new byte[20];
+                        Array.Clear(newData, 0, 8);
+                        BitConverter.GetBytes(2).CopyTo(newData, 8);
+                        MappingBytes.CopyTo(newData, 12);
+                        Array.Clear(newData, 16, 4);
+                    }
+                    else
+                    {
+                        int oldCount = BitConverter.ToInt32(currentData, 8);
+                        newData = new byte[currentData.Length + 4];
+                        Array.Copy(currentData, 0, newData, 0, 8);
+                        BitConverter.GetBytes(oldCount + 1).CopyTo(newData, 8);
+                        Array.Copy(currentData, 12, newData, 12, currentData.Length - 16);
+                        MappingBytes.CopyTo(newData, currentData.Length - 4);
+                        Array.Clear(newData, newData.Length - 4, 4);
+                    }
+                    key.SetValue(RegValue, newData, RegistryValueKind.Binary);
+                }
+                else
+                {
+                    if (!IsMappingApplied() || currentData == null) return true;
+
+                    int oldCount = BitConverter.ToInt32(currentData, 8);
+                    if (oldCount <= 2)
+                    {
+                        key.DeleteValue(RegValue, false);
+                    }
+                    else
+                    {
+                        byte[] newData = new byte[currentData.Length - 4];
+                        Array.Copy(currentData, 0, newData, 0, 8);
+                        BitConverter.GetBytes(oldCount - 1).CopyTo(newData, 8);
+
+                        int destOffset = 12;
+                        for (int i = 0; i < oldCount - 1; i++)
+                        {
+                            int srcOffset = 12 + (i * 4);
+                            bool isTarget = currentData[srcOffset] == MappingBytes[0] &&
+                                            currentData[srcOffset + 1] == MappingBytes[1] &&
+                                            currentData[srcOffset + 2] == MappingBytes[2] &&
+                                            currentData[srcOffset + 3] == MappingBytes[3];
+
+                            if (!isTarget)
+                            {
+                                Array.Copy(currentData, srcOffset, newData, destOffset, 4);
+                                destOffset += 4;
+                            }
+                        }
+                        Array.Clear(newData, newData.Length - 4, 4);
+                        key.SetValue(RegValue, newData, RegistryValueKind.Binary);
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"레지스트리 수정 중 오류가 발생했습니다.\n{ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+    }
+    #endregion
+
     #region [ 메인 폼 (MainForm) 및 트레이 제어 ]
+    /// <summary>
+    /// [수정: 내부 구조 논리 흐름에 따라 메서드/변수 재배치] UI 제어와 IME 상태 동기화를 담당하는 메인 백그라운드 폼
+    /// </summary>
     internal class MainForm : Form
     {
+        // ---------------------------------------------------------
+        // 전역 상태 변수
+        // ---------------------------------------------------------
         public static MainForm? Instance { get; private set; }
         public static IntPtr LastValidHwnd { get; private set; } = IntPtr.Zero;
         public static IntPtr LastValidFocusHwnd { get; private set; } = IntPtr.Zero;
 
+        // ---------------------------------------------------------
+        // 상수 및 UI 설정 캐시 (AppConfig 연동)
+        // ---------------------------------------------------------
         private const int HiddenFormSize = 16;
         private const int HiddenFormLocation = -100;
         private const int HiddenLayeredWindowLocation = -10000;
@@ -687,41 +818,96 @@ namespace IMEPointer
         private const int RebuildRetryAfterScaleChangeMs = 1500;
         private const int DisplaySettingsChangedDelayMs = 400;
         private const int UserPreferenceChangedDelayMs = 600;
-        private const int OverlayDefaultDurationMs = 1500;
-        private const float OverlayDefaultFontSize = 29f;   // 폰트 단위를 Pixel로 취급하기 위해 기존 22pt(약 29px) 기준값으로 조정
-        private const int OverlayDefaultHeight = 52;
-        private const int OverlayDefaultCharWidth = 30;
-        private const int OverlayDefaultPaddingWidth = 24;
-        private const int OverlayDefaultYOffset = 40;
         private const float PointerDiagonalFactor = 0.7071f;
         private const float IBeamIndicatorYOffsetFactor = 0.65f;
         private const float IndicatorBottomMargin = 4f;
-        private const int TrayIconSize = 32;
-        private const float TrayLowercaseFontSize = 31F;
-        private const float TrayUppercaseFontSize = 32F;
+
         private static readonly RectangleF TrayIconTextRectLower = new RectangleF(-2.0f, -5.0f, 36f, 36f);
         private static readonly RectangleF TrayIconTextRectUpper = new RectangleF(-2.0f, -3.5f, 36f, 36f);
 
+        // ---------------------------------------------------------
+        // 필드 (Field) 선언
+        // ---------------------------------------------------------
+        private readonly Dictionary<ImeState.State, StateAssets> _assetCache = new();
+        private readonly System.Windows.Forms.Timer _stateCheckTimer;
+        private readonly NotifyIcon _sysTrayIcon;
+        private readonly ContextMenuStrip _trayContextMenu;
+        private readonly ToolStripMenuItem _menuItemStatus;
+        private bool _isTextOverlayEnabled = AppConfig.DefaultShowTextOverlay; 
+
+        internal enum PointerMode { WinDefault = 0, WinColor = 1, NewColor = 2 }
+        internal enum CapsMode { WinDefault = 0, Engineer = 1, Pali = 2, Japanese1 = 3, Japanese2 = 4, Japanese3 = 5 }
+
+        private PointerMode _activePointerMode = (PointerMode)AppConfig.DefaultPointerMode;
+        private CapsMode _activeCapsMode = (CapsMode)AppConfig.DefaultCapsMode;
+        private bool _isMiniIndicatorEnabled = AppConfig.DefaultEnableMiniIndicator;
+        private bool _isKeyboardLayoutOverlayEnabled = AppConfig.DefaultShowKeyboardLayout;
+
+        // 메뉴 항목 캐시
+        private ToolStripMenuItem _menuItemPointerWinDefault = null!;
+        private ToolStripMenuItem _menuItemPointerWinColor = null!;
+        private ToolStripMenuItem _menuItemPointerNewColor = null!;
+        private ToolStripMenuItem _menuItemCapsWinDefault = null!;
+        private ToolStripMenuItem _menuItemCapsEngineer = null!;
+        private ToolStripMenuItem _menuItemCapsPali = null!;
+        private ToolStripMenuItem _menuItemCapsJapanese1 = null!;
+        private ToolStripMenuItem _menuItemCapsJapanese2 = null!;
+        private ToolStripMenuItem _menuItemCapsJapanese3 = null!;
+        private ToolStripMenuItem _menuItemToggleIndicator = null!;
+        private ToolStripMenuItem _menuItemToggleKeyboardLayout = null!;
+        private ToolStripMenuItem _menuItemToggleTextOverlay = null!; 
+        private ToolStripMenuItem _menuItemToggleCopilotMap = null!;
+
+        // 상태 추적용 변수
+        private bool _isCurrentProcessTarget = false;
+        private bool _isShiftVisualInverted = false; 
+        private bool _lastHangulSyncState = false;
+        private KeyboardLayoutForm? _frmKeyboardLayout;
+        private TextOverlayForm? _frmTextOverlay; 
+        private Point _lastKeyboardLayoutLocation = Point.Empty;
+
+        private ImeState.State _previousImeState = (ImeState.State)(-1);
+        private Color _currentIndicatorColor = Color.White;
+        private Color _lastRenderedIndicatorColor = Color.Empty;
+        private IntPtr _lastForegroundHwnd = IntPtr.Zero;
+        private IntPtr _currentContextHwnd = IntPtr.Zero;
+        private IntPtr _lastPolledHwnd = IntPtr.Zero; 
+
+        // 그래픽 자원
+        private IntPtr _dcIndicatorScreen = IntPtr.Zero;
+        private IntPtr _dcIndicatorMem = IntPtr.Zero;
+        private IntPtr _hBmpIndicator = IntPtr.Zero;
+        private IntPtr _hBmpIndicatorOld = IntPtr.Zero;
+        private bool _isIndicatorRendered = false;
+        private bool _isPointerInIBeamCell = false;
+        private int _lastIndicatorX = int.MinValue;
+        private int _lastIndicatorY = int.MinValue;
+
+        private float _currentDpiScale = 1.0f;
+        private float _physIndicatorOffsetX = 0f;
+        private int _indicatorCanvasSize = 16;
+        private int _pointerPhysicalSize = 32;
+
+        private IntPtr _lastAppliedArrowHandle = IntPtr.Zero;
+        private static readonly unsafe int s_bmiSize = sizeof(NativeMethods.BITMAPINFO);
+        private static readonly uint s_currentProcessId = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
+
+        // ---------------------------------------------------------
+        // 구조체 정의
+        // ---------------------------------------------------------
         private readonly struct ActiveInputModeContext
         {
             public readonly bool IsPaliModeActive;
             public readonly bool IsEngineerModeActive;
             public readonly bool IsJapanese1ModeActive;
             public readonly bool IsJapanese2ModeActive;
+            public readonly bool IsJapanese3ModeActive;
             public readonly IKeyProcessor? ActiveProcessor;
 
-            public ActiveInputModeContext(
-                bool isPaliModeActive,
-                bool isEngineerModeActive,
-                bool isJapanese1ModeActive,
-                bool isJapanese2ModeActive,
-                IKeyProcessor? activeProcessor)
+            public ActiveInputModeContext(bool p, bool e, bool j1, bool j2, bool j3, IKeyProcessor? proc)
             {
-                IsPaliModeActive = isPaliModeActive;
-                IsEngineerModeActive = isEngineerModeActive;
-                IsJapanese1ModeActive = isJapanese1ModeActive;
-                IsJapanese2ModeActive = isJapanese2ModeActive;
-                ActiveProcessor = activeProcessor;
+                IsPaliModeActive = p; IsEngineerModeActive = e; IsJapanese1ModeActive = j1;
+                IsJapanese2ModeActive = j2; IsJapanese3ModeActive = j3; ActiveProcessor = proc;
             }
         }
 
@@ -731,60 +917,9 @@ namespace IMEPointer
             public readonly ImeState.State ActiveState;
             public readonly IKeyProcessor Processor;
 
-            public CapsModeStateMapping(CapsMode mode, ImeState.State activeState, IKeyProcessor processor)
+            public CapsModeStateMapping(CapsMode m, ImeState.State s, IKeyProcessor p)
             {
-                Mode = mode;
-                ActiveState = activeState;
-                Processor = processor;
-            }
-        }
-
-        private static class TrayIconRenderer
-        {
-            public static Icon Create(string text, Color bgColor, Color textColor)
-            {
-                using Bitmap bmp = new(TrayIconSize, TrayIconSize);
-                using Graphics g = Graphics.FromImage(bmp);
-                g.SmoothingMode = SmoothingMode.AntiAlias;
-                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-
-                using SolidBrush bgBrush = new(bgColor);
-                g.FillRectangle(bgBrush, 0, 0, TrayIconSize, TrayIconSize);
-
-                bool startsLower = !string.IsNullOrEmpty(text) && char.IsLower(text[0]);
-                using Font font = new(startsLower ? "Segoe Print" : "Segoe UI Black", startsLower ? TrayLowercaseFontSize : TrayUppercaseFontSize, FontStyle.Bold, GraphicsUnit.Pixel);
-                using SolidBrush textBrush = new(textColor);
-                using StringFormat sf = new()
-                {
-                    Alignment = StringAlignment.Center,
-                    LineAlignment = StringAlignment.Center,
-                    FormatFlags = StringFormatFlags.NoWrap
-                };
-
-                RectangleF layoutRect = startsLower ? TrayIconTextRectLower : TrayIconTextRectUpper;
-
-                if (startsLower)
-                {
-                    DrawBoldLowercase(g, text, font, textBrush, layoutRect, sf);
-                }
-                else
-                {
-                    g.DrawString(text, font, textBrush, layoutRect, sf);
-                }
-
-                IntPtr hIcon = bmp.GetHicon();
-                Icon icon = (Icon)Icon.FromHandle(hIcon).Clone();
-                NativeMethods.DestroyIcon(hIcon);
-                return icon;
-            }
-
-            private static void DrawBoldLowercase(Graphics g, string text, Font font, Brush textBrush, RectangleF layoutRect, StringFormat sf)
-            {
-                g.DrawString(text, font, textBrush, new RectangleF(layoutRect.X, layoutRect.Y, layoutRect.Width, layoutRect.Height), sf);
-                g.DrawString(text, font, textBrush, new RectangleF(layoutRect.X + 1.0f, layoutRect.Y, layoutRect.Width, layoutRect.Height), sf);
-                g.DrawString(text, font, textBrush, new RectangleF(layoutRect.X, layoutRect.Y + 1.0f, layoutRect.Width, layoutRect.Height), sf);
-                g.DrawString(text, font, textBrush, new RectangleF(layoutRect.X + 1.0f, layoutRect.Y + 1.0f, layoutRect.Width, layoutRect.Height), sf);
-                g.DrawString(text, font, textBrush, new RectangleF(layoutRect.X + 0.5f, layoutRect.Y + 0.5f, layoutRect.Width, layoutRect.Height), sf);
+                Mode = m; ActiveState = s; Processor = p;
             }
         }
 
@@ -812,66 +947,9 @@ namespace IMEPointer
             }
         }
 
-        private readonly Dictionary<ImeState.State, StateAssets> _assetCache = new();
-        private readonly System.Windows.Forms.Timer _stateTimer;
-        private readonly NotifyIcon _trayIcon;
-        private readonly ContextMenuStrip _contextMenu;
-        private readonly ToolStripMenuItem _statusMenuItem;
-        private bool _showTextOverlay = AppConfig.DefaultShowTextOverlay; 
-
-        internal enum PointerMode { WinDefault = 0, WinColor = 1, NewColor = 2 }
-        internal enum CapsMode { WinDefault = 0, Engineer = 1, Pali = 2, Japanese1 = 3, Japanese2 = 4 }
-
-        private PointerMode _pointerMode = (PointerMode)AppConfig.DefaultPointerMode;
-        private CapsMode _capsMode = (CapsMode)AppConfig.DefaultCapsMode;
-        private bool _enableMiniIndicator = AppConfig.DefaultEnableMiniIndicator;
-        private bool _showKeyboardLayoutOverlay = AppConfig.DefaultShowKeyboardLayout;
-
-        private ToolStripMenuItem _menuPointerWinDefault = null!;
-        private ToolStripMenuItem _menuPointerWinColor = null!;
-        private ToolStripMenuItem _menuPointerNewColor = null!;
-        private ToolStripMenuItem _menuCapsWinDefault = null!;
-        private ToolStripMenuItem _menuCapsEngineer = null!;
-        private ToolStripMenuItem _menuCapsPali = null!;
-        private ToolStripMenuItem _menuCapsJapanese1 = null!;
-        private ToolStripMenuItem _menuCapsJapanese2 = null!;
-        private ToolStripMenuItem _toggleIndicatorMenuItem = null!;
-        private ToolStripMenuItem _toggleKeyboardLayoutMenuItem = null!;
-        private ToolStripMenuItem _toggleTextOverlayMenuItem = null!; 
-
-        private bool _showMiniIndicator = false;
-        private bool _visualShiftInversion = false; 
-        private bool _lastSyncHangulState = false;
-        private KeyboardLayoutForm? _keyboardLayoutForm;
-        private TextOverlayForm? _textOverlayForm; 
-        private Point _keyboardLayoutLastLocation = Point.Empty;
-
-        private ImeState.State _lastState = (ImeState.State)(-1);
-        private Color _currentDotColor = Color.White;
-        private Color _lastIndicatorColor = Color.Empty;
-        private IntPtr _lastForegroundHwnd = IntPtr.Zero;
-        private IntPtr _currentHwnd = IntPtr.Zero;
-        private IntPtr _lastPolledHFore = IntPtr.Zero; // 포커스 변경 감지를 위한 변수 추가
-
-        private IntPtr _indicatorScreenDc = IntPtr.Zero;
-        private IntPtr _indicatorMemDc = IntPtr.Zero;
-        private IntPtr _indicatorHBitmap = IntPtr.Zero;
-        private IntPtr _indicatorOldBitmap = IntPtr.Zero;
-        private bool _isIndicatorBaked = false;
-        private bool _isPointerInsideCell = false;
-        private int _lastIndicatorX = int.MinValue;
-        private int _lastIndicatorY = int.MinValue;
-
-        private float _currentScaleRatio = 1.0f;
-        private float _physIndicatorOffsetX = 0f;
-        private int _indicatorCanvasSize = 16;
-        private int _pointerPhysicalSize = 32;
-
-        private IntPtr _lastAppliedArrowHandle = IntPtr.Zero;
-        private static readonly unsafe int s_bmiSize = sizeof(NativeMethods.BITMAPINFO);
-        // 트레이 메뉴 클릭 시 포커스 강탈로 인한 상태 초기화 현상을 막기 위해 현재 프로세스 ID 캐싱
-        private static readonly uint _currentProcessId = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
-
+        // ---------------------------------------------------------
+        // 초기화 및 폼 생성
+        // ---------------------------------------------------------
         protected override CreateParams CreateParams
         {
             get
@@ -891,15 +969,15 @@ namespace IMEPointer
             this.StartPosition = FormStartPosition.Manual;
             this.Location = new Point(HiddenFormLocation, HiddenFormLocation);
 
-            _contextMenu = new ContextMenuStrip();
-            _statusMenuItem = new ToolStripMenuItem(UiText.StatusChecking) { Enabled = false };
+            _trayContextMenu = new ContextMenuStrip();
+            _menuItemStatus = new ToolStripMenuItem(UiText.StatusChecking) { Enabled = false };
 
-            InitializeTrayMenu();
+            BuildTrayMenu();
 
-            _trayIcon = new NotifyIcon { Text = UiText.AppName, ContextMenuStrip = _contextMenu, Visible = true };
-            _trayIcon.MouseClick += (s, e) =>
+            _sysTrayIcon = new NotifyIcon { Text = UiText.AppName, ContextMenuStrip = _trayContextMenu, Visible = true };
+            _sysTrayIcon.MouseClick += (s, e) =>
             {
-                if (e.Button == MouseButtons.Left) { NativeMethods.SetForegroundWindow(this.Handle); _contextMenu.Show(Cursor.Position); }
+                if (e.Button == MouseButtons.Left) { NativeMethods.SetForegroundWindow(this.Handle); _trayContextMenu.Show(Cursor.Position); }
             };
 
             GlobalInputHook.Install();
@@ -909,235 +987,120 @@ namespace IMEPointer
 
             RebuildStateAssets();
 
-            _stateTimer = new System.Windows.Forms.Timer { Interval = AppConfig.PollingInterval };
-            _stateTimer.Tick += StateTimer_Tick;
+            _stateCheckTimer = new System.Windows.Forms.Timer { Interval = AppConfig.PollingInterval };
+            _stateCheckTimer.Tick += ProcessStateCheck;
         }
 
-        // 트레이 메뉴 생성 로직 통합 (헬퍼 메서드를 이용한 중복 제거)
-        private void InitializeTrayMenu()
+        // ---------------------------------------------------------
+        // 트레이 메뉴 구성 (BuildTrayMenu)
+        // ---------------------------------------------------------
+        private void BuildTrayMenu()
         {
-            // [수정 시작: 트레이 메뉴 첫줄에 제목("IMEPointer") 표시 및 깃허브 페이지 이동 기능 추가]
             var titleMenuItem = new ToolStripMenuItem(UiText.AppName, null, (s, e) =>
             {
                 try
                 {
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = UiText.GithubUrl,
-                        UseShellExecute = true // .NET 환경에서 외부 URL 호출 시 필수 설정
-                    });
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = UiText.GithubUrl, UseShellExecute = true });
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show($"웹페이지를 열 수 없습니다.\n{ex.Message}", UiText.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             });
-            // 다른 메뉴와 구분되도록 글꼴을 굵게(Bold) 처리
             titleMenuItem.Font = new Font(titleMenuItem.Font, FontStyle.Bold); 
-            _contextMenu.Items.Add(titleMenuItem);
-            // [수정 끝]
+            _trayContextMenu.Items.Add(titleMenuItem);
+            _trayContextMenu.Items.Add(_menuItemStatus);
+            _trayContextMenu.Items.Add(new ToolStripSeparator());
 
-            _contextMenu.Items.Add(_statusMenuItem);
-            _contextMenu.Items.Add(new ToolStripSeparator());
+            _menuItemPointerWinDefault = AddMenuToggle("WIN Default Pointer", AppConfig.ShowPointerWinDefault, (s, e) => UpdatePointerMode(PointerMode.WinDefault));
+            _menuItemPointerWinColor = AddMenuToggle("WIN Color Pointer", AppConfig.ShowPointerWinColor, (s, e) => UpdatePointerMode(PointerMode.WinColor));
+            _menuItemPointerNewColor = AddMenuToggle("NEW Color Pointer", AppConfig.ShowPointerNewColor, (s, e) => UpdatePointerMode(PointerMode.NewColor));
+            AddMenuSeparatorIf(AppConfig.ShowPointerWinDefault || AppConfig.ShowPointerWinColor || AppConfig.ShowPointerNewColor);
 
-            // 포인터 메뉴
-            _menuPointerWinDefault = AddConfigMenu("WIN Default Pointer", AppConfig.ShowPointerWinDefault, (s, e) => SetPointerMode(PointerMode.WinDefault));
-            _menuPointerWinColor = AddConfigMenu("WIN Color Pointer", AppConfig.ShowPointerWinColor, (s, e) => SetPointerMode(PointerMode.WinColor));
-            _menuPointerNewColor = AddConfigMenu("NEW Color Pointer", AppConfig.ShowPointerNewColor, (s, e) => SetPointerMode(PointerMode.NewColor));
-            AddSeparatorIf(AppConfig.ShowPointerWinDefault || AppConfig.ShowPointerWinColor || AppConfig.ShowPointerNewColor);
+            _menuItemCapsWinDefault = AddMenuToggle("한글CAPS 한글_Default", AppConfig.ShowCapsHangul, (s, e) => UpdateCapsMode(CapsMode.WinDefault));
+            _menuItemCapsEngineer = AddMenuToggle("한글CAPS 공학용_특수기호", AppConfig.ShowCapsEngineer, (s, e) => UpdateCapsMode(CapsMode.Engineer));
+            _menuItemCapsPali = AddMenuToggle("한글CAPS Pali_Sanskrit", AppConfig.ShowCapsPali, (s, e) => UpdateCapsMode(CapsMode.Pali));
+            _menuItemCapsJapanese1 = AddMenuToggle("한글CAPS 일본어1_조합형", AppConfig.ShowCapsJapanese1, (s, e) => UpdateCapsMode(CapsMode.Japanese1));
+            _menuItemCapsJapanese2 = AddMenuToggle("한글CAPS 일본어2_조합형", AppConfig.ShowCapsJapanese2, (s, e) => UpdateCapsMode(CapsMode.Japanese2));
+            _menuItemCapsJapanese3 = AddMenuToggle("한글CAPS 일본어3_3Layer", AppConfig.ShowCapsJapanese3, (s, e) => UpdateCapsMode(CapsMode.Japanese3));
+            AddMenuSeparatorIf(AppConfig.ShowCapsHangul || AppConfig.ShowCapsEngineer || AppConfig.ShowCapsPali || AppConfig.ShowCapsJapanese1 || AppConfig.ShowCapsJapanese2 || AppConfig.ShowCapsJapanese3);
 
-            // 캡스 모드 메뉴
-            _menuCapsWinDefault = AddConfigMenu("한글CAPS 한글_Default", AppConfig.ShowCapsHangul, (s, e) => SetCapsMode(CapsMode.WinDefault));
-            _menuCapsEngineer = AddConfigMenu("한글CAPS 공학용_특수기호", AppConfig.ShowCapsEngineer, (s, e) => SetCapsMode(CapsMode.Engineer));
-            _menuCapsPali = AddConfigMenu("한글CAPS Pali_Sanskrit", AppConfig.ShowCapsPali, (s, e) => SetCapsMode(CapsMode.Pali));
-            _menuCapsJapanese1 = AddConfigMenu("한글CAPS 일본어1_조합형", AppConfig.ShowCapsJapanese1, (s, e) => SetCapsMode(CapsMode.Japanese1));
-            _menuCapsJapanese2 = AddConfigMenu("한글CAPS 일본어2_3Layer", AppConfig.ShowCapsJapanese2, (s, e) => SetCapsMode(CapsMode.Japanese2));
-            AddSeparatorIf(AppConfig.ShowCapsHangul || AppConfig.ShowCapsEngineer || AppConfig.ShowCapsPali || AppConfig.ShowCapsJapanese1 || AppConfig.ShowCapsJapanese2);
-
-            // 옵션 메뉴
-            _toggleKeyboardLayoutMenuItem = AddConfigMenu("한글CAPS 키보드 배열창", AppConfig.ShowKeyboardlayoutMenu, (s, e) =>
+            _menuItemToggleKeyboardLayout = AddMenuToggle("한글CAPS 키보드 배열창", AppConfig.ShowKeyboardlayoutMenu, (s, e) =>
             {
-                _showKeyboardLayoutOverlay = _toggleKeyboardLayoutMenuItem.Checked;
-                if (!_showKeyboardLayoutOverlay) CloseAllLayoutForms();
+                _isKeyboardLayoutOverlayEnabled = _menuItemToggleKeyboardLayout.Checked;
+                if (!_isKeyboardLayoutOverlayEnabled) CloseAllLayoutForms();
                 else RefreshKeyboardLayoutOverlay();
             });
-            _toggleKeyboardLayoutMenuItem.CheckOnClick = true;
-            _toggleKeyboardLayoutMenuItem.Checked = _showKeyboardLayoutOverlay;
+            _menuItemToggleKeyboardLayout.CheckOnClick = true;
+            _menuItemToggleKeyboardLayout.Checked = _isKeyboardLayoutOverlayEnabled;
 
-            _toggleTextOverlayMenuItem = AddConfigMenu("한글CAPS 입력문자 표시창", AppConfig.ShowTextOverlayMenu, (s, e) =>
+            _menuItemToggleTextOverlay = AddMenuToggle("한글CAPS 입력문자 표시창", AppConfig.ShowTextOverlayMenu, (s, e) =>
             {
-                _showTextOverlay = _toggleTextOverlayMenuItem.Checked;
-                if (!_showTextOverlay) _textOverlayForm?.Clear();
+                _isTextOverlayEnabled = _menuItemToggleTextOverlay.Checked;
+                if (!_isTextOverlayEnabled) _frmTextOverlay?.Clear();
             });
-            _toggleTextOverlayMenuItem.CheckOnClick = true;
-            _toggleTextOverlayMenuItem.Checked = _showTextOverlay;
+            _menuItemToggleTextOverlay.CheckOnClick = true;
+            _menuItemToggleTextOverlay.Checked = _isTextOverlayEnabled;
 
-            _toggleIndicatorMenuItem = AddConfigMenu("한글/엑셀 작은원 표시", AppConfig.ShowSmallCircleMenu, (s, e) =>
+            _menuItemToggleIndicator = AddMenuToggle("한글/엑셀 작은원 표시", AppConfig.ShowSmallCircleMenu, (s, e) =>
             {
-                _enableMiniIndicator = _toggleIndicatorMenuItem.Checked;
-                if (!_enableMiniIndicator) UpdateLayeredIndicator(Color.Transparent, HiddenLayeredWindowLocation, HiddenLayeredWindowLocation);
+                _isMiniIndicatorEnabled = _menuItemToggleIndicator.Checked;
+                if (!_isMiniIndicatorEnabled) UpdateLayeredIndicator(Color.Transparent, HiddenLayeredWindowLocation, HiddenLayeredWindowLocation);
             });
-            _toggleIndicatorMenuItem.CheckOnClick = true;
-            _toggleIndicatorMenuItem.Checked = _enableMiniIndicator;
+            _menuItemToggleIndicator.CheckOnClick = true;
+            _menuItemToggleIndicator.Checked = _isMiniIndicatorEnabled;
 
-            AddSeparatorIf(AppConfig.ShowKeyboardlayoutMenu || AppConfig.ShowTextOverlayMenu || AppConfig.ShowSmallCircleMenu);
-            _contextMenu.Items.Add(new ToolStripMenuItem(UiText.ExitMenu, null, (s, e) => this.Close()));
+            _menuItemToggleCopilotMap = AddMenuToggle("한자키 적용/복원 키맵핑", AppConfig.ShowCopilotMapMenu, (s, e) =>
+            {
+                bool isApplied = RegistryManager.IsMappingApplied();
+                bool apply = !isApplied;
+                string actionName = apply ? "적용" : "복원";
 
-            RefreshPointerModeCheck();
-            RefreshCapsModeCheck();
+                if (MessageBox.Show($"Copilot 키를 한자키로 {actionName}하시겠습니까?\n(관리자 권한 및 재부팅 필요)", "키맵핑 확인", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    if (RegistryManager.ToggleMapping(apply))
+                    {
+                        _menuItemToggleCopilotMap.Checked = apply;
+                        AppConfig.EnableCopilotMap = apply;
+                        MessageBox.Show($"키맵핑 {actionName} 완료.\n재부팅(Reboot)해 주시기 바랍니다.", "재부팅 필요", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        _menuItemToggleCopilotMap.Checked = isApplied;
+                    }
+                }
+                else _menuItemToggleCopilotMap.Checked = isApplied;
+            });
+            _menuItemToggleCopilotMap.CheckOnClick = false; 
+            _menuItemToggleCopilotMap.Checked = RegistryManager.IsMappingApplied(); 
+            AppConfig.EnableCopilotMap = RegistryManager.IsMappingApplied(); 
+
+            AddMenuSeparatorIf(AppConfig.ShowKeyboardlayoutMenu || AppConfig.ShowTextOverlayMenu || AppConfig.ShowCopilotMapMenu || AppConfig.ShowSmallCircleMenu);
+            _trayContextMenu.Items.Add(new ToolStripMenuItem(UiText.ExitMenu, null, (s, e) => this.Close()));
+
+            SyncPointerMenuChecks();
+            SyncCapsMenuChecks();
         }
 
-        private ToolStripMenuItem AddConfigMenu(string text, bool show, EventHandler onClick)
+        private ToolStripMenuItem AddMenuToggle(string text, bool show, EventHandler onClick)
         {
             var item = new ToolStripMenuItem(text, null, onClick);
-            if (show) _contextMenu.Items.Add(item);
+            if (show) _trayContextMenu.Items.Add(item);
             return item;
         }
 
-        private void AddSeparatorIf(bool condition)
+        private void AddMenuSeparatorIf(bool condition)
         {
-            if (condition) _contextMenu.Items.Add(new ToolStripSeparator());
+            if (condition) _trayContextMenu.Items.Add(new ToolStripSeparator());
         }
 
-        public void RequestLayoutRefresh() => this.BeginInvoke(new Action(RefreshKeyboardLayoutOverlay));
-
-        private void SetPointerMode(PointerMode mode)
-        {
-            _pointerMode = mode;
-            RefreshPointerModeCheck();
-            _lastState = (ImeState.State)(-1);
-            if (mode == PointerMode.WinColor)
-            {
-                _stateTimer.Stop(); RebuildStateAssets(); _stateTimer.Start();
-            }
-        }
-
-        private void RefreshPointerModeCheck()
-        {
-            if (_menuPointerWinDefault != null) _menuPointerWinDefault.Checked = (_pointerMode == PointerMode.WinDefault);
-            if (_menuPointerWinColor != null) _menuPointerWinColor.Checked = (_pointerMode == PointerMode.WinColor);
-            if (_menuPointerNewColor != null) _menuPointerNewColor.Checked = (_pointerMode == PointerMode.NewColor);
-        }
-
-        // 선택된 한글CAPS 입력모드를 대상 창에 적용하는 헬퍼 메서드
-        private void ApplySelectedCapsMode(IntPtr targetHwnd)
-        {
-            if (targetHwnd == IntPtr.Zero) return;
-
-            ImeState.SetHangulState(targetHwnd, true);
-
-            bool capsOn = (NativeMethods.GetKeyState(NativeMethods.VK_CAPITAL) & 0x0001) != 0;
-            if (!capsOn)
-            {
-                NativeMethods.SimulateCapsLock();
-            }
-        }
-
-        private void ApplySelectedCapsModeWithVerification(IntPtr targetHwnd, int retryCount = 2)
-        {
-            if (targetHwnd == IntPtr.Zero) return;
-
-            ApplySelectedCapsMode(targetHwnd);
-
-            if (ImeState.IsHangulModeSystemWide(targetHwnd)) return;
-            if (retryCount <= 0) return;
-
-            IntPtr retryRootHwnd = LastValidHwnd != IntPtr.Zero ? LastValidHwnd : targetHwnd;
-
-            Task.Delay(TrayContextMenuForegroundDelayRetryMs).ContinueWith(_ =>
-                this.BeginInvoke(new Action(() =>
-                {
-                    IntPtr retryTarget = GetFocusedInputHwnd(retryRootHwnd);
-                    if (retryTarget == IntPtr.Zero) retryTarget = retryRootHwnd;
-
-                    // IsTaskbarWindow, IsTrayOrAppWindow 호출
-                    if (retryTarget != IntPtr.Zero && !IsTaskbarWindow(retryTarget) && !IsTrayOrAppWindow(retryTarget))
-                    {
-                        NativeMethods.SetForegroundWindow(retryTarget);
-                    }
-
-                    ApplySelectedCapsModeWithVerification(retryTarget, retryCount - 1);
-                })));
-        }
-
-        private void SetCapsMode(CapsMode mode)
-        {
-            _capsMode = mode;
-            RefreshCapsModeCheck();
-            _lastState = (ImeState.State)(-1);
-            RefreshKeyboardLayoutOverlay();
-
-            IntPtr taskbarHwnd = NativeMethods.GetForegroundWindow();
-            // IsTaskbarWindow, IsTrayOrAppWindow 호출
-            if (taskbarHwnd != IntPtr.Zero && (IsTaskbarWindow(taskbarHwnd) || IsTrayOrAppWindow(taskbarHwnd)))
-            {
-                ApplySelectedCapsModeWithVerification(taskbarHwnd, 1);
-            }
-
-            IntPtr targetHwnd = LastValidFocusHwnd != IntPtr.Zero
-                ? LastValidFocusHwnd
-                : (LastValidHwnd != IntPtr.Zero ? LastValidHwnd : taskbarHwnd);
-
-            if (targetHwnd != IntPtr.Zero)
-            {
-                // IsTaskbarWindow, IsTrayOrAppWindow 호출
-                if (!IsTaskbarWindow(targetHwnd) && !IsTrayOrAppWindow(targetHwnd))
-                {
-                    NativeMethods.SetForegroundWindow(targetHwnd);
-                }
-                ApplySelectedCapsModeWithVerification(targetHwnd);
-            }
-        }
-
-        private void RefreshCapsModeCheck()
-        {
-            if (_menuCapsWinDefault != null) _menuCapsWinDefault.Checked = (_capsMode == CapsMode.WinDefault);
-            if (_menuCapsEngineer != null) _menuCapsEngineer.Checked = (_capsMode == CapsMode.Engineer);
-            if (_menuCapsPali != null) _menuCapsPali.Checked = (_capsMode == CapsMode.Pali);
-            if (_menuCapsJapanese1 != null) _menuCapsJapanese1.Checked = (_capsMode == CapsMode.Japanese1);
-            if (_menuCapsJapanese2 != null) _menuCapsJapanese2.Checked = (_capsMode == CapsMode.Japanese2);
-        }
-
+        // ---------------------------------------------------------
+        // 이벤트 핸들러 및 폼 오버라이드
+        // ---------------------------------------------------------
         protected override void WndProc(ref Message m)
         {
-            if (m.Msg == WindowPosChangedMessage) Task.Delay(200).ContinueWith(_ => this.BeginInvoke(new Action(() => RebakeWithRetry(RebuildRetryAfterWindowPosChangedMs))));
+            if (m.Msg == WindowPosChangedMessage) Task.Delay(200).ContinueWith(_ => this.BeginInvoke(new Action(() => RebuildAssetsWithRetry(RebuildRetryAfterWindowPosChangedMs))));
             base.WndProc(ref m);
-        }
-
-        private void RebakeWithRetry(int retryDelayMs)
-        {
-            _stateTimer.Stop(); RebuildStateAssets(); _stateTimer.Start();
-
-            int currentPhysSize = _pointerPhysicalSize;
-            if (retryDelayMs > 0)
-            {
-                Task.Delay(retryDelayMs).ContinueWith(_ =>
-                    this.BeginInvoke(new Action(() =>
-                    {
-                        // GetSystemMetrics를 통해 시스템이 확정한 커서 크기를 바로 가져옵니다
-                        int sysCursorWidth = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXCURSOR);
-                        int expectedPhys = sysCursorWidth > 0 ? sysCursorWidth : Math.Max(32, (int)Math.Round(32 * _currentScaleRatio));
-                        
-                        if (expectedPhys != currentPhysSize) { _stateTimer.Stop(); RebuildStateAssets(); _stateTimer.Start(); }
-                    })));
-            }
-        }
-
-        private void RebakeOnScaleChange() => RebakeWithRetry(RebuildRetryAfterScaleChangeMs);
-
-        private void OnDisplaySettingsChanged(object? sender, EventArgs e)
-        {
-            if (this.InvokeRequired) { this.BeginInvoke(new Action(() => OnDisplaySettingsChanged(sender, e))); return; }
-            Task.Delay(DisplaySettingsChangedDelayMs).ContinueWith(_ => this.BeginInvoke(new Action(RebakeOnScaleChange)));
-        }
-
-        private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
-        {
-            if (e.Category == UserPreferenceCategory.Accessibility || e.Category == UserPreferenceCategory.Mouse)
-            {
-                if (this.InvokeRequired) { this.BeginInvoke(new Action(() => OnUserPreferenceChanged(sender, e))); return; }
-                Task.Delay(UserPreferenceChangedDelayMs).ContinueWith(_ => this.BeginInvoke(new Action(RebakeOnScaleChange)));
-            }
         }
 
         protected override void OnPaint(PaintEventArgs e) { }
@@ -1146,86 +1109,305 @@ namespace IMEPointer
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            _currentHwnd = NativeMethods.GetForegroundWindow();
-            _lastPolledHFore = _currentHwnd; // 포커스 변경 감지를 위한 초기화
-            _lastForegroundHwnd = _currentHwnd;
-            _showMiniIndicator = IsTargetProcess(_currentHwnd);
-            _lastSyncHangulState = ImeState.IsHangulModeSystemWide(_currentHwnd);
+            _currentContextHwnd = NativeMethods.GetForegroundWindow();
+            _lastPolledHwnd = _currentContextHwnd; 
+            _lastForegroundHwnd = _currentContextHwnd;
+            _isCurrentProcessTarget = EvaluateTargetProcess(_currentContextHwnd);
+            _lastHangulSyncState = ImeState.IsHangulModeSystemWide(_currentContextHwnd);
             
-            // 오버레이 폼 초기화 및 프로세서 델리게이트 연동
-            _textOverlayForm = new TextOverlayForm();
+            _frmTextOverlay = new TextOverlayForm();
             
-            // 앱 시작 시에는 현재 포커스 창만 기억하고 입력모드는 강제 변경하지 않습니다.
-            // IsTaskbarWindow 및 IsTrayOrAppWindow 호출
-            if (_currentHwnd != IntPtr.Zero && !IsTaskbarWindow(_currentHwnd) && !IsTrayOrAppWindow(_currentHwnd))
+            if (_currentContextHwnd != IntPtr.Zero && !IsTaskbarWindow(_currentContextHwnd) && !IsAppOrTrayWindow(_currentContextHwnd))
             {
-                LastValidHwnd = _currentHwnd;
-                LastValidFocusHwnd = GetFocusedInputHwnd(_currentHwnd);
+                LastValidHwnd = _currentContextHwnd;
+                LastValidFocusHwnd = SearchFocusedInputHwnd(_currentContextHwnd);
             }
 
-            ApplyState(ImeState.Detect(_currentHwnd,
-                _capsMode == CapsMode.Pali,
-                _capsMode == CapsMode.Japanese1,
-                _capsMode == CapsMode.Japanese2,
-                _capsMode == CapsMode.Engineer));
+            ApplyVisualState(ImeState.Detect(_currentContextHwnd,
+                _activeCapsMode == CapsMode.Pali,
+                _activeCapsMode == CapsMode.Japanese1,
+                _activeCapsMode == CapsMode.Japanese2,
+                _activeCapsMode == CapsMode.Japanese3,
+                _activeCapsMode == CapsMode.Engineer));
 
-            _stateTimer.Start();
+            _stateCheckTimer.Start();
         }
 
-        // =======================================================================================
-        // [오버레이 관련 렌더링 및 퍼블릭 API (Lang.cs 연동)]
-        // =======================================================================================
-        /// <summary>
-        /// Lang.cs 혹은 다른 모듈에서 텍스트 표시창을 강제로 띄울 때 호출하는 공개 메서드입니다.
-        /// </summary>
-        
-        public void ShowOverlay(string text, int durationMs = OverlayDefaultDurationMs)
+        private void OnDisplaySettingsChanged(object? sender, EventArgs e)
         {
-            if (!_showTextOverlay) return;
-
-            // 포인터 크기 계산에 썼던 동일한 디스플레이 배율(_currentScaleRatio)을 적용하여 동적 스케일링
-            float scaledFontSize = OverlayDefaultFontSize * _currentScaleRatio;
-            int scaledHeight = (int)Math.Round(OverlayDefaultHeight * _currentScaleRatio);
-            int scaledCharWidth = (int)Math.Round(OverlayDefaultCharWidth * _currentScaleRatio);
-            int scaledPadWidth = (int)Math.Round(OverlayDefaultPaddingWidth * _currentScaleRatio);
-            int scaledYOffset = (int)Math.Round(OverlayDefaultYOffset * _currentScaleRatio);
-
-            ShowOverlayInternal(text, durationMs > 0, scaledFontSize, scaledHeight, scaledCharWidth, scaledPadWidth, scaledYOffset);
+            if (this.InvokeRequired) { this.BeginInvoke(new Action(() => OnDisplaySettingsChanged(sender, e))); return; }
+            Task.Delay(DisplaySettingsChangedDelayMs).ContinueWith(_ => this.BeginInvoke(new Action(() => RebuildAssetsWithRetry(RebuildRetryAfterScaleChangeMs))));
         }
 
-        public void ClearOverlay() => _textOverlayForm?.Clear();
-
-        private Size CalcOverlaySize(string ch, int charW, int padW, int formH)
+        private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
         {
-            // 한글/기타 문자열의 길이에 맞춰 오버레이 폭을 가변적으로 계산
-            int length = 0;
-            foreach (char c in ch) length += (c >= 0x1100 && c <= 0xD7AF) ? 2 : 1; 
-            
-            // 오버레이 폼의 최소 너비(기존 40)에도 배율을 반영하여 텍스트 짤림 방지
-            int minWidth = (int)Math.Round(40 * _currentScaleRatio);
-            
-            return new Size(Math.Max(length * (charW / 2) + padW, minWidth), formH);
-        }
-
-        private void ShowOverlayInternal(string ch, bool useTimer, float fontSize, int formH, int charW, int padW, int yOffset)
-        {
-            if (this.InvokeRequired)
+            if (e.Category == UserPreferenceCategory.Accessibility || e.Category == UserPreferenceCategory.Mouse)
             {
-                this.BeginInvoke(new Action(() => ShowOverlayInternal(ch, useTimer, fontSize, formH, charW, padW, yOffset)));
-                return;
+                if (this.InvokeRequired) { this.BeginInvoke(new Action(() => OnUserPreferenceChanged(sender, e))); return; }
+                Task.Delay(UserPreferenceChangedDelayMs).ContinueWith(_ => this.BeginInvoke(new Action(() => RebuildAssetsWithRetry(RebuildRetryAfterScaleChangeMs))));
+            }
+        }
+
+        // ---------------------------------------------------------
+        // 모드 전환 로직
+        // ---------------------------------------------------------
+        public void RequestLayoutRefresh() => this.BeginInvoke(new Action(RefreshKeyboardLayoutOverlay));
+
+        private void UpdatePointerMode(PointerMode mode)
+        {
+            _activePointerMode = mode;
+            SyncPointerMenuChecks();
+            _previousImeState = (ImeState.State)(-1);
+            if (mode == PointerMode.WinColor)
+            {
+                _stateCheckTimer.Stop(); RebuildStateAssets(); _stateCheckTimer.Start();
+            }
+        }
+
+        private void SyncPointerMenuChecks()
+        {
+            if (_menuItemPointerWinDefault != null) _menuItemPointerWinDefault.Checked = (_activePointerMode == PointerMode.WinDefault);
+            if (_menuItemPointerWinColor != null) _menuItemPointerWinColor.Checked = (_activePointerMode == PointerMode.WinColor);
+            if (_menuItemPointerNewColor != null) _menuItemPointerNewColor.Checked = (_activePointerMode == PointerMode.NewColor);
+        }
+
+        private void UpdateCapsMode(CapsMode mode)
+        {
+            _activeCapsMode = mode;
+            SyncCapsMenuChecks();
+            _previousImeState = (ImeState.State)(-1);
+            RefreshKeyboardLayoutOverlay();
+
+            IntPtr activeHwnd = NativeMethods.GetForegroundWindow();
+            if (activeHwnd != IntPtr.Zero && (IsTaskbarWindow(activeHwnd) || IsAppOrTrayWindow(activeHwnd)))
+            {
+                EnforceCapsModeToTarget(activeHwnd, 1);
             }
 
-            Point caretPos = GetInputCaretPosition();
-            Size size = CalcOverlaySize(ch, charW, padW, formH);
+            IntPtr targetHwnd = LastValidFocusHwnd != IntPtr.Zero ? LastValidFocusHwnd : (LastValidHwnd != IntPtr.Zero ? LastValidHwnd : activeHwnd);
 
-            _textOverlayForm?.ShowOverlay(ch, useTimer, fontSize, size.Width, size.Height, caretPos.X, caretPos.Y + yOffset);
+            if (targetHwnd != IntPtr.Zero)
+            {
+                if (!IsTaskbarWindow(targetHwnd) && !IsAppOrTrayWindow(targetHwnd))
+                {
+                    NativeMethods.SetForegroundWindow(targetHwnd);
+                }
+                EnforceCapsModeToTarget(targetHwnd);
+            }
         }
 
-        private static Point GetInputCaretPosition()
+        public string GetCapsModeOverlayText()
+        {
+            return _activeCapsMode switch
+            {
+                CapsMode.WinDefault => "한글_default",
+                CapsMode.Engineer => "공학용_특수기호",
+                CapsMode.Pali => "Pali_Sanskrit",
+                CapsMode.Japanese1 => "일본어1_조합형",
+                CapsMode.Japanese2 => "일본어2_조합형",
+                CapsMode.Japanese3 => "일본어3_3Layer",
+                _ => "한글_default"
+            };
+        }
+
+        private void SyncCapsMenuChecks()
+        {
+            if (_menuItemCapsWinDefault != null) _menuItemCapsWinDefault.Checked = (_activeCapsMode == CapsMode.WinDefault);
+            if (_menuItemCapsEngineer != null) _menuItemCapsEngineer.Checked = (_activeCapsMode == CapsMode.Engineer);
+            if (_menuItemCapsPali != null) _menuItemCapsPali.Checked = (_activeCapsMode == CapsMode.Pali);
+            if (_menuItemCapsJapanese1 != null) _menuItemCapsJapanese1.Checked = (_activeCapsMode == CapsMode.Japanese1);
+            if (_menuItemCapsJapanese2 != null) _menuItemCapsJapanese2.Checked = (_activeCapsMode == CapsMode.Japanese2);
+            if (_menuItemCapsJapanese3 != null) _menuItemCapsJapanese3.Checked = (_activeCapsMode == CapsMode.Japanese3);
+        }
+
+        private void ApplyCapsModeBase(IntPtr targetHwnd)
+        {
+            if (targetHwnd == IntPtr.Zero) return;
+            ImeState.SetHangulState(targetHwnd, true);
+            bool capsOn = (NativeMethods.GetKeyState(NativeMethods.VK_CAPITAL) & 0x0001) != 0;
+            if (!capsOn) NativeMethods.SimulateCapsLock();
+        }
+
+        private void EnforceCapsModeToTarget(IntPtr targetHwnd, int retryCount = 2)
+        {
+            if (targetHwnd == IntPtr.Zero) return;
+            ApplyCapsModeBase(targetHwnd);
+            if (ImeState.IsHangulModeSystemWide(targetHwnd) || retryCount <= 0) return;
+
+            IntPtr rootHwnd = LastValidHwnd != IntPtr.Zero ? LastValidHwnd : targetHwnd;
+
+            Task.Delay(TrayContextMenuForegroundDelayRetryMs).ContinueWith(_ =>
+                this.BeginInvoke(new Action(() =>
+                {
+                    IntPtr retryTarget = SearchFocusedInputHwnd(rootHwnd);
+                    if (retryTarget == IntPtr.Zero) retryTarget = rootHwnd;
+
+                    if (retryTarget != IntPtr.Zero && !IsTaskbarWindow(retryTarget) && !IsAppOrTrayWindow(retryTarget))
+                    {
+                        NativeMethods.SetForegroundWindow(retryTarget);
+                    }
+                    EnforceCapsModeToTarget(retryTarget, retryCount - 1);
+                })));
+        }
+
+        // ---------------------------------------------------------
+        // 상태 확인(Tick) 및 동기화 루틴
+        // ---------------------------------------------------------
+        private void ProcessStateCheck(object? sender, EventArgs e)
+        {
+            IntPtr actualHFore = NativeMethods.GetForegroundWindow();
+            bool isFocusChanged = (actualHFore != _lastPolledHwnd);
+            
+            bool isTaskbar = IsTaskbarWindow(actualHFore);
+            bool isTrayOrApp = IsAppOrTrayWindow(actualHFore);
+            bool isLayoutForm = IsLayoutFormForeground(actualHFore);
+
+            CacheLastValidWindows(actualHFore, isTaskbar, isTrayOrApp, isLayoutForm);
+            SyncSystemHangulState(actualHFore, isTaskbar, isTrayOrApp, isLayoutForm, isFocusChanged);
+
+            _lastPolledHwnd = actualHFore;
+
+            IntPtr contextHwnd = ResolveContextHwnd(actualHFore);
+            bool cachedIsHangulMode = ImeState.IsHangulModeSystemWide(contextHwnd);
+            ushort contextLangId = ResolveLanguageId(contextHwnd);
+
+            TrackCurrentWindow(contextHwnd, isTaskbar, isTrayOrApp, isLayoutForm);
+
+            ImeState.State currentState = ImeState.Detect(contextHwnd,
+                _activeCapsMode == CapsMode.Pali,
+                _activeCapsMode == CapsMode.Japanese1,
+                _activeCapsMode == CapsMode.Japanese2,                
+                _activeCapsMode == CapsMode.Japanese3,
+                _activeCapsMode == CapsMode.Engineer);
+
+            ActiveInputModeContext activeInputMode = ResolveInputModeContext(currentState);
+
+            GlobalInputHook.UpdateContext(new GlobalInputHook.HookContextSnapshot(
+                contextHwnd, contextLangId, cachedIsHangulMode, activeInputMode.ActiveProcessor,
+                activeInputMode.IsPaliModeActive, activeInputMode.IsEngineerModeActive, activeInputMode.IsJapanese1ModeActive,
+                activeInputMode.IsJapanese2ModeActive, activeInputMode.IsJapanese3ModeActive));
+
+            if (currentState != _previousImeState)
+            {
+                _previousImeState = currentState;
+                ApplyVisualState(currentState);
+            }
+
+            RefreshKeyboardLayoutOverlay();
+            RenderMiniIndicator(currentState);
+        }
+
+        private bool IsLayoutFormForeground(IntPtr actualHFore) => _frmKeyboardLayout != null && actualHFore == _frmKeyboardLayout.Handle;
+
+        private void CacheLastValidWindows(IntPtr actualHFore, bool isTaskbar, bool isTrayOrApp, bool isLayoutForm)
+        {
+            if (!isTaskbar && !isTrayOrApp && !isLayoutForm && actualHFore != IntPtr.Zero && actualHFore != this.Handle)
+            {
+                LastValidHwnd = actualHFore;
+                LastValidFocusHwnd = SearchFocusedInputHwnd(actualHFore);
+            }
+        }
+
+        private void SyncSystemHangulState(IntPtr actualHFore, bool isTaskbar, bool isTrayOrApp, bool isLayoutForm, bool isFocusChanged)
+        {
+            bool isCurrentHangul = ImeState.IsHangulModeSystemWide(actualHFore);
+
+            if (isFocusChanged)
+            {
+                if (LastValidHwnd != IntPtr.Zero)
+                {
+                    bool isValidHangul = ImeState.IsHangulModeSystemWide(LastValidHwnd);
+                    if ((isTaskbar || isTrayOrApp || isLayoutForm) && isValidHangul != isCurrentHangul)
+                    {
+                        ImeState.SetHangulState(actualHFore, isValidHangul);
+                        isCurrentHangul = ImeState.IsHangulModeSystemWide(actualHFore);
+                    }
+                }
+                _lastHangulSyncState = isCurrentHangul;
+            }
+            else if (isCurrentHangul != _lastHangulSyncState)
+            {
+                _lastHangulSyncState = isCurrentHangul;
+
+                Action<IntPtr> SetState = (hwnd) => { if (hwnd != IntPtr.Zero && hwnd != actualHFore) ImeState.SetHangulState(hwnd, isCurrentHangul); };
+                
+                SetState(LastValidHwnd);
+                SetState(_frmKeyboardLayout?.Handle ?? IntPtr.Zero);
+                SetState(this.Handle);
+            }
+        }
+
+        private IntPtr ResolveContextHwnd(IntPtr actualHFore) => (LastValidHwnd != IntPtr.Zero) ? LastValidHwnd : actualHFore;
+
+        private static ushort ResolveLanguageId(IntPtr contextHwnd)
+        {
+            if (contextHwnd == IntPtr.Zero) return 0;
+            uint tid = NativeMethods.GetWindowThreadProcessId(contextHwnd, out _);
+            return (ushort)(NativeMethods.GetKeyboardLayout(tid).ToInt64() & 0xFFFF);
+        }
+
+        private void TrackCurrentWindow(IntPtr contextHwnd, bool isTaskbar, bool isTrayOrApp, bool isLayoutForm)
+        {
+            if (contextHwnd != _currentContextHwnd)
+            {
+                if (!isTaskbar && !isTrayOrApp && !isLayoutForm)
+                {
+                    _lastForegroundHwnd = contextHwnd;
+                    _isCurrentProcessTarget = EvaluateTargetProcess(contextHwnd);
+                    _isPointerInIBeamCell = false;
+                }
+                _currentContextHwnd = contextHwnd;
+            }
+        }
+
+        private ActiveInputModeContext ResolveInputModeContext(ImeState.State state)
+        {
+            CapsModeStateMapping[] maps = {
+                new(CapsMode.Pali, ImeState.State.PaliHangul, KeyProcessorFactory.Pali),
+                new(CapsMode.Engineer, ImeState.State.Engineer, KeyProcessorFactory.Engineer),
+                new(CapsMode.Japanese1, ImeState.State.JapaneseHangul1A, KeyProcessorFactory.Japanese1),
+                new(CapsMode.Japanese2, ImeState.State.JapaneseHangul1B, KeyProcessorFactory.Japanese2),
+                new(CapsMode.Japanese3, ImeState.State.JapaneseHangul2, KeyProcessorFactory.Japanese3)
+            };
+            foreach (var map in maps)
+                if (_activeCapsMode == map.Mode && state == map.ActiveState)
+                    return new ActiveInputModeContext(map.Mode == CapsMode.Pali, map.Mode == CapsMode.Engineer, map.Mode == CapsMode.Japanese1, map.Mode == CapsMode.Japanese2, map.Mode == CapsMode.Japanese3, map.Processor);
+            return new ActiveInputModeContext(false, false, false, false, false, null);
+        }
+
+        // ---------------------------------------------------------
+        // 오버레이 퍼블릭 API (Lang.cs 등 연동)
+        // ---------------------------------------------------------
+        public void ShowOverlay(string text, int durationMs = AppConfig.OverlayDefaultDurationMs)
+        {
+            if (!_isTextOverlayEnabled) return;
+
+            float scaledFontSize = AppConfig.OverlayDefaultFontSize * _currentDpiScale;
+            int scaledHeight = (int)Math.Round(AppConfig.OverlayDefaultHeight * _currentDpiScale);
+            int scaledCharWidth = (int)Math.Round(AppConfig.OverlayDefaultCharWidth * _currentDpiScale);
+            int scaledPadWidth = (int)Math.Round(AppConfig.OverlayDefaultPaddingWidth * _currentDpiScale);
+            int scaledYOffset = (int)Math.Round(AppConfig.OverlayDefaultYOffset * _currentDpiScale);
+
+            if (this.InvokeRequired) this.BeginInvoke(new Action(() => ExecuteShowOverlay(text, durationMs > 0, scaledFontSize, scaledHeight, scaledCharWidth, scaledPadWidth, scaledYOffset)));
+            else ExecuteShowOverlay(text, durationMs > 0, scaledFontSize, scaledHeight, scaledCharWidth, scaledPadWidth, scaledYOffset);
+        }
+
+        public void ClearOverlay() => _frmTextOverlay?.Clear();
+
+        private void ExecuteShowOverlay(string ch, bool useTimer, float fontSize, int formH, int charW, int padW, int yOffset)
+        {
+            int length = 0; foreach (char c in ch) length += (c >= 0x1100 && c <= 0xD7AF) ? 2 : 1; 
+            int minWidth = (int)Math.Round(40 * _currentDpiScale);
+            Size sz = new Size(Math.Max(length * (charW / 2) + padW, minWidth), formH);
+
+            Point pt = ResolveCaretPosition();
+            _frmTextOverlay?.ShowOverlay(ch, useTimer, fontSize, sz.Width, sz.Height, pt.X, pt.Y + yOffset);
+        }
+
+        private static Point ResolveCaretPosition()
         {
             IntPtr hFore = NativeMethods.GetForegroundWindow();
             uint tid = NativeMethods.GetWindowThreadProcessId(hFore, out _);
-
             NativeMethods.GUITHREADINFO gti = new() { cbSize = Marshal.SizeOf<NativeMethods.GUITHREADINFO>() };
             if (NativeMethods.GetGUIThreadInfo(tid, ref gti) && gti.hwndCaret != IntPtr.Zero)
             {
@@ -1233,490 +1415,215 @@ namespace IMEPointer
                 NativeMethods.ClientToScreen(gti.hwndCaret, ref pt);
                 return new Point(pt.X, pt.Y);
             }
-
-            if (NativeMethods.GetCursorPos(out NativeMethods.POINT mPt))
-                return new Point(mPt.X, mPt.Y);
-
+            if (NativeMethods.GetCursorPos(out NativeMethods.POINT mPt)) return new Point(mPt.X, mPt.Y);
             return Point.Empty;
         }
-        // =======================================================================================
 
-        private void DisposeAssetCache()
+        // ---------------------------------------------------------
+        // 에셋 및 UI 렌더링 
+        // ---------------------------------------------------------
+        private void RebuildAssetsWithRetry(int retryDelayMs)
         {
-            foreach (var asset in _assetCache.Values) try { asset.Dispose(); } catch { }
-            _assetCache.Clear();
-        }
-
-        private static float GetPrimaryMonitorDpi()
-        {
-            IntPtr hFore = NativeMethods.GetForegroundWindow();
-            if (hFore != IntPtr.Zero)
+            _stateCheckTimer.Stop(); RebuildStateAssets(); _stateCheckTimer.Start();
+            int currentPhysSize = _pointerPhysicalSize;
+            if (retryDelayMs > 0)
             {
-                IntPtr hMonitor = NativeMethods.MonitorFromWindow(hFore, NativeMethods.MONITOR_DEFAULTTONEAREST);
-                if (hMonitor != IntPtr.Zero && NativeMethods.GetDpiForMonitor(hMonitor, NativeMethods.MDT_EFFECTIVE_DPI, out uint dpiX, out uint dpiY) == 0 && dpiX > 0)
-                    return (float)dpiX;
+                Task.Delay(retryDelayMs).ContinueWith(_ => this.BeginInvoke(new Action(() =>
+                {
+                    int sysCursorWidth = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXCURSOR);
+                    int expectedPhys = sysCursorWidth > 0 ? sysCursorWidth : Math.Max(32, (int)Math.Round(32 * _currentDpiScale));
+                    if (expectedPhys != currentPhysSize) { _stateCheckTimer.Stop(); RebuildStateAssets(); _stateCheckTimer.Start(); }
+                })));
             }
-            uint sysDpi = NativeMethods.GetDpiForSystem();
-            return sysDpi > 0 ? (float)sysDpi : 96f;
         }
 
         private void RebuildStateAssets()
         {
             bool trayWasVisible = false;
-            try { trayWasVisible = _trayIcon?.Visible ?? false; } catch { }
+            try { trayWasVisible = _sysTrayIcon?.Visible ?? false; } catch { }
 
-            DisposeAssetCache();
-            RestoreDefaults();
+            foreach (var asset in _assetCache.Values) try { asset.Dispose(); } catch { }
+            _assetCache.Clear(); RestoreDefaults();
 
-            float dpi = GetPrimaryMonitorDpi();
-            _currentScaleRatio = dpi / 96f;
+            float dpi = 96f;
+            IntPtr hFore = NativeMethods.GetForegroundWindow();
+            if (hFore != IntPtr.Zero)
+            {
+                IntPtr hMonitor = NativeMethods.MonitorFromWindow(hFore, NativeMethods.MONITOR_DEFAULTTONEAREST);
+                if (hMonitor != IntPtr.Zero && NativeMethods.GetDpiForMonitor(hMonitor, NativeMethods.MDT_EFFECTIVE_DPI, out uint dpiX, out _) == 0 && dpiX > 0) dpi = dpiX;
+            }
+            else { uint sysDpi = NativeMethods.GetDpiForSystem(); if (sysDpi > 0) dpi = sysDpi; }
 
+            _currentDpiScale = dpi / 96f;
             int sysCursorWidth = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXCURSOR);
-            int physicalSize = sysCursorWidth > 0 ? sysCursorWidth : Math.Max(32, (int)Math.Round(32 * _currentScaleRatio));
-
-            _pointerPhysicalSize = physicalSize;
-            _physIndicatorOffsetX = physicalSize * 0.5f;
+            _pointerPhysicalSize = sysCursorWidth > 0 ? sysCursorWidth : Math.Max(32, (int)Math.Round(32 * _currentDpiScale));
+            _physIndicatorOffsetX = _pointerPhysicalSize * 0.5f;
             
-            bool anyWinColorFailed = false;
+            bool winColorFailed = false;
 
             foreach (ImeState.State state in Enum.GetValues(typeof(ImeState.State)))
             {
-                if (!AppConfig.Themes.TryGetValue(state, out AppConfig.Theme theme)) continue;
+                if (!AppConfig.Themes.TryGetValue(state, out AppConfig.Theme t)) continue;
                 try
                 {
-                    IntPtr hArrowNew = WinColorPointerFactory.CreateColoredSystemPointer(NativeMethods.OCR_NORMAL, theme.PointerColor, _pointerPhysicalSize);
-                    IntPtr hIBeamNew = WinColorPointerFactory.CreateColoredSystemPointer(NativeMethods.OCR_IBEAM, theme.IBeamColor, _pointerPhysicalSize);
+                    IntPtr hArrowNew = PointerGraphicsFactory.CreateColoredSystemPointer(NativeMethods.OCR_NORMAL, t.PointerColor, _pointerPhysicalSize);
+                    IntPtr hIBeamNew = PointerGraphicsFactory.CreateColoredSystemPointer(NativeMethods.OCR_IBEAM, t.IBeamColor, _pointerPhysicalSize);
+                    IntPtr hArrowWin = PointerGraphicsFactory.CreateColoredSystemPointer(NativeMethods.OCR_NORMAL, t.PointerColor, _pointerPhysicalSize);
+                    IntPtr hIBeamWin = PointerGraphicsFactory.CreateColoredSystemPointer(NativeMethods.OCR_IBEAM, t.IBeamColor == Color.White ? Color.Black : t.IBeamColor, _pointerPhysicalSize);
 
-                    Color winIBeamColor = theme.IBeamColor == Color.White ? Color.Black : theme.IBeamColor;
-                    IntPtr hArrowWin = WinColorPointerFactory.CreateColoredSystemPointer(NativeMethods.OCR_NORMAL, theme.PointerColor, _pointerPhysicalSize);
-                    IntPtr hIBeamWin = WinColorPointerFactory.CreateColoredSystemPointer(NativeMethods.OCR_IBEAM, winIBeamColor, _pointerPhysicalSize);
+                    if (hArrowWin == IntPtr.Zero) { hArrowWin = NativeMethods.CopyIcon(hArrowNew); winColorFailed = true; }
+                    if (hIBeamWin == IntPtr.Zero) { hIBeamWin = NativeMethods.CopyIcon(hIBeamNew); winColorFailed = true; }
 
-                    if (hArrowWin == IntPtr.Zero) { hArrowWin = NativeMethods.CopyIcon(hArrowNew); anyWinColorFailed = true; }
-                    if (hIBeamWin == IntPtr.Zero) { hIBeamWin = NativeMethods.CopyIcon(hIBeamNew); anyWinColorFailed = true; }
-
-                    StateAssets assets = new()
+                    _assetCache[state] = new StateAssets
                     {
-                        DotColor = theme.PointerColor,
-                        Description = theme.Description,
-                        ArrowNewPtr = hArrowNew,
-                        IBeamNewPtr = hIBeamNew,
-                        ArrowWinPtr = hArrowWin,
-                        IBeamWinPtr = hIBeamWin,
-                        TrayIcon = TrayIconRenderer.Create(theme.TrayText, theme.TrayBgColor, theme.TrayTextColor),
+                        DotColor = t.PointerColor, Description = t.Description, ArrowNewPtr = hArrowNew, IBeamNewPtr = hIBeamNew,
+                        ArrowWinPtr = hArrowWin, IBeamWinPtr = hIBeamWin,
+                        TrayIcon = BuildTrayIcon(t.TrayText, t.TrayBgColor, t.TrayTextColor),
+                        IBeamCompareHandleNew = NativeMethods.CopyIcon(hIBeamNew), IBeamCompareHandleWin = NativeMethods.CopyIcon(hIBeamWin)
                     };
-                    assets.IBeamCompareHandleNew = NativeMethods.CopyIcon(hIBeamNew);
-                    assets.IBeamCompareHandleWin = NativeMethods.CopyIcon(hIBeamWin);
-
-                    _assetCache[state] = assets;
                 }
                 catch { }
             }
 
             try
             {
-                if (trayWasVisible && _trayIcon != null)
+                if (trayWasVisible && _sysTrayIcon != null)
                 {
-                    _trayIcon.Visible = true;
-                    ImeState.State stateToApply = _lastState == (ImeState.State)(-1) ? ImeState.State.EnglishLower : _lastState;
-                    if (_assetCache.TryGetValue(stateToApply, out var recoveryAssets) && recoveryAssets.TrayIcon != null) 
-                        _trayIcon.Icon = recoveryAssets.TrayIcon;
+                    _sysTrayIcon.Visible = true;
+                    ImeState.State st = _previousImeState == (ImeState.State)(-1) ? ImeState.State.EnglishLower : _previousImeState;
+                    if (_assetCache.TryGetValue(st, out var ast) && ast.TrayIcon != null) _sysTrayIcon.Icon = ast.TrayIcon;
                 }
-            }
-            catch { }
+            } catch { }
 
-            if (_pointerMode == PointerMode.WinColor && anyWinColorFailed)
+            if (_activePointerMode == PointerMode.WinColor && winColorFailed)
             {
-                _pointerMode = PointerMode.NewColor; RefreshPointerModeCheck(); _lastState = (ImeState.State)(-1);
+                _activePointerMode = PointerMode.NewColor; SyncPointerMenuChecks(); _previousImeState = (ImeState.State)(-1);
             }
         }
 
-        private void StateTimer_Tick(object? sender, EventArgs e)
+        private static Icon BuildTrayIcon(string text, Color bg, Color fg)
         {
-            IntPtr actualHFore = NativeMethods.GetForegroundWindow();
+            using Bitmap bmp = new(AppConfig.TrayIconSize, AppConfig.TrayIconSize);
+            using Graphics g = Graphics.FromImage(bmp);
+            g.SmoothingMode = SmoothingMode.AntiAlias; g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+            using SolidBrush bgBrush = new(bg); g.FillRectangle(bgBrush, 0, 0, AppConfig.TrayIconSize, AppConfig.TrayIconSize);
             
-            // 포커스가 기존 창에서 새로 옮겨갔는지 확인하여 1회성 강제 동기화 여부를 결정
-            bool isFocusChanged = (actualHFore != _lastPolledHFore);
-            
-            // 작업표시줄과 앱(트레이 등) 연관 창 분리 적용
-            bool isTaskbar = IsTaskbarWindow(actualHFore);
-            bool isTrayOrApp = IsTrayOrAppWindow(actualHFore);
-            bool isLayoutForm = IsKeyboardLayoutForeground(actualHFore);
+            bool lower = !string.IsNullOrEmpty(text) && char.IsLower(text[0]);
+            using Font font = new(lower ? "Segoe Print" : "Segoe UI Black", lower ? AppConfig.TrayLowercaseFontSize : AppConfig.TrayUppercaseFontSize, FontStyle.Bold, GraphicsUnit.Pixel);
+            using SolidBrush fgBrush = new(fg);
+            using StringFormat sf = new() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoWrap };
 
-            UpdateLastValidWindows(actualHFore, isTaskbar, isTrayOrApp, isLayoutForm);
-            SyncHangulStateAcrossWindows(actualHFore, isTaskbar, isTrayOrApp, isLayoutForm, isFocusChanged);
-
-            _lastPolledHFore = actualHFore; // 다음 틱을 위해 저장
-
-            IntPtr contextHwnd = ResolveContextWindow(actualHFore);
-            bool cachedIsHangulMode = ImeState.IsHangulModeSystemWide(contextHwnd);
-            ushort contextLangId = GetContextLanguageId(contextHwnd);
-
-            UpdateCurrentWindowTracking(contextHwnd, isTaskbar, isTrayOrApp, isLayoutForm);
-
-            ImeState.State currentState = DetectCurrentState(contextHwnd);
-            ActiveInputModeContext activeInputMode = ResolveActiveInputMode(currentState);
-
-            UpdateHookContext(contextHwnd, contextLangId, cachedIsHangulMode, activeInputMode);
-
-            if (currentState != _lastState)
+            RectangleF rect = lower ? TrayIconTextRectLower : TrayIconTextRectUpper;
+            if (lower)
             {
-                _lastState = currentState;
-                ApplyState(currentState);
+                g.DrawString(text, font, fgBrush, new RectangleF(rect.X, rect.Y, rect.Width, rect.Height), sf);
+                g.DrawString(text, font, fgBrush, new RectangleF(rect.X + 1f, rect.Y, rect.Width, rect.Height), sf);
+                g.DrawString(text, font, fgBrush, new RectangleF(rect.X, rect.Y + 1f, rect.Width, rect.Height), sf);
+                g.DrawString(text, font, fgBrush, new RectangleF(rect.X + 1f, rect.Y + 1f, rect.Width, rect.Height), sf);
+                g.DrawString(text, font, fgBrush, new RectangleF(rect.X + 0.5f, rect.Y + 0.5f, rect.Width, rect.Height), sf);
             }
+            else g.DrawString(text, font, fgBrush, rect, sf);
 
-            RefreshKeyboardLayoutOverlay();
-            UpdateMiniIndicator(currentState);
+            IntPtr hIcon = bmp.GetHicon(); Icon icon = (Icon)Icon.FromHandle(hIcon).Clone(); NativeMethods.DestroyIcon(hIcon); return icon;
         }
 
-        private bool IsKeyboardLayoutForeground(IntPtr actualHFore) =>
-            _keyboardLayoutForm != null && actualHFore == _keyboardLayoutForm.Handle;
-
-        private void UpdateLastValidWindows(IntPtr actualHFore, bool isTaskbar, bool isTrayOrApp, bool isLayoutForm)
+        private void ApplyVisualState(ImeState.State state)
         {
-            // 작업표시줄과 트레이/앱 창이 아닌 경우에만 실제 텍스트 입력창으로 갱신
-            if (!isTaskbar && !isTrayOrApp && !isLayoutForm && actualHFore != IntPtr.Zero && actualHFore != this.Handle)
+            if (!_assetCache.TryGetValue(state, out StateAssets? assets)) return;
+            _currentIndicatorColor = assets.DotColor;
+
+            try { if (assets.TrayIcon != null && (_sysTrayIcon.Icon == null || _sysTrayIcon.Icon.Handle != assets.TrayIcon.Handle)) _sysTrayIcon.Icon = assets.TrayIcon; }
+            catch { _sysTrayIcon.Icon = assets.TrayIcon; }
+
+            switch (_activePointerMode)
             {
-                LastValidHwnd = actualHFore;
-                LastValidFocusHwnd = GetFocusedInputHwnd(actualHFore);
+                case PointerMode.WinDefault: RestoreDefaults(); _lastAppliedArrowHandle = IntPtr.Zero; break;
+                case PointerMode.WinColor:
+                case PointerMode.NewColor:
+                    IntPtr hArr = NativeMethods.CopyIcon(_activePointerMode == PointerMode.WinColor ? assets.ArrowWinPtr : assets.ArrowNewPtr);
+                    IntPtr hIb = NativeMethods.CopyIcon(_activePointerMode == PointerMode.WinColor ? assets.IBeamWinPtr : assets.IBeamNewPtr);
+                    _lastAppliedArrowHandle = hArr;
+                    if (hArr != IntPtr.Zero) { if (!NativeMethods.SetSystemCursor(hArr, NativeMethods.OCR_NORMAL)) NativeMethods.DestroyCursor(hArr); }
+                    if (hIb != IntPtr.Zero) { if (!NativeMethods.SetSystemCursor(hIb, NativeMethods.OCR_IBEAM)) NativeMethods.DestroyCursor(hIb); }
+                    break;
             }
+
+            _sysTrayIcon.Text = UiText.TrayTooltip(assets.Description);
+            _menuItemStatus.Text = UiText.StatusLabel(assets.Description);
         }
 
-        // 요청사항 1,2,3에 따른 동기화 로직 전면 개편 및 트레이/작업표시줄 역동기화(Bounce-back) 문제 해결
-        private void SyncHangulStateAcrossWindows(IntPtr actualHFore, bool isTaskbar, bool isTrayOrApp, bool isLayoutForm, bool isFocusChanged)
-        {
-            bool currentHangul = ImeState.IsHangulModeSystemWide(actualHFore);
-
-            if (isFocusChanged)
-            {
-                if (LastValidHwnd != IntPtr.Zero)
-                {
-                    bool groupA_Hangul = ImeState.IsHangulModeSystemWide(LastValidHwnd);
-
-                    // 작업표시줄, 트레이/앱, 배열창으로 포커스 이동 시 Group A(문자 입력창)의 상태로 1회 강제 동기화
-                    if (isTaskbar || isTrayOrApp || isLayoutForm)
-                    {
-                        if (groupA_Hangul != currentHangul)
-                        {
-                            ImeState.SetHangulState(actualHFore, groupA_Hangul);
-                            
-                            // 핵심 수정: 가짜 상태 할당 제거. 실제 윈도우에 반영된 상태를 다시 읽어와 기준값을 맞춤.
-                            currentHangul = ImeState.IsHangulModeSystemWide(actualHFore);
-                        }
-                    }
-                }
-                _lastSyncHangulState = currentHangul;
-            }
-            else
-            {
-                // 포커스가 유지된 상태에서 상태가 변경된 경우
-                if (currentHangul != _lastSyncHangulState)
-                {
-                    _lastSyncHangulState = currentHangul;
-
-                    if (isTaskbar)
-                    {
-                        if (LastValidHwnd != IntPtr.Zero && LastValidHwnd != actualHFore)
-                            ImeState.SetHangulState(LastValidHwnd, currentHangul);
-
-                        if (_keyboardLayoutForm != null && _keyboardLayoutForm.Handle != IntPtr.Zero)
-                            ImeState.SetHangulState(_keyboardLayoutForm.Handle, currentHangul);
-
-                        if (this.Handle != IntPtr.Zero)
-                            ImeState.SetHangulState(this.Handle, currentHangul);
-                    }
-                    else
-                    {
-                        if (LastValidHwnd != IntPtr.Zero && actualHFore != LastValidHwnd)
-                            ImeState.SetHangulState(LastValidHwnd, currentHangul);
-
-                        if (_keyboardLayoutForm != null && _keyboardLayoutForm.Handle != IntPtr.Zero && actualHFore != _keyboardLayoutForm.Handle)
-                            ImeState.SetHangulState(_keyboardLayoutForm.Handle, currentHangul);
-
-                        if (this.Handle != IntPtr.Zero && actualHFore != this.Handle)
-                            ImeState.SetHangulState(this.Handle, currentHangul);
-                    }
-                }
-            }
-        }
-
-        private IntPtr ResolveContextWindow(IntPtr actualHFore)
-        {
-            IntPtr contextHwnd = LastValidHwnd != IntPtr.Zero ? LastValidHwnd : actualHFore;
-            return contextHwnd == IntPtr.Zero ? actualHFore : contextHwnd;
-        }
-
-        private static ushort GetContextLanguageId(IntPtr contextHwnd)
-        {
-            if (contextHwnd == IntPtr.Zero) return 0;
-
-            uint contextTid = NativeMethods.GetWindowThreadProcessId(contextHwnd, out _);
-            return (ushort)(NativeMethods.GetKeyboardLayout(contextTid).ToInt64() & 0xFFFF);
-        }
-
-        private void UpdateCurrentWindowTracking(IntPtr contextHwnd, bool isTaskbar, bool isTrayOrApp, bool isLayoutForm)
-        {
-            if (contextHwnd != _currentHwnd)
-            {
-                if (!isTaskbar && !isTrayOrApp && !isLayoutForm)
-                {
-                    _lastForegroundHwnd = contextHwnd;
-                    _showMiniIndicator = IsTargetProcess(contextHwnd);
-                    _isPointerInsideCell = false;
-                }
-                _currentHwnd = contextHwnd;
-            }
-        }
-
-        private ImeState.State DetectCurrentState(IntPtr contextHwnd) =>
-            ImeState.Detect(contextHwnd,
-                _capsMode == CapsMode.Pali,
-                _capsMode == CapsMode.Japanese1,
-                _capsMode == CapsMode.Japanese2,
-                _capsMode == CapsMode.Engineer);
-
-        private ActiveInputModeContext ResolveActiveInputMode(ImeState.State currentState)
-        {
-            CapsModeStateMapping[] mappings =
-            {
-                new(CapsMode.Pali, ImeState.State.PaliHangul, KeyProcessorFactory.Pali),
-                new(CapsMode.Engineer, ImeState.State.Engineer, KeyProcessorFactory.Engineer),
-                new(CapsMode.Japanese1, ImeState.State.JapaneseHangul1, KeyProcessorFactory.Japanese1),
-                new(CapsMode.Japanese2, ImeState.State.JapaneseHangul2, KeyProcessorFactory.Japanese2),
-            };
-
-            foreach (CapsModeStateMapping mapping in mappings)
-            {
-                if (_capsMode == mapping.Mode && currentState == mapping.ActiveState)
-                {
-                    return new ActiveInputModeContext(
-                        mapping.Mode == CapsMode.Pali,
-                        mapping.Mode == CapsMode.Engineer,
-                        mapping.Mode == CapsMode.Japanese1,
-                        mapping.Mode == CapsMode.Japanese2,
-                        mapping.Processor);
-                }
-            }
-
-            return new ActiveInputModeContext(false, false, false, false, null);
-        }
-
-        private static void UpdateHookContext(
-            IntPtr contextHwnd,
-            ushort contextLangId,
-            bool cachedIsHangulMode,
-            ActiveInputModeContext activeInputMode)
-        {
-            GlobalInputHook.UpdateContext(new GlobalInputHook.HookContextSnapshot(
-                contextHwnd,
-                contextLangId,
-                cachedIsHangulMode,
-                activeInputMode.ActiveProcessor,
-                activeInputMode.IsPaliModeActive,
-                activeInputMode.IsEngineerModeActive,
-                activeInputMode.IsJapanese1ModeActive,
-                activeInputMode.IsJapanese2ModeActive));
-        }
-
-        private void UpdateMiniIndicator(ImeState.State currentState)
-        {
-            if (!NativeMethods.GetCursorPos(out NativeMethods.POINT pt))
-                return;
-
-            if (_showMiniIndicator && _enableMiniIndicator)
-            {
-                bool isIBeamActive = IsCurrentPointerIBeam(currentState);
-                if (isIBeamActive != _isPointerInsideCell)
-                {
-                    UpdateLayeredIndicator(Color.Transparent, HiddenLayeredWindowLocation, HiddenLayeredWindowLocation);
-                    _isPointerInsideCell = isIBeamActive;
-                }
-
-                if (!_isPointerInsideCell)
-                {
-                    UpdateIndicatorNearPointer(pt.X, pt.Y);
-                }
-                else
-                {
-                    UpdateLayeredIndicator(Color.Transparent, HiddenLayeredWindowLocation, HiddenLayeredWindowLocation);
-                }
-            }
-            else
-            {
-                UpdateLayeredIndicator(Color.Transparent, HiddenLayeredWindowLocation, HiddenLayeredWindowLocation);
-            }
-        }
-
-        private void UpdateIndicatorNearPointer(float hotX, float hotY)
-        {
-            float targetX;
-            float targetY;
-
-            if (IsArrowPointer())
-            {
-                float offsetPhys = AppConfig.IndicatorOffset * (_pointerPhysicalSize / 32f);
-                targetX = hotX + PointerDiagonalFactor * offsetPhys;
-                targetY = hotY + PointerDiagonalFactor * offsetPhys;
-            }
-            else
-            {
-                targetX = hotX + _physIndicatorOffsetX;
-                targetY = hotY + (_pointerPhysicalSize * IBeamIndicatorYOffsetFactor);
-            }
-
-            float pointerBottomY = hotY + _pointerPhysicalSize;
-            if (targetY < pointerBottomY + IndicatorBottomMargin) targetY = pointerBottomY + IndicatorBottomMargin;
-
-            int destX = (int)Math.Round(targetX - (_indicatorCanvasSize / 2.0f));
-            int destY = (int)Math.Round(targetY - (_indicatorCanvasSize / 2.0f));
-            UpdateLayeredIndicator(_currentDotColor, destX, destY);
-        }
-
-        private string? GetKeyboardLayoutImageName()
-        {
-            var processor = GlobalInputHook.ActiveProcessor;
-            bool isPhysicalShift = (NativeMethods.GetKeyState(0x10) & 0x8000) != 0;
-            bool isVirtualShift = processor != null ? processor.IsVirtualShift : _visualShiftInversion;
-
-            bool displayShift = isPhysicalShift ^ isVirtualShift;
-            string shiftSuffix = displayShift ? "2" : "1";
-
-            // 키보드 배열창 기능 영어 및 한글 확장, "한글CAPS 한글" 처리 반영
-            // 1. 영어 입력 모드 (소문자, 대문자 및 영문 기반 Pali US, Japanese IME 포함)
-            if (_lastState == ImeState.State.EnglishLower || _lastState == ImeState.State.EnglishUpper || 
-                _lastState == ImeState.State.PaliUS || _lastState == ImeState.State.JapaneseIME)
-            {
-                return $"EnglishKey{shiftSuffix}.png";
-            }
-
-            // 2. 한글 입력 모드 (Caps Lock Off 상태) 및 "한글CAPS 한글" 메뉴 선택 시
-            if (_lastState == ImeState.State.Hangul)
-            {
-                return $"KoreanKey{shiftSuffix}.png";
-            }
-
-            // 3. 기존 특수 기능 모드 (한글 + Caps Lock On 상태)
-            if (_capsMode == CapsMode.Pali) return $"PaliKey{shiftSuffix}.png";
-            if (_capsMode == CapsMode.Engineer) return $"EngineerKey{shiftSuffix}.png";
-            if (_capsMode == CapsMode.Japanese1) return $"Japan1Layer{(processor?.CurrentLayer ?? 1)}Key{shiftSuffix}.png";
-            if (_capsMode == CapsMode.Japanese2) return $"Japan2Layer{(processor?.CurrentLayer ?? 1)}Key{shiftSuffix}.png";
-
-            // 기본 예외 처리 (안전망)
-            if (_capsMode == CapsMode.WinDefault) return $"KoreanKey{shiftSuffix}.png";
-            
-            return null;
-        }
-
+        // ---------------------------------------------------------
+        // 헬퍼 및 기타 로직
+        // ---------------------------------------------------------
         private void RefreshKeyboardLayoutOverlay()
         {
-            if (!_showKeyboardLayoutOverlay)
+            if (!_isKeyboardLayoutOverlayEnabled) { CloseAllLayoutForms(); return; }
+
+            var processor = GlobalInputHook.ActiveProcessor;
+            bool isPhyShift = (NativeMethods.GetKeyState(0x10) & 0x8000) != 0;
+            if (AppConfig.EnableCopilotMap && ((NativeMethods.GetKeyState(0x5B) & 0x8000) != 0 || (NativeMethods.GetKeyState(0x5C) & 0x8000) != 0)) isPhyShift = false;
+            
+            bool isVirtShift = processor != null ? processor.IsVirtualShift : _isShiftVisualInverted;
+            string suffix = (isPhyShift ^ isVirtShift) ? "2" : "1";
+            string? name = null;
+
+            if (_previousImeState == ImeState.State.EnglishLower || _previousImeState == ImeState.State.EnglishUpper || _previousImeState == ImeState.State.PaliUS || _previousImeState == ImeState.State.JapaneseIME) name = $"EnglishKey{suffix}.png";
+            else if (_previousImeState == ImeState.State.Hangul) name = $"KoreanKey{suffix}.png";
+            else if (_activeCapsMode == CapsMode.Pali) name = $"PaliKey{suffix}.png";
+            else if (_activeCapsMode == CapsMode.Engineer) name = $"EngineerKey{suffix}.png";
+            else if (_activeCapsMode == CapsMode.Japanese1) name = $"Japan1Layer1Key{suffix}.png";
+            else if (_activeCapsMode == CapsMode.Japanese2) name = $"Japan1Layer2Key{suffix}.png";
+            else if (_activeCapsMode == CapsMode.Japanese3) name = $"Japan2Layer{(processor?.CurrentLayer ?? 1)}Key{suffix}.png";
+            else name = $"KoreanKey{suffix}.png";
+
+            if (name == null) return;
+
+            if (_frmKeyboardLayout == null || _frmKeyboardLayout.IsDisposed)
             {
-                CloseAllLayoutForms();
-                return;
+                _frmKeyboardLayout = new KeyboardLayoutForm();
+                if (_lastKeyboardLayoutLocation != Point.Empty) _frmKeyboardLayout.Location = _lastKeyboardLayoutLocation;
+                _frmKeyboardLayout.OnLayoutDoubleClicked += (s, e) => { if (GlobalInputHook.ActiveProcessor != null) GlobalInputHook.ActiveProcessor.ToggleVirtualShift(); else _isShiftVisualInverted = !_isShiftVisualInverted; RefreshKeyboardLayoutOverlay(); };
+                _frmKeyboardLayout.OnClosedByUser += (s, e) => { _isKeyboardLayoutOverlayEnabled = false; _menuItemToggleKeyboardLayout.Checked = false; CloseAllLayoutForms(); };
             }
 
-            string? imageName = GetKeyboardLayoutImageName();
-            if (string.IsNullOrEmpty(imageName)) return;
-
-            if (_keyboardLayoutForm == null || _keyboardLayoutForm.IsDisposed)
-            {
-                _keyboardLayoutForm = new KeyboardLayoutForm();
-                
-                if (_keyboardLayoutLastLocation != Point.Empty)
-                {
-                    _keyboardLayoutForm.Location = _keyboardLayoutLastLocation;
-                }
-                
-                _keyboardLayoutForm.OnLayoutDoubleClicked += (s, e) =>
-                {
-                    if (GlobalInputHook.ActiveProcessor != null)
-                        GlobalInputHook.ActiveProcessor.ToggleVirtualShift();
-                    else
-                        _visualShiftInversion = !_visualShiftInversion;
-                    
-                    RefreshKeyboardLayoutOverlay();
-                };
-                
-                _keyboardLayoutForm.OnClosedByUser += (s, e) =>
-                {
-                    HideKeyboardLayoutOverlay();
-                };
-            }
-
-            _keyboardLayoutForm.UpdateImage(imageName);
-
-            if (!_keyboardLayoutForm.Visible)
-            {
-                _keyboardLayoutForm.Show();
-                if (_keyboardLayoutForm.WindowState == FormWindowState.Minimized)
-                {
-                    _keyboardLayoutForm.WindowState = FormWindowState.Normal;
-                }
-            }
-        }
-
-        public void HideKeyboardLayoutOverlay()
-        {
-            _showKeyboardLayoutOverlay = false;
-            _toggleKeyboardLayoutMenuItem.Checked = false;
-            CloseAllLayoutForms();
+            _frmKeyboardLayout.UpdateImage(name);
+            if (!_frmKeyboardLayout.Visible) { _frmKeyboardLayout.Show(); if (_frmKeyboardLayout.WindowState == FormWindowState.Minimized) _frmKeyboardLayout.WindowState = FormWindowState.Normal; }
         }
 
         private void CloseAllLayoutForms()
         {
-            if (_keyboardLayoutForm != null)
-            {
-                _keyboardLayoutLastLocation = _keyboardLayoutForm.Location;
-                _keyboardLayoutForm.Close();
-                _keyboardLayoutForm = null;
-            }
+            if (_frmKeyboardLayout != null) { _lastKeyboardLayoutLocation = _frmKeyboardLayout.Location; _frmKeyboardLayout.Close(); _frmKeyboardLayout = null; }
         }
 
-        private void ApplyState(ImeState.State state)
+        private void RenderMiniIndicator(ImeState.State state)
         {
-            if (!_assetCache.TryGetValue(state, out StateAssets? assets)) return;
-            _currentDotColor = assets.DotColor;
-
-            try
+            if (!NativeMethods.GetCursorPos(out NativeMethods.POINT pt)) return;
+            if (_isCurrentProcessTarget && _isMiniIndicatorEnabled)
             {
-                if (assets.TrayIcon != null && (_trayIcon.Icon == null || _trayIcon.Icon.Handle != assets.TrayIcon.Handle)) 
-                    _trayIcon.Icon = assets.TrayIcon;
+                bool isIBeam = EvaluatePointerIsIBeam(state);
+                if (isIBeam != _isPointerInIBeamCell) { UpdateLayeredIndicator(Color.Transparent, HiddenLayeredWindowLocation, HiddenLayeredWindowLocation); _isPointerInIBeamCell = isIBeam; }
+                if (!_isPointerInIBeamCell)
+                {
+                    float tx = pt.X + (EvaluatePointerIsArrow() ? PointerDiagonalFactor * AppConfig.IndicatorOffset * (_pointerPhysicalSize / 32f) : _physIndicatorOffsetX);
+                    float ty = pt.Y + (EvaluatePointerIsArrow() ? PointerDiagonalFactor * AppConfig.IndicatorOffset * (_pointerPhysicalSize / 32f) : _pointerPhysicalSize * IBeamIndicatorYOffsetFactor);
+                    if (ty < pt.Y + _pointerPhysicalSize + IndicatorBottomMargin) ty = pt.Y + _pointerPhysicalSize + IndicatorBottomMargin;
+                    UpdateLayeredIndicator(_currentIndicatorColor, (int)Math.Round(tx - _indicatorCanvasSize / 2f), (int)Math.Round(ty - _indicatorCanvasSize / 2f));
+                }
+                else UpdateLayeredIndicator(Color.Transparent, HiddenLayeredWindowLocation, HiddenLayeredWindowLocation);
             }
-            catch { _trayIcon.Icon = assets.TrayIcon; }
-
-            switch (_pointerMode)
-            {
-                case PointerMode.WinDefault:
-                    RestoreDefaults(); _lastAppliedArrowHandle = IntPtr.Zero; break;
-                case PointerMode.WinColor:
-                    {
-                        IntPtr hArrow = NativeMethods.CopyIcon(assets.ArrowWinPtr); IntPtr hIBeam = NativeMethods.CopyIcon(assets.IBeamWinPtr);
-                        _lastAppliedArrowHandle = hArrow; ReplaceSystemPointer(hArrow, NativeMethods.OCR_NORMAL); ReplaceSystemPointer(hIBeam, NativeMethods.OCR_IBEAM);
-                        break;
-                    }
-                case PointerMode.NewColor:
-                    {
-                        IntPtr hArrow = NativeMethods.CopyIcon(assets.ArrowNewPtr); IntPtr hIBeam = NativeMethods.CopyIcon(assets.IBeamNewPtr);
-                        _lastAppliedArrowHandle = hArrow; ReplaceSystemPointer(hArrow, NativeMethods.OCR_NORMAL); ReplaceSystemPointer(hIBeam, NativeMethods.OCR_IBEAM);
-                        break;
-                    }
-            }
-
-            _trayIcon.Text = UiText.TrayTooltip(assets.Description);
-            _statusMenuItem.Text = UiText.StatusLabel(assets.Description);
+            else UpdateLayeredIndicator(Color.Transparent, HiddenLayeredWindowLocation, HiddenLayeredWindowLocation);
         }
 
-        private bool IsCurrentPointerIBeam(ImeState.State state)
+        private bool EvaluatePointerIsIBeam(ImeState.State state)
         {
             NativeMethods.CURSORINFO ci = new() { cbSize = Marshal.SizeOf<NativeMethods.CURSORINFO>() };
-            if (!NativeMethods.GetCursorInfo(ref ci) || ci.hCursor == IntPtr.Zero) return false;
-            if (!_assetCache.TryGetValue(state, out StateAssets? assets)) return false;
-            IntPtr compareHandle = _pointerMode == PointerMode.WinColor ? assets.IBeamCompareHandleWin : assets.IBeamCompareHandleNew;
-            return ci.hCursor == compareHandle;
+            if (!NativeMethods.GetCursorInfo(ref ci) || ci.hCursor == IntPtr.Zero || !_assetCache.TryGetValue(state, out var a)) return false;
+            return ci.hCursor == (_activePointerMode == PointerMode.WinColor ? a.IBeamCompareHandleWin : a.IBeamCompareHandleNew);
         }
 
-        private bool IsArrowPointer()
+        private bool EvaluatePointerIsArrow()
         {
-            if (_pointerMode == PointerMode.WinDefault)
+            if (_activePointerMode == PointerMode.WinDefault)
             {
                 try
                 {
@@ -1728,719 +1635,114 @@ namespace IMEPointer
                         if (ii.hbmColor != IntPtr.Zero) NativeMethods.DeleteObject(ii.hbmColor);
                         return isArr;
                     }
-                }
-                catch { }
-                return false;
+                } catch { } return false;
             }
-
-            if (_lastState == (ImeState.State)(-1)) return false;
-            if (!_assetCache.TryGetValue(_lastState, out StateAssets? assets)) return false;
-            var curInfo = new NativeMethods.CURSORINFO { cbSize = Marshal.SizeOf<NativeMethods.CURSORINFO>() };
-            if (!NativeMethods.GetCursorInfo(ref curInfo) || curInfo.hCursor == IntPtr.Zero) return false;
-            IntPtr ibeamCompare = _pointerMode == PointerMode.WinColor ? assets.IBeamCompareHandleWin : assets.IBeamCompareHandleNew;
-            return curInfo.hCursor != ibeamCompare;
+            if (_previousImeState == (ImeState.State)(-1) || !_assetCache.TryGetValue(_previousImeState, out var a)) return false;
+            var cInfo = new NativeMethods.CURSORINFO { cbSize = Marshal.SizeOf<NativeMethods.CURSORINFO>() };
+            return NativeMethods.GetCursorInfo(ref cInfo) && cInfo.hCursor != IntPtr.Zero && cInfo.hCursor != (_activePointerMode == PointerMode.WinColor ? a.IBeamCompareHandleWin : a.IBeamCompareHandleNew);
         }
 
-        private static IntPtr GetFocusedInputHwnd(IntPtr hWnd)
+        private static IntPtr SearchFocusedInputHwnd(IntPtr hWnd)
         {
             if (hWnd == IntPtr.Zero) return IntPtr.Zero;
-
-            uint threadId = NativeMethods.GetWindowThreadProcessId(hWnd, out _);
             NativeMethods.GUITHREADINFO gti = new() { cbSize = Marshal.SizeOf<NativeMethods.GUITHREADINFO>() };
-
-            if (NativeMethods.GetGUIThreadInfo(threadId, ref gti))
+            if (NativeMethods.GetGUIThreadInfo(NativeMethods.GetWindowThreadProcessId(hWnd, out _), ref gti))
             {
                 if (gti.hwndFocus != IntPtr.Zero) return gti.hwndFocus;
                 if (gti.hwndActive != IntPtr.Zero) return gti.hwndActive;
             }
-
             return hWnd;
         }
 
-        // 기존 IsTaskbarOrTrayWindow를 IsTaskbarWindow와 IsTrayOrAppWindow로 분리하여 역할 명확화
         private unsafe bool IsTaskbarWindow(IntPtr hWnd)
         {
             if (hWnd == IntPtr.Zero) return false;
-
-            Span<char> className = stackalloc char[256];
-            fixed (char* pName = className)
+            Span<char> nm = stackalloc char[256];
+            fixed (char* p = nm)
             {
-                int length = NativeMethods.GetClassName(hWnd, pName, 256);
-                if (length > 0)
-                {
-                    ReadOnlySpan<char> nameSpan = className.Slice(0, length);
-                    return nameSpan.IndexOf("Shell_TrayWnd".AsSpan(), StringComparison.OrdinalIgnoreCase) >= 0
-                        || nameSpan.IndexOf("NotifyIconOverflowWindow".AsSpan(), StringComparison.OrdinalIgnoreCase) >= 0; 
-                }
+                int len = NativeMethods.GetClassName(hWnd, p, 256);
+                if (len > 0) { var s = nm.Slice(0, len); return s.IndexOf("Shell_TrayWnd") >= 0 || s.IndexOf("NotifyIconOverflowWindow") >= 0; }
                 return false;
             }
         }
 
-        private unsafe bool IsTrayOrAppWindow(IntPtr hWnd)
+        private unsafe bool IsAppOrTrayWindow(IntPtr hWnd)
         {
             if (hWnd == IntPtr.Zero || hWnd == this.Handle) return true;
-
-            NativeMethods.GetWindowThreadProcessId(hWnd, out uint pid);
-            if (pid == _currentProcessId) return true; 
-
-            Span<char> className = stackalloc char[256];
-            fixed (char* pName = className)
+            NativeMethods.GetWindowThreadProcessId(hWnd, out uint pid); if (pid == s_currentProcessId) return true;
+            Span<char> nm = stackalloc char[256];
+            fixed (char* p = nm)
             {
-                int length = NativeMethods.GetClassName(hWnd, pName, 256);
-                if (length > 0)
-                {
-                    ReadOnlySpan<char> nameSpan = className.Slice(0, length);
-                    return nameSpan.IndexOf("Progman".AsSpan(), StringComparison.OrdinalIgnoreCase) >= 0
-                        || nameSpan.IndexOf("WorkerW".AsSpan(), StringComparison.OrdinalIgnoreCase) >= 0
-                        || nameSpan.IndexOf("#32768".AsSpan(), StringComparison.OrdinalIgnoreCase) >= 0; 
-                }
+                int len = NativeMethods.GetClassName(hWnd, p, 256);
+                if (len > 0) { var s = nm.Slice(0, len); return s.IndexOf("Progman") >= 0 || s.IndexOf("WorkerW") >= 0 || s.IndexOf("#32768") >= 0; }
                 return false;
             }
         }
 
-        private static void ReplaceSystemPointer(IntPtr hNew, uint pointerId)
-        {
-            if (hNew == IntPtr.Zero) return;
-            if (!NativeMethods.SetSystemCursor(hNew, pointerId)) NativeMethods.DestroyCursor(hNew);
-        }
-
-        private static bool IsTargetProcess(IntPtr hWnd)
+        private static bool EvaluateTargetProcess(IntPtr hWnd)
         {
             if (hWnd == IntPtr.Zero) return false;
-            NativeMethods.GetWindowThreadProcessId(hWnd, out uint pid);
-            if (pid == 0) return false;
-            try
-            {
-                using var proc = System.Diagnostics.Process.GetProcessById((int)pid);
-                string name = proc.ProcessName;
-                foreach (string targetApp in AppConfig.IndicatorTargetApps)
-                    if (name.Equals(targetApp, StringComparison.OrdinalIgnoreCase)) return true;
-                return false;
-            }
-            catch { return false; }
+            NativeMethods.GetWindowThreadProcessId(hWnd, out uint pid); if (pid == 0) return false;
+            try { string n = System.Diagnostics.Process.GetProcessById((int)pid).ProcessName; foreach (string a in AppConfig.IndicatorTargetApps) if (n.Equals(a, StringComparison.OrdinalIgnoreCase)) return true; } catch { } return false;
         }
 
         public static void RestoreDefaults() => NativeMethods.SystemParametersInfo(NativeMethods.SPI_SETCURSORS, 0, IntPtr.Zero, NativeMethods.SPIF_SENDCHANGE);
 
-        private void UpdateLayeredIndicator(Color color, int x, int y)
+        private void UpdateLayeredIndicator(Color c, int x, int y)
         {
-            bool needsUpdate = false;
-            if (color != _lastIndicatorColor)
-            {
-                _lastIndicatorColor = color;
-                if (color != Color.Transparent) BakeIndicatorBuffer(color);
-                needsUpdate = true;
-            }
-            if (x != _lastIndicatorX || y != _lastIndicatorY)
-            {
-                _lastIndicatorX = x; _lastIndicatorY = y; needsUpdate = true;
-            }
-            if (!needsUpdate) return;
+            bool update = false;
+            if (c != _lastRenderedIndicatorColor) { _lastRenderedIndicatorColor = c; if (c != Color.Transparent) RenderIndicatorBuffer(c); update = true; }
+            if (x != _lastIndicatorX || y != _lastIndicatorY) { _lastIndicatorX = x; _lastIndicatorY = y; update = true; }
+            if (!update) return;
 
             NativeMethods.SIZE sz = new() { cx = _indicatorCanvasSize, cy = _indicatorCanvasSize };
-            NativeMethods.POINT srcPt = new() { X = 0, Y = 0 };
-            NativeMethods.POINT destPt = new() { X = x, Y = y };
+            NativeMethods.POINT src = new() { X = 0, Y = 0 }, dst = new() { X = x, Y = y };
             NativeMethods.BLENDFUNCTION bf = new() { BlendOp = 0, BlendFlags = 0, SourceConstantAlpha = 255, AlphaFormat = 1 };
 
-            if (color == Color.Transparent || !_isIndicatorBaked)
+            if (c == Color.Transparent || !_isIndicatorRendered)
             {
-                if (_indicatorMemDc != IntPtr.Zero)
+                if (_dcIndicatorMem != IntPtr.Zero)
                 {
-                    destPt.X = -10000; destPt.Y = -10000; bf.SourceConstantAlpha = 0;
+                    dst.X = -10000; dst.Y = -10000; bf.SourceConstantAlpha = 0;
                     IntPtr sDc = NativeMethods.GetDC(IntPtr.Zero);
-                    _ = NativeMethods.UpdateLayeredWindow(this.Handle, sDc, ref destPt, ref sz, _indicatorMemDc, ref srcPt, 0, ref bf, 2);
+                    _ = NativeMethods.UpdateLayeredWindow(this.Handle, sDc, ref dst, ref sz, _dcIndicatorMem, ref src, 0, ref bf, 2);
                     _ = NativeMethods.ReleaseDC(IntPtr.Zero, sDc);
                 }
                 return;
             }
-
-            IntPtr curScreenDc = NativeMethods.GetDC(IntPtr.Zero);
-            _ = NativeMethods.UpdateLayeredWindow(this.Handle, curScreenDc, ref destPt, ref sz, _indicatorMemDc, ref srcPt, 0, ref bf, 2);
-            _ = NativeMethods.ReleaseDC(IntPtr.Zero, curScreenDc);
+            IntPtr curDc = NativeMethods.GetDC(IntPtr.Zero);
+            _ = NativeMethods.UpdateLayeredWindow(this.Handle, curDc, ref dst, ref sz, _dcIndicatorMem, ref src, 0, ref bf, 2);
+            _ = NativeMethods.ReleaseDC(IntPtr.Zero, curDc);
         }
 
-        private void BakeIndicatorBuffer(Color color)
+        private void RenderIndicatorBuffer(Color c)
         {
-            CleanUpIndicatorGdi();
-            if (color == Color.Transparent) return;
+            if (_dcIndicatorMem != IntPtr.Zero) { if (_hBmpIndicatorOld != IntPtr.Zero) NativeMethods.SelectObject(_dcIndicatorMem, _hBmpIndicatorOld); NativeMethods.DeleteDC(_dcIndicatorMem); _dcIndicatorMem = IntPtr.Zero; }
+            if (_hBmpIndicator != IntPtr.Zero) { NativeMethods.DeleteObject(_hBmpIndicator); _hBmpIndicator = IntPtr.Zero; }
+            if (_dcIndicatorScreen != IntPtr.Zero) { NativeMethods.ReleaseDC(IntPtr.Zero, _dcIndicatorScreen); _dcIndicatorScreen = IntPtr.Zero; }
+            if (c == Color.Transparent) { _isIndicatorRendered = false; return; }
 
-            float circleSize = AppConfig.IndicatorSize * _currentScaleRatio;
-            float penWidth = 1.0f;
-            _indicatorCanvasSize = (int)Math.Ceiling(circleSize + (penWidth * 2) + 6);
-            if (_indicatorCanvasSize % 2 != 0) _indicatorCanvasSize++;
+            float sz = AppConfig.IndicatorSize * _currentDpiScale, pW = 1.0f;
+            _indicatorCanvasSize = (int)Math.Ceiling(sz + (pW * 2) + 6); if (_indicatorCanvasSize % 2 != 0) _indicatorCanvasSize++;
 
             using Bitmap bmp = new(_indicatorCanvasSize, _indicatorCanvasSize, PixelFormat.Format32bppArgb);
             using (Graphics g = Graphics.FromImage(bmp))
             {
                 g.SmoothingMode = SmoothingMode.AntiAlias; g.PixelOffsetMode = PixelOffsetMode.HighQuality; g.Clear(Color.Transparent);
-                float center = _indicatorCanvasSize / 2f; float radius = circleSize / 2f;
-                Color penColor = (color == Color.White) ? Color.Black : (color == Color.Black) ? Color.White : Color.Black;
-                using SolidBrush brush = new(color); g.FillEllipse(brush, center - radius, center - radius, circleSize, circleSize);
-                using Pen pen = new(penColor, penWidth); g.DrawEllipse(pen, center - radius, center - radius, circleSize, circleSize);
+                float ct = _indicatorCanvasSize / 2f, r = sz / 2f;
+                using SolidBrush b = new(c); g.FillEllipse(b, ct - r, ct - r, sz, sz);
+                using Pen p = new(c == Color.White ? Color.Black : (c == Color.Black ? Color.White : Color.Black), pW); g.DrawEllipse(p, ct - r, ct - r, sz, sz);
             }
-            _indicatorScreenDc = NativeMethods.GetDC(IntPtr.Zero);
-            _indicatorMemDc = NativeMethods.CreateCompatibleDC(_indicatorScreenDc);
-            _indicatorHBitmap = CreateAlphaHBitmap(bmp, _indicatorScreenDc);
-            _indicatorOldBitmap = NativeMethods.SelectObject(_indicatorMemDc, _indicatorHBitmap);
-            _isIndicatorBaked = true;
-        }
-
-        private void CleanUpIndicatorGdi()
-        {
-            if (_indicatorMemDc != IntPtr.Zero)
-            {
-                if (_indicatorOldBitmap != IntPtr.Zero) { _ = NativeMethods.SelectObject(_indicatorMemDc, _indicatorOldBitmap); _indicatorOldBitmap = IntPtr.Zero; }
-                _ = NativeMethods.DeleteDC(_indicatorMemDc); _indicatorMemDc = IntPtr.Zero;
-            }
-            if (_indicatorHBitmap != IntPtr.Zero)
-            {
-                _ = NativeMethods.DeleteObject(_indicatorHBitmap); _indicatorHBitmap = IntPtr.Zero;
-            }
-            if (_indicatorScreenDc != IntPtr.Zero)
-            {
-                _ = NativeMethods.ReleaseDC(IntPtr.Zero, _indicatorScreenDc); _indicatorScreenDc = IntPtr.Zero;
-            }
-            _isIndicatorBaked = false;
-        }
-
-        private static unsafe IntPtr CreateAlphaHBitmap(Bitmap bitmap, IntPtr hdcScreen)
-        {
-            NativeMethods.BITMAPINFO bmi = new() { biSize = s_bmiSize, biWidth = bitmap.Width, biHeight = -bitmap.Height, biPlanes = 1, biBitCount = 32, biCompression = 0 };
-            IntPtr hBitmap = NativeMethods.CreateDIBSection(hdcScreen, ref bmi, 0, out IntPtr pBits, IntPtr.Zero, 0);
-            if (hBitmap == IntPtr.Zero) return IntPtr.Zero;
-            var bmpData = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppPArgb);
-            int bytes = Math.Abs(bmpData.Stride) * bitmap.Height;
-            Buffer.MemoryCopy((void*)bmpData.Scan0, (void*)pBits, bytes, bytes);
-            bitmap.UnlockBits(bmpData);
-            return hBitmap;
-        }
-    }
-    #endregion
-
-    #region [ 5. 감지 및 입력 훅 모듈 (ImeState, GlobalInputHook) ]
-    /// 대상 창의 현재 입력 상태(IME 모드)를 감지하고 상태를 변경하는 모듈입니다.
-    internal static class ImeState
-    {
-        public enum State
-        {
-            EnglishLower, EnglishUpper, Hangul, PaliUS, PaliHangul, JapaneseIME, JapaneseHangul1, JapaneseHangul2, Engineer
-        }
-
-        public static bool IsHangul(State state) =>
-            state == State.Hangul || state == State.PaliHangul || state == State.JapaneseHangul1 || state == State.JapaneseHangul2 || state == State.Engineer;
-
-        public static State Detect(IntPtr foregroundHwnd,
-            bool enablePali = false, bool enableJapanese1 = false, bool enableJapanese2 = false, bool enableEngineer = false)
-        {
-            bool capsOn = (NativeMethods.GetKeyState(NativeMethods.VK_CAPITAL) & 0x0001) != 0;
-            if (foregroundHwnd == IntPtr.Zero) return capsOn ? State.EnglishUpper : State.EnglishLower;
-
-            uint threadId = NativeMethods.GetWindowThreadProcessId(foregroundHwnd, out _);
-            long hklValue = NativeMethods.GetKeyboardLayout(threadId).ToInt64();
-            ushort langId = (ushort)(hklValue & 0xFFFF);
-
-            if (langId == 0x0409) return State.PaliUS;
-            if (langId == 0x0411) return State.JapaneseIME;
-
-            if (langId == 0x0412)
-            {
-                bool isHangul = IsHangulModeSystemWide(foregroundHwnd);
-                if (isHangul)
-                {
-                    if (capsOn)
-                    {
-                        if (enablePali) return State.PaliHangul;
-                        if (enableEngineer) return State.Engineer;
-                        if (enableJapanese1) return State.JapaneseHangul1;
-                        if (enableJapanese2) return State.JapaneseHangul2;
-                    }
-                    return State.Hangul;
-                }
-                return capsOn ? State.EnglishUpper : State.EnglishLower;
-            }
-
-            return capsOn ? State.EnglishUpper : State.EnglishLower;
-        }
-
-        private static IntPtr GetTargetImeWindow(IntPtr hWnd)
-        {
-            if (hWnd == IntPtr.Zero) return IntPtr.Zero;
-            uint threadId = NativeMethods.GetWindowThreadProcessId(hWnd, out _);
-            IntPtr focusWnd = hWnd;
-
-            NativeMethods.GUITHREADINFO gti = new() { cbSize = Marshal.SizeOf<NativeMethods.GUITHREADINFO>() };
-            if (NativeMethods.GetGUIThreadInfo(threadId, ref gti))
-            {
-                if (gti.hwndFocus != IntPtr.Zero) focusWnd = gti.hwndFocus;
-                else if (gti.hwndActive != IntPtr.Zero) focusWnd = gti.hwndActive;
-            }
-
-            IntPtr hIme = NativeMethods.ImmGetDefaultIMEWnd(focusWnd);
-            return hIme != IntPtr.Zero ? hIme : NativeMethods.ImmGetDefaultIMEWnd(hWnd);
-        }
-
-        public static bool IsHangulModeSystemWide(IntPtr foregroundHwnd)
-        {
-            return CheckHangulPublic(foregroundHwnd);
-        }
-
-        // 단일 변수 대신 Dictionary를 사용하여 각 윈도우 핸들별로 마지막 IME 상태를 캐싱
-        private static readonly Dictionary<IntPtr, bool> _hangulStateCache = new Dictionary<IntPtr, bool>();
-
-        public static bool CheckHangulPublic(IntPtr hWnd)
-        {
-            if (hWnd == IntPtr.Zero) return false;
-
-            IntPtr hImeWnd = GetTargetImeWindow(hWnd);
-            if (hImeWnd != IntPtr.Zero)
-            {
-                IntPtr res = NativeMethods.SendMessageTimeout(hImeWnd, NativeMethods.WM_IME_CONTROL, (IntPtr)NativeMethods.IMC_GETCONVERSIONMODE, IntPtr.Zero, NativeMethods.SMTO_ABORTIFHUNG, 30, out IntPtr result);
-                if (res != IntPtr.Zero)
-                {
-                    bool isHangul = ((uint)result.ToInt64() & NativeMethods.IME_CMODE_NATIVE) != 0;
-                    _hangulStateCache[hWnd] = isHangul;
-                    return isHangul;
-                }
-            }
-
-            IntPtr hIMC = NativeMethods.ImmGetContext(hWnd);
-            if (hIMC != IntPtr.Zero)
-            {
-                bool success = NativeMethods.ImmGetConversionStatus(hIMC, out uint conv, out _);
-                NativeMethods.ImmReleaseContext(hWnd, hIMC);
-                if (success)
-                {
-                    bool isHangul = (conv & NativeMethods.IME_CMODE_NATIVE) != 0;
-                    _hangulStateCache[hWnd] = isHangul;
-                    return isHangul;
-                }
-            }
+            _dcIndicatorScreen = NativeMethods.GetDC(IntPtr.Zero); _dcIndicatorMem = NativeMethods.CreateCompatibleDC(_dcIndicatorScreen);
             
-            // API 호출 실패 시(백그라운드 윈도우 등) 해당 윈도우의 마지막 정상 상태를 반환
-            return _hangulStateCache.TryGetValue(hWnd, out bool cachedState) ? cachedState : false;
-        }
-
-        public static void SetHangulState(IntPtr hWnd, bool setHangul)
-        {
-            IntPtr hImeWnd = GetTargetImeWindow(hWnd);
-            if (hImeWnd != IntPtr.Zero)
+            NativeMethods.BITMAPINFO bmi = new() { biSize = s_bmiSize, biWidth = bmp.Width, biHeight = -bmp.Height, biPlanes = 1, biBitCount = 32, biCompression = 0 };
+            _hBmpIndicator = NativeMethods.CreateDIBSection(_dcIndicatorScreen, ref bmi, 0, out IntPtr pBits, IntPtr.Zero, 0);
+            if (_hBmpIndicator != IntPtr.Zero)
             {
-                NativeMethods.SendMessageTimeout(hImeWnd, NativeMethods.WM_IME_CONTROL, (IntPtr)NativeMethods.IMC_GETCONVERSIONMODE, IntPtr.Zero, NativeMethods.SMTO_ABORTIFHUNG, 20, out IntPtr result);
-                uint mode = (uint)result.ToInt64();
-                bool isHangul = (mode & NativeMethods.IME_CMODE_NATIVE) != 0;
-
-                if (isHangul != setHangul)
-                {
-                    if (setHangul) mode |= NativeMethods.IME_CMODE_NATIVE;
-                    else mode &= ~NativeMethods.IME_CMODE_NATIVE;
-                    NativeMethods.SendMessageTimeout(hImeWnd, NativeMethods.WM_IME_CONTROL, (IntPtr)NativeMethods.IMC_SETCONVERSIONMODE, (IntPtr)mode, NativeMethods.SMTO_ABORTIFHUNG, 20, out _);
-                    
-                    // 명시적으로 상태를 변경했으므로 해당 핸들의 캐시 상태도 즉시 업데이트
-                    _hangulStateCache[hWnd] = setHangul;
-                }
+                var dat = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppPArgb);
+                int b = Math.Abs(dat.Stride) * bmp.Height; unsafe { Buffer.MemoryCopy((void*)dat.Scan0, (void*)pBits, b, b); } bmp.UnlockBits(dat);
             }
-        }
-    }
-    #endregion
-
-    #region [ 전역 시스템 훅 모듈 통합 (GlobalInputHook) ]
-    // KeyboardHook과 MouseHook을 단일 클래스로 통합하여 핸들 관리 단순화
-    internal static class GlobalInputHook
-    {
-        internal readonly struct HookContextSnapshot
-        {
-            public readonly IntPtr ContextHwnd;
-            public readonly ushort ContextLangId;
-            public readonly bool IsHangulMode;
-            public readonly IKeyProcessor? ActiveProcessor;
-            public readonly bool IsPaliModeActive;
-            public readonly bool IsEngineerModeActive;
-            public readonly bool IsJapanese1ModeActive;
-            public readonly bool IsJapanese2ModeActive;
-
-            public HookContextSnapshot(
-                IntPtr contextHwnd,
-                ushort contextLangId,
-                bool isHangulMode,
-                IKeyProcessor? activeProcessor,
-                bool isPaliModeActive,
-                bool isEngineerModeActive,
-                bool isJapanese1ModeActive,
-                bool isJapanese2ModeActive)
-            {
-                ContextHwnd = contextHwnd;
-                ContextLangId = contextLangId;
-                IsHangulMode = isHangulMode;
-                ActiveProcessor = activeProcessor;
-                IsPaliModeActive = isPaliModeActive;
-                IsEngineerModeActive = isEngineerModeActive;
-                IsJapanese1ModeActive = isJapanese1ModeActive;
-                IsJapanese2ModeActive = isJapanese2ModeActive;
-            }
-        }
-
-        public static bool IsEnabled { get; set; } = true;
-
-        private static HookContextSnapshot _contextSnapshot = new(
-            IntPtr.Zero,
-            0,
-            false,
-            null,
-            false,
-            false,
-            false,
-            false);
-
-        public static bool IsPaliModeActive => _contextSnapshot.IsPaliModeActive;
-        public static bool IsEngineerModeActive => _contextSnapshot.IsEngineerModeActive;
-        public static bool IsJapanese1ModeActive => _contextSnapshot.IsJapanese1ModeActive;
-        public static bool IsJapanese2ModeActive => _contextSnapshot.IsJapanese2ModeActive;
-        public static IKeyProcessor? ActiveProcessor => _contextSnapshot.ActiveProcessor;
-        public static IntPtr ContextHwnd => _contextSnapshot.ContextHwnd;
-        public static ushort ContextLangId => _contextSnapshot.ContextLangId;
-        public static bool CachedIsHangulMode => _contextSnapshot.IsHangulMode;
-
-        public static volatile bool IsSending = false;
-        private static IntPtr _kbdHookId = IntPtr.Zero;
-        private static IntPtr _mouseHookId = IntPtr.Zero;
-        private static IntPtr _lastResolvedContextHwnd = IntPtr.Zero;
-
-        public static unsafe void Install()
-        {
-            if (_kbdHookId != IntPtr.Zero && _mouseHookId != IntPtr.Zero) return;
-            using var process = System.Diagnostics.Process.GetCurrentProcess();
-            var module = process.MainModule ?? throw new InvalidOperationException("MainModule을 가져올 수 없습니다.");
-            IntPtr hMod = NativeMethods.GetModuleHandle(module.ModuleName);
-
-            if (_kbdHookId == IntPtr.Zero)
-            {
-                delegate* unmanaged[Stdcall]<int, IntPtr, IntPtr, IntPtr> kbdCb = &KbdHookCallback;
-                _kbdHookId = NativeMethods.SetWindowsHookEx(NativeMethods.WH_KEYBOARD_LL, kbdCb, hMod, 0);
-            }
-            if (_mouseHookId == IntPtr.Zero)
-            {
-                delegate* unmanaged[Stdcall]<int, IntPtr, IntPtr, IntPtr> mouseCb = &MouseHookCallback;
-                _mouseHookId = NativeMethods.SetWindowsHookEx(14, mouseCb, hMod, 0);
-            }
-        }
-
-        public static void Uninstall()
-        {
-            if (_kbdHookId != IntPtr.Zero) { NativeMethods.UnhookWindowsHookEx(_kbdHookId); _kbdHookId = IntPtr.Zero; }
-            if (_mouseHookId != IntPtr.Zero) { NativeMethods.UnhookWindowsHookEx(_mouseHookId); _mouseHookId = IntPtr.Zero; }
-        }
-
-        public static void UpdateContext(HookContextSnapshot snapshot)
-        {
-            _contextSnapshot = snapshot;
-        }
-
-        public static void SendReplacement(int backCount, string text)
-        {
-            IsSending = true;
-            for (int i = 0; i < backCount; i++) NativeMethods.SendBackspace();
-            if (!string.IsNullOrEmpty(text)) NativeMethods.SendUnicodeString(text);
-            IsSending = false;
-        }
-
-[System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvStdcall) })]
-        private static IntPtr MouseHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
-        {
-            // 대응책 1: UnmanagedCallersOnly 메서드 내 예외가 외부로 전파되는 것을 차단하는 try-catch 추가
-            try
-            {
-                if (nCode >= 0 && wParam.ToInt32() == 0x0201)
-                {
-                    ActiveProcessor?.OnMouseClick();
-                }
-            }
-            catch
-            {
-                // 후킹 콜백 내부에서의 예외는 조용히 무시하고 다음 훅으로 넘겨 시스템 멈춤을 방지합니다.
-            }
-            return NativeMethods.CallNextHookEx(_mouseHookId, nCode, wParam, lParam);
-        }
-
-        private static bool IsInterestedKeyboardMessage(int msg) =>
-            msg == NativeMethods.WM_KEYDOWN || msg == NativeMethods.WM_SYSKEYDOWN;
-
-        private static bool IsHanjaOrRightCtrl(int vkCode) => vkCode == 0x19 || vkCode == 0xA3;
-
-        private static bool HasBlockedModifierChord(bool allowCtrlForCurrentKey)
-        {
-            bool isCtrl = (NativeMethods.GetKeyState(0x11) & 0x8000) != 0;
-            if (isCtrl && !allowCtrlForCurrentKey) return true;
-
-            if ((NativeMethods.GetKeyState(0x12) & 0x8000) != 0) return true;
-
-            return (NativeMethods.GetKeyState(0x5B) & 0x8000) != 0
-                || (NativeMethods.GetKeyState(0x5C) & 0x8000) != 0;
-        }
-
-        private static IntPtr ResolveContextHwnd()
-        {
-            IntPtr hwnd = ContextHwnd;
-            if (hwnd != IntPtr.Zero)
-            {
-                _lastResolvedContextHwnd = hwnd;
-                return hwnd;
-            }
-
-            if (_lastResolvedContextHwnd != IntPtr.Zero)
-                return _lastResolvedContextHwnd;
-
-            hwnd = NativeMethods.GetForegroundWindow();
-            if (hwnd != IntPtr.Zero)
-                _lastResolvedContextHwnd = hwnd;
-
-            return hwnd;
-        }
-
-        private static IntPtr BypassKeyboardHook(int nCode, IntPtr wParam, IntPtr lParam) =>
-            NativeMethods.CallNextHookEx(_kbdHookId, nCode, wParam, lParam);
-
-        private static bool ShouldBypassHook(int nCode, IntPtr wParam)
-        {
-            if (nCode < 0 || IsSending || !IsEnabled)
-                return true;
-
-            int msg = wParam.ToInt32();
-            return !IsInterestedKeyboardMessage(msg);
-        }
-
-        private static bool TryResolveKeyboardContext(int vkCode, out IntPtr hFore, out bool capsOn, out bool isHangulMode, out bool isHanjaOrRCtrl)
-        {
-            isHanjaOrRCtrl = IsHanjaOrRightCtrl(vkCode);
-
-            if (HasBlockedModifierChord(isHanjaOrRCtrl))
-            {
-                hFore = IntPtr.Zero;
-                capsOn = false;
-                isHangulMode = false;
-                return false;
-            }
-
-            hFore = ResolveContextHwnd();
-            if (hFore == IntPtr.Zero)
-            {
-                capsOn = false;
-                isHangulMode = false;
-                return false;
-            }
-
-            capsOn = (NativeMethods.GetKeyState(NativeMethods.VK_CAPITAL) & 0x0001) != 0;
-            isHangulMode = CachedIsHangulMode;
-            return true;
-        }
-
-        private static IntPtr HandleHanjaKey(int nCode, IntPtr wParam, IntPtr lParam, IntPtr hFore, bool capsOn, bool isHangulMode)
-        {
-            if (isHangulMode & !capsOn) 
-            { 
-                return BypassKeyboardHook(nCode, wParam, lParam); 
-            }
-
-            if (!isHangulMode)
-            {
-                ImeState.SetHangulState(hFore, true);
-                if (!capsOn) NativeMethods.SimulateCapsLock();
-                MainForm.Instance?.ShowOverlay(UiText.HangulCapsMode);
-                return (IntPtr)1;
-            }
-
-            IKeyProcessor? hanjaProcessor = ActiveProcessor;
-            if (hanjaProcessor != null && hanjaProcessor.ProcessHanjaKey(hFore, capsOn, isHangulMode))
-            {
-                MainForm.Instance?.RequestLayoutRefresh();
-                return (IntPtr)1;
-            }
-
-            return BypassKeyboardHook(nCode, wParam, lParam);
-        }
-
-        private static IntPtr HandleLanguageProcessorKey(int nCode, IntPtr wParam, IntPtr lParam, int vkCode, IntPtr hFore, bool capsOn, bool 시isHangulMode)
-        {
-            IKeyProcessor? keyProcessor = ActiveProcessor;
-            if (keyProcessor == null || ContextLangId != 0x0412)
-                return BypassKeyboardHook(nCode, wParam, lParam);
-
-            bool isShift = (NativeMethods.GetKeyState(0x10) & 0x8000) != 0;
-            if (keyProcessor.ProcessKeyDown(vkCode, isShift, capsOn, hFore, 시isHangulMode))
-                return (IntPtr)1;
-
-            return BypassKeyboardHook(nCode, wParam, lParam);
-        }
-
-        [System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvStdcall) })]
-        private static IntPtr KbdHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
-        {
-            if (ShouldBypassHook(nCode, wParam))
-                return BypassKeyboardHook(nCode, wParam, lParam);
-
-            try
-            {
-                int vkCode = Marshal.ReadInt32(lParam);
-
-                if (!TryResolveKeyboardContext(vkCode, out IntPtr hFore, out bool capsOn, out bool isHangulMode, out bool isHanjaOrRCtrl))
-                    return BypassKeyboardHook(nCode, wParam, lParam);
-
-                if (isHanjaOrRCtrl)
-                    return HandleHanjaKey(nCode, wParam, lParam, hFore, capsOn, isHangulMode);
-
-                return HandleLanguageProcessorKey(nCode, wParam, lParam, vkCode, hFore, capsOn, isHangulMode);
-            }
-            catch
-            {
-            }
-
-            return BypassKeyboardHook(nCode, wParam, lParam);
-        }
-    }
-    #endregion
-
-    #region [ 7. Win32 P/Invoke API 선언부 (NativeMethods) ]
-    internal static unsafe partial class NativeMethods
-    {
-        // --- 상수 영역 ---
-        public const int VK_CAPITAL = 0x14;
-        public const int WM_IME_CONTROL = 0x0283;
-        public const int IMC_GETCONVERSIONMODE = 0x0001;
-        public const int IMC_SETCONVERSIONMODE = 0x0002;
-        public const uint IME_CMODE_NATIVE = 0x0001;
-        public const uint SMTO_ABORTIFHUNG = 0x0002;
-        public const uint OCR_NORMAL = 32512;
-        public const uint OCR_IBEAM = 32513;
-        public const uint SPI_SETCURSORS = 0x0057;
-        public const uint SPIF_SENDCHANGE = 0x0002;
-        public const int WH_KEYBOARD_LL = 13;
-        public const int WM_KEYDOWN = 0x0100;
-        public const int WM_SYSKEYDOWN = 0x0104;
-        public const uint INPUT_KEYBOARD = 1;
-        public const uint KEYEVENTF_UNICODE = 0x0004;
-        public const uint KEYEVENTF_KEYUP = 0x0002;
-        public const int MDT_EFFECTIVE_DPI = 0;
-        public const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
-        public const uint IMAGE_CURSOR = 2;
-        public const uint LR_SHARED = 0x00008000;
-        public const uint LR_DEFAULTSIZE = 0x00000040;
-        // [수정: 포인터 및 커서 시스템 메트릭스 획득을 위한 상수 추가]
-        public const int SM_CXCURSOR = 13;
-        public const int SM_CYCURSOR = 14;
-
-        // --- 구조체 영역 ---
-        [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X, Y; }
-        [StructLayout(LayoutKind.Sequential)] public struct SIZE { public int cx, cy; }
-        [StructLayout(LayoutKind.Sequential)] public struct BLENDFUNCTION { public byte BlendOp, BlendFlags, SourceConstantAlpha, AlphaFormat; }
-        [StructLayout(LayoutKind.Sequential)] public struct ICONINFO { public int fIcon, xHotspot, yHotspot; public IntPtr hbmMask, hbmColor; }
-        [StructLayout(LayoutKind.Sequential)] public struct GUITHREADINFO { public int cbSize, flags; public IntPtr hwndActive, hwndFocus, hwndCapture, hwndMenuOwner, hwndMoveSize, hwndCaret; public int rectLeft, rectTop, rectRight, rectBottom; }
-        [StructLayout(LayoutKind.Sequential)] public struct BITMAPINFO { public int biSize, biWidth, biHeight; public short biPlanes, biBitCount; public int biCompression, biSizeImage, biXPelsPerMeter, biYPelsPerMeter, biClrUsed, biClrImportant; }
-        [StructLayout(LayoutKind.Sequential)] public struct CURSORINFO { public int cbSize, flags; public IntPtr hCursor; public POINT ptScreenPos; }
-        [StructLayout(LayoutKind.Sequential)] public struct INPUT { public uint type; public InputUnion U; }
-        [StructLayout(LayoutKind.Explicit)] public struct InputUnion { [FieldOffset(0)] public MOUSEINPUT mi; [FieldOffset(0)] public KEYBDINPUT ki; [FieldOffset(0)] public HARDWAREINPUT hi; }
-        [StructLayout(LayoutKind.Sequential)] public struct MOUSEINPUT { public int dx, dy, mouseData, dwFlags, time; public IntPtr dwExtraInfo; }
-        [StructLayout(LayoutKind.Sequential)] public struct KEYBDINPUT { public ushort wVk, wScan; public uint dwFlags, time; public IntPtr dwExtraInfo; }
-        [StructLayout(LayoutKind.Sequential)] public struct HARDWAREINPUT { public uint uMsg; public ushort wParamL, wParamH; }
-
-        // --- User32.dll (창, 입력, 커서 관리) ---
-        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool ClientToScreen(IntPtr hWnd, ref POINT lpPoint);
-        [LibraryImport("user32.dll", EntryPoint = "LoadImageW", SetLastError = true)] public static partial IntPtr LoadImage(IntPtr hinst, IntPtr name, uint type, int cx, int cy, uint fuLoad);
-        [LibraryImport("user32.dll", EntryPoint = "SetWindowsHookExW", SetLastError = true)] public static partial IntPtr SetWindowsHookEx(int idHook, delegate* unmanaged[Stdcall]<int, IntPtr, IntPtr, IntPtr> lpfn, IntPtr hMod, uint dwThreadId);
-        [LibraryImport("user32.dll", EntryPoint = "UnhookWindowsHookEx", SetLastError = true)][return: MarshalAs(UnmanagedType.Bool)] public static partial bool UnhookWindowsHookEx(IntPtr hhk);
-        [LibraryImport("user32.dll", EntryPoint = "CallNextHookEx")] public static partial IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
-        [LibraryImport("user32.dll", EntryPoint = "SendInput", SetLastError = true)] public static partial uint SendInput(uint nInputs, ReadOnlySpan<INPUT> pInputs, int cbSize);
-        [LibraryImport("user32.dll", EntryPoint = "GetDpiForSystem")] public static partial uint GetDpiForSystem();
-        [LibraryImport("user32.dll", EntryPoint = "MonitorFromWindow")] public static partial IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
-        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool GetCursorInfo(ref CURSORINFO pci);
-        [LibraryImport("user32.dll", EntryPoint = "GetIconInfo")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool GetIconInfo(IntPtr hIcon, out ICONINFO piconinfo);
-        [LibraryImport("user32.dll")][SuppressGCTransition] public static partial IntPtr GetForegroundWindow();
-        [LibraryImport("user32.dll")][SuppressGCTransition] public static partial uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
-        [LibraryImport("user32.dll")][SuppressGCTransition] public static partial IntPtr GetKeyboardLayout(uint idThread);
-        [LibraryImport("user32.dll")][SuppressGCTransition] public static partial short GetKeyState(int keyCode);
-        [LibraryImport("user32.dll")][SuppressGCTransition][return: MarshalAs(UnmanagedType.Bool)] public static partial bool GetCursorPos(out POINT lpPoint);
-        [LibraryImport("user32.dll", EntryPoint = "SendMessageTimeoutW")] public static partial IntPtr SendMessageTimeout(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam, uint fuFlags, uint uTimeout, out IntPtr lpdwResult);
-        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool SetSystemCursor(IntPtr hcur, uint id);
-        [LibraryImport("user32.dll")] public static partial IntPtr CopyIcon(IntPtr hIcon);
-        [LibraryImport("user32.dll")] public static partial IntPtr CreateIconIndirect(ref ICONINFO iconinfo);
-        [LibraryImport("user32.dll", EntryPoint = "GetClassNameW", StringMarshalling = StringMarshalling.Utf16)] public static partial int GetClassName(IntPtr hWnd, char* lpClassName, int nMaxCount);
-        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool SetForegroundWindow(IntPtr hWnd);
-        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool UpdateLayeredWindow(IntPtr hwnd, IntPtr hdcDst, ref POINT pptDst, ref SIZE psize, IntPtr hdcSrc, ref POINT pptSrc, uint crKey, ref BLENDFUNCTION pblend, uint dwFlags);
-
-        // [수정: 포인터 및 커서 시스템 메트릭스 획득 API 추가]
-        [LibraryImport("user32.dll")] public static partial int GetSystemMetrics(int nIndex);
-        
-        // --- Gdi32.dll / Imm32.dll / Shcore.dll / 커스텀 유틸리티 등 ---
-        [LibraryImport("gdi32.dll", EntryPoint = "CreateCompatibleDC")] public static partial IntPtr CreateCompatibleDC(IntPtr hdc);
-        [LibraryImport("gdi32.dll", EntryPoint = "DeleteDC")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool DeleteDC(IntPtr hdc);
-        [LibraryImport("gdi32.dll", EntryPoint = "CreateDIBSection")] public static partial IntPtr CreateDIBSection(IntPtr hdc, ref BITMAPINFO pbmi, uint iUsage, out IntPtr ppvBits, IntPtr hSection, uint dwOffset);
-        [LibraryImport("gdi32.dll", EntryPoint = "SelectObject")] public static partial IntPtr SelectObject(IntPtr hdc, IntPtr hgdiobj);
-        [LibraryImport("gdi32.dll", EntryPoint = "DeleteObject")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool DeleteObject(IntPtr hObject);
-        [LibraryImport("user32.dll", EntryPoint = "GetDC")] public static partial IntPtr GetDC(IntPtr hWnd);
-        [LibraryImport("user32.dll", EntryPoint = "ReleaseDC")] public static partial int ReleaseDC(IntPtr hWnd, IntPtr hDC);
-        [LibraryImport("user32.dll", EntryPoint = "DrawIconEx")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool DrawIconEx(IntPtr hdc, int xLeft, int yTop, IntPtr hIcon, int cxWidth, int cyWidth, uint istepIfAniCur, IntPtr hbrFlickerFreeDraw, uint diFlags);
-        [LibraryImport("user32.dll", EntryPoint = "DestroyCursor")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool DestroyCursor(IntPtr hCursor);
-        
-        [LibraryImport("imm32.dll")][SuppressGCTransition] public static partial IntPtr ImmGetDefaultIMEWnd(IntPtr hWnd);
-        [LibraryImport("imm32.dll")][SuppressGCTransition] public static partial IntPtr ImmGetContext(IntPtr hWnd);
-        
-        // [수정: 텍스트 짤림으로 누락된 P/Invoke 복구 및 추가 (빌드 오류 방지용)]
-        [LibraryImport("imm32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool ImmGetConversionStatus(IntPtr hIMC, out uint lpfdwConversion, out uint lpfdwSentence);
-        [LibraryImport("imm32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool ImmReleaseContext(IntPtr hWnd, IntPtr hIMC);
-        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool DestroyIcon(IntPtr hIcon);
-        [LibraryImport("user32.dll", EntryPoint = "SystemParametersInfoW")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool SystemParametersInfo(uint uiAction, uint uiParam, IntPtr pvParam, uint fWinIni);
-        [LibraryImport("kernel32.dll", EntryPoint = "GetModuleHandleW", StringMarshalling = StringMarshalling.Utf16)] public static partial IntPtr GetModuleHandle(string lpModuleName);
-        [LibraryImport("shcore.dll")] public static partial int GetDpiForMonitor(IntPtr hmonitor, int dpiType, out uint dpiX, out uint dpiY);
-
-        // --- 누락된 User32.dll API 선언 추가 ---
-        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui);
-        // --- Kernel32.dll & Shcore.dll ---
-        [LibraryImport("kernel32.dll")] public static partial IntPtr GlobalLock(IntPtr hMem);
-        [LibraryImport("kernel32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool GlobalUnlock(IntPtr hMem);
-
-        // ---  Lang.cs에서 Clipboard 사용을 위한 Win32 API (P/Invoke) 선언 --- 
-        [DllImport("user32.dll", SetLastError = true)] public static extern bool OpenClipboard(IntPtr hWndNewOwner);
-        [DllImport("user32.dll", SetLastError = true)] public static extern bool CloseClipboard();
-        [DllImport("user32.dll", SetLastError = true)] public static extern bool EmptyClipboard();
-        [DllImport("user32.dll", SetLastError = true)] public static extern IntPtr GetClipboardData(uint uFormat);
-        [DllImport("user32.dll", SetLastError = true)] public static extern bool IsClipboardFormatAvailable(uint format);
-
-        // --- 유틸리티 메서드 ---
-        public static void SimulateCapsLock()
-        {
-            INPUT[] inputs = new INPUT[2];
-            inputs[0].type = INPUT_KEYBOARD;
-            inputs[0].U.ki.wVk = VK_CAPITAL;
-            inputs[1].type = INPUT_KEYBOARD;
-            inputs[1].U.ki.wVk = VK_CAPITAL;
-            inputs[1].U.ki.dwFlags = KEYEVENTF_KEYUP;
-            SendInput(2, inputs, Marshal.SizeOf<INPUT>());
-        }
-
-        public static void SendBackspace()
-        {
-            INPUT[] inputs = new INPUT[2];
-            inputs[0].type = INPUT_KEYBOARD;
-            inputs[0].U.ki.wVk = 0x08; // VK_BACK
-            inputs[1].type = INPUT_KEYBOARD;
-            inputs[1].U.ki.wVk = 0x08;
-            inputs[1].U.ki.dwFlags = KEYEVENTF_KEYUP;
-            SendInput(2, inputs, Marshal.SizeOf<INPUT>());
-        }
-
-        public static void SendUnicodeString(string text)
-        {
-            if (string.IsNullOrEmpty(text)) return;
-            INPUT[] inputs = new INPUT[text.Length * 2];
-            for (int i = 0; i < text.Length; i++)
-            {
-                inputs[i * 2].type = INPUT_KEYBOARD;
-                inputs[i * 2].U.ki.wScan = text[i];
-                inputs[i * 2].U.ki.dwFlags = KEYEVENTF_UNICODE;
-
-                inputs[i * 2 + 1].type = INPUT_KEYBOARD;
-                inputs[i * 2 + 1].U.ki.wScan = text[i];
-                inputs[i * 2 + 1].U.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
-            }
-            SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+            _hBmpIndicatorOld = NativeMethods.SelectObject(_dcIndicatorMem, _hBmpIndicator); _isIndicatorRendered = true;
         }
     }
     #endregion
