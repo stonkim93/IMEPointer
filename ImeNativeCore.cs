@@ -18,7 +18,7 @@ namespace IMEPointer
     {
         public enum State
         {
-            EnglishLower, EnglishUpper, Hangul, PaliUS, PaliHangul, JapaneseIME, JapaneseHangul1A, JapaneseHangul1B, JapaneseHangul2, Engineer
+            EnglishLower, EnglishUpper, Hangul, PaliUS, PaliHangul, JapaneseIME, JapaneseHangul1, JapaneseHangul2, JapaneseHangul3, Engineer
         }
 
         // [수정: 캐시 메모리 누수 방지] 핸들(IntPtr) 누적을 방지하기 위한 최대 캐시 크기 설정
@@ -29,7 +29,7 @@ namespace IMEPointer
         /// 주어진 상태가 한글 입력 기반인지 확인합니다.
         /// </summary>
         public static bool IsHangul(State state) =>
-            state == State.Hangul || state == State.PaliHangul || state == State.JapaneseHangul1A || state == State.JapaneseHangul1B || state == State.JapaneseHangul2 || state == State.Engineer;
+            state == State.Hangul || state == State.PaliHangul || state == State.JapaneseHangul1 || state == State.JapaneseHangul2 || state == State.JapaneseHangul3 || state == State.Engineer;
 
         /// <summary>
         /// 현재 포커스된 창의 키보드 레이아웃과 IME 상태를 종합하여 현재 입력 상태를 판별합니다.
@@ -56,9 +56,9 @@ namespace IMEPointer
                     {
                         if (enablePali) return State.PaliHangul;
                         if (enableEngineer) return State.Engineer;
-                        if (enableJapanese1) return State.JapaneseHangul1A;
-                        if (enableJapanese2) return State.JapaneseHangul1B;                        
-                        if (enableJapanese3) return State.JapaneseHangul2;
+                        if (enableJapanese1) return State.JapaneseHangul1;
+                        if (enableJapanese2) return State.JapaneseHangul2;                        
+                        if (enableJapanese3) return State.JapaneseHangul3;
                     }
                     return State.Hangul;
                 }

@@ -31,7 +31,7 @@ namespace IMEPointer
         public const uint INPUT_KEYBOARD = 1;               // 키보드 입력 유형
         public const uint KEYEVENTF_UNICODE = 0x0004;       // Unicode 키 이벤트 플래그
         public const uint KEYEVENTF_KEYUP = 0x0002;         // 키 업 이벤트 플래그
-        public const int MDT_EFFECTIVE_DPI = 0;             // 효과적인 DPI
+        public const int MDT_EFFECTIVE_DPI = 0;             // 모니터 DPI 가져오기: 실제 DPI
         public const uint MONITOR_DEFAULTTONEAREST = 0x00000002; // 기본 모니터: 가장 가까운 모니터
         public const uint IMAGE_CURSOR = 2;                 // LoadImage에서 커서 이미지를 로드할 때 사용
         public const uint LR_SHARED = 0x00008000;           // LoadImage에서 공유 리소스를 로드할 때 사용

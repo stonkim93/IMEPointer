@@ -37,7 +37,7 @@
 
 - **새로운 활용**: 한글/Caps 상태에서 **공학용 특수기호, Pali어, 일본어** 등의 입력 모드로 재구성
 
-- **효과**: 최소 키 입력으로 최대 다양한 모드 지원
+- **효과**: 여러가지 언어의 IME 설치없이 다양한 언어의 입력 모드 지원
 
 #### 🎯 3. 초기 불교 문헌 연구 지원
 
@@ -110,6 +110,8 @@
 
 - 일본어1 조합모드에서 "대표자음 + あ행모음 → 조합문자" 변환 표시
 
+- 일본어2 조합모드에서 "최빈자음 + あ행모음 → 조합문자" 변환 표시
+
 - 일본어/Pali어에서 HK/YN/PE 전환키 사용시 글자 전환 표시
 
 - 한자키로 입력모드/Layer 전환시 현재 입력모드/Layer 표시
@@ -123,6 +125,20 @@
   ⚠️ 한글과컴퓨터 아래한글 (`hwp.exe`)의 텍스트 입력창 안에서는 포인터가 검은색 I자로 바뀐다.
 
 ### 6️⃣ 삼성전자 갤럭시북5 Copilot키의 한자키 적용/복원 키맵핑 기능 제공
+
+- 트레이 메뉴에서 "한자키 적용/복원 키맵핑" 기능을 제공한다.
+
+- 삼성전자 갤럭시북5은 다음과 같이 copilot키를 한자키와 겸용으로 사용한다.
+
+  * 그냥 눌렀을 때: Copilot 실행 매크로 신호 (Win + Shift + F23)
+
+  * Fn + 눌렀을 때: 한자키 신호 (IME Kanji)
+
+- Sharpkeys 앱을 사용하면 다음의 키맵핑으로 Registry를 수정하여 한자키를 사용할 수 있다.
+
+  * 기존 Copilot 키 선택: "Function : F23 (00_6E)"
+
+  * 한자키로 키맵핑 : "Unknown: 0xE071 (E0_71)"
 
 ### 7️⃣ 트레이 아이콘 **클릭**하여 메뉴 선택하고, 옵션 On/Off
 
@@ -273,7 +289,7 @@
 
 ### 2️⃣ 일본어 입력하기
 
-#### 일본어1_조합형
+#### 일본어1_조합형 (대표자음)
 
 1. 트레이 메뉴에서 "한글CAPS 일본어1_조합형" 선택 (한글 입력 모드 + CAPS Lock On)
 
@@ -331,7 +347,7 @@
 
 5. 한자키/HK/YN 전환기능
 
-- **한자키** (RCtrl): Layer1 ↔ Layer2
+- **한자키** (RCtrl): 일본어1 ↔ 영어소문자 입력모드
 
 - **HK** 전환키(B): 히라가나(H) ↔ 가타카나(K)
 
@@ -351,7 +367,23 @@
 
 </div>
 
-#### 일본어3 (3-Layer)
+#### 일본어2_조합형(최빈자음)
+
+1. 트레이 메뉴에서 "한글CAPS 일본어2_조합형" 선택 (한글 입력 모드 + CAPS Lock On)
+
+2. 일본어1_조합형(대표자음)과 동일한 방식이지만, 각행의 대표자음을 사용 빈도가 높은 문자로 선정함. 
+
+- 조합모드에서 두번째 あ행모음 이외의 글자를 입력하여 빠른 문자 입력이 가능하도록 고려함.
+
+<div align="center">
+
+![alt text](images/Japan1Layer2Key1.png)
+![alt text](images/Japan1Layer2Key2.png)
+
+</div>
+
+
+#### 일본어3 (_3-Layer)
 
 1. 트레이 메뉴에서 "한글CAPS 일본어3_3Layer" 선택 (한글 입력 모드 + CAPS Lock On)
 
@@ -399,7 +431,7 @@
 
 5. 한자키/HK/YN 전환기능
 
-- **한자키** (RCtrl): Layer1 → Layer2 → Layer3 → Layer1 
+- **한자키** (RCtrl): Layer1 → Layer2 → Layer3 → 영어소문자 입력모드 → Layer1 
 
 - **HK** 전환키(B): 히라가나(H) ↔ 가타카나(K)
 
@@ -489,23 +521,7 @@
 - ㅌ + 한자키 : 훈민정음 자음/모음 (ㅸ,ㆆ,ㅿ,ㆎ,ㆇ)
 - ㅎ + 한자키 : 그리스 문자 (Δ, Ω, α, β 등)
 
-### 4️⃣ 한자키 적용/복원 키맵핑 기능 제공
-
-- 삼성전자 갤럭시북5은 다음과 같이 copilot키를 한자키와 겸용으로 사용한다.
-
-  * 그냥 눌렀을 때: Copilot 실행 매크로 신호 (Win + Shift + F23)
-
-  * Fn + 눌렀을 때: 한자키 신호 (IME Kanji)
-
-- Sharpkeys 앱을 사용하면 다음의 키맵핑으로 Registry를 수정하여 한자키를 사용할 수 있다.
-
-  * 기존 Copilot 키 선택: "Function : F23 (00_6E)"
-
-  * 한자키로 키맵핑 : "Unknown: 0xE071 (E0_71)"
-
-- 이 앱의 트레이 메뉴에서 한자키 적용/복원 키맵핑 기능을 제공한다.
-
-### 5️⃣ 아래한글에서 윈도우 MS IME 사용하기
+### 4️⃣ 아래한글에서 윈도우 MS IME 사용하기
 
 > 📌 [TIP]
 > 한글과컴퓨터의 자체 입력기 대신 Microsoft IME를 사용하도록 전환하면, 아래한글에서도 IMEPointer가 입력 상태를 정확히 표시합니다.
@@ -515,7 +531,7 @@
 * **글자판 자동 변경** 해제하여 항상 윈도우 설정을 따르도록 저장
 * 트레이 아이콘을 클릭하여 **엑셀/한글 작은원 표시**가 체크되면, 입력 상태를 시각적으로 구분하기 쉬움
 
-### 6️⃣ 윈도우 시작 프로그램에 추가하기
+### 5️⃣ 윈도우 시작 프로그램에 추가하기
 
 * 윈도우 실행창(run)을 띄운다 : <kbd>WIN</kbd> + <kbd>R</kbd>
 * 윈도우 시작프로그램 폴더를 연다 : `shell:startup`
@@ -635,7 +651,7 @@ dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=
 ### 4️⃣ 메모리 낭비 제로, 극한의 성능 최적화 (Zero GC & Resource Management)
 
 * **마우스 끊김 원천 차단 (Zero GC)**:
-  - 30ms마다 마우스를 감지하면서도 임시 공간(Stack)만 사용하고 즉시 비워버리는 특수 설계
+  - 100ms마다 마우스를 감지하면서도 임시 공간(Stack)만 사용하고 즉시 비워버리는 특수 설계
   - 가비지 컬렉터가 개입할 여지를 없애 **마우스가 단 1ms도 끊기지 않음**
 
 * **컬러 포인터 캐싱**: 자주 사용하는 컬러 포인터를 메모리에 캐시하여 반복 생성 방지
@@ -674,9 +690,19 @@ dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=
 
 - 키보드 배열 검토에는 Claude Haiku 4.5 (무료)를 활용했습니다. 
 
-- Colr 마우스 포인터나 한글CAPS 입력모드를 사용하지 않고, 한자키를 Pali어 입력/전환 기능으로 사용하는 Pali어 입력 전용앱(IMEPali)을 개발했어요.
+- Color 마우스 포인터나 한글CAPS 입력모드를 사용하지 않고, 한자키를 Pali어 입력/전환 기능으로 사용하는 Pali어 입력 전용앱(IMEPali)을 개발했어요.
 
 - Made with ❤️ for multilingual writers, scholars, engineers, and Pāḷi researchers
+
+## 🏆 Family Apps
+
+- **IMEPointer** : Full Packages.
+
+- **IMEPali** : Pali input system in the English mode not Korean CAPS mode.
+
+- **IMEJapanese** : Japanese1 + Japanese2 + Japanese3 input system. 
+
+- **IMCPointer** : Color Pointer Only.
 
 
 ## 📜 라이선스 (License)

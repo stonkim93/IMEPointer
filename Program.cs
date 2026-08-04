@@ -89,9 +89,9 @@ namespace IMEPointer
         public static bool ShowKeyboardlayoutMenu = false;
 #endif
 
-        public static bool ShowCopilotMapMenu = true;  
         public static bool ShowTextOverlayMenu = true;          
         public static bool ShowSmallCircleMenu = true;          
+        public static bool ShowCopilotMapMenu = true;  
 
         // ---------------------------------------------------------
         // 4. 프로그램 시작 시 초기 모드 설정
@@ -101,10 +101,10 @@ namespace IMEPointer
         
         public static bool DefaultShowKeyboardLayout = true;    
         public static bool DefaultShowTextOverlay = true;       
+        public static bool DefaultEnableMiniIndicator = true;   
         public static bool DefaultEnableCopilotMap = false;     
         public static bool EnableCopilotMap = DefaultEnableCopilotMap;       
-        public static bool DefaultEnableMiniIndicator = true;   
-        public static bool IsOverlayKey2Mode = false;           
+        public static bool IsOverlayKey2Mode = false;   // Lang.cs에서 IME 상태 감지 시, OverlayKey2 모드로 동작할지 여부 결정
 
         public struct Theme
         {
@@ -125,9 +125,9 @@ namespace IMEPointer
             [ImeState.State.Engineer] = new Theme { PointerColor = Color.Orange, TrayBgColor = Color.Black, TrayTextColor = Color.Orange, TrayText = "S", Description = "한글CAPS 공학용 특수기호 [S]", IBeamColor = Color.Orange },
             [ImeState.State.PaliHangul] = new Theme { PointerColor = Color.Orange, TrayBgColor = Color.Black, TrayTextColor = Color.Orange, TrayText = "P", Description = "한글CAPS Pali어 [P]", IBeamColor = Color.Orange },
             [ImeState.State.JapaneseIME] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "j", Description = "Japanese IME [j]", IBeamColor = Color.Lime },
-            [ImeState.State.JapaneseHangul1A] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "한글CAPS 일본어1 [J]", IBeamColor = Color.Lime },
-            [ImeState.State.JapaneseHangul1B] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "한글CAPS 일본어2 [J]", IBeamColor = Color.Lime },
-            [ImeState.State.JapaneseHangul2] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "한글CAPS 일본어3 [J]", IBeamColor = Color.Lime }
+            [ImeState.State.JapaneseHangul1] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "한글CAPS 일본어1 [J]", IBeamColor = Color.Lime },
+            [ImeState.State.JapaneseHangul2] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "한글CAPS 일본어2 [J]", IBeamColor = Color.Lime },
+            [ImeState.State.JapaneseHangul3] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "한글CAPS 일본어3 [J]", IBeamColor = Color.Lime }
         };
     }
     #endregion
@@ -1365,9 +1365,9 @@ namespace IMEPointer
             CapsModeStateMapping[] maps = {
                 new(CapsMode.Pali, ImeState.State.PaliHangul, KeyProcessorFactory.Pali),
                 new(CapsMode.Engineer, ImeState.State.Engineer, KeyProcessorFactory.Engineer),
-                new(CapsMode.Japanese1, ImeState.State.JapaneseHangul1A, KeyProcessorFactory.Japanese1),
-                new(CapsMode.Japanese2, ImeState.State.JapaneseHangul1B, KeyProcessorFactory.Japanese2),
-                new(CapsMode.Japanese3, ImeState.State.JapaneseHangul2, KeyProcessorFactory.Japanese3)
+                new(CapsMode.Japanese1, ImeState.State.JapaneseHangul1, KeyProcessorFactory.Japanese1),
+                new(CapsMode.Japanese2, ImeState.State.JapaneseHangul2, KeyProcessorFactory.Japanese2),
+                new(CapsMode.Japanese3, ImeState.State.JapaneseHangul3, KeyProcessorFactory.Japanese3)
             };
             foreach (var map in maps)
                 if (_activeCapsMode == map.Mode && state == map.ActiveState)
