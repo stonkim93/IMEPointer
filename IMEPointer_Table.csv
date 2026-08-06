@@ -1,0 +1,643 @@
+file/DLL,class/struct/interface,method/function,constant/variable,category,data type,function or roles
+Program.cs,-,-,-,-,file,IMEPointer 앱의 메인 진입점 및 전체 UI/로직을 포함하는 소스코드
+Program.cs,AppConfig,-,-,-,class,사용자가 변경할 수 있는 앱의 전반적인 환경설정 값들을 모아둔 정적 클래스
+Program.cs,AppConfig,-,PollingInterval,const,int,IME 상태 감지 주기 (ms 단위)
+Program.cs,AppConfig,-,IndicatorTargetApps,readonly,array,상태 표시기를 띄울 대상 프로세스 이름 목록
+Program.cs,AppConfig,-,IndicatorSize,const,float,상태 표시기의 기본 크기
+Program.cs,AppConfig,-,IndicatorOffset,const,float,상태 표시기가 포인터에서 떨어지는 오프셋 거리
+Program.cs,AppConfig,-,OverlayDefaultDurationMs,const,int,오버레이 UI의 기본 표시 시간 (ms 단위)
+Program.cs,AppConfig,-,OverlayDefaultFontSize,const,float,오버레이 UI의 기본 폰트 크기
+Program.cs,AppConfig,-,OverlayDefaultHeight,const,int,오버레이 UI의 기본 높이
+Program.cs,AppConfig,-,OverlayDefaultCharWidth,const,int,오버레이 UI의 문자당 기본 너비
+Program.cs,AppConfig,-,OverlayDefaultPaddingWidth,const,int,오버레이 UI의 기본 여백 너비
+Program.cs,AppConfig,-,OverlayDefaultYOffset,const,int,오버레이 UI의 Y축 오프셋
+Program.cs,AppConfig,-,TrayIconSize,const,int,트레이 아이콘의 렌더링 크기
+Program.cs,AppConfig,-,TrayLowercaseFontSize,const,float,트레이 아이콘 내 소문자 폰트 크기
+Program.cs,AppConfig,-,TrayUppercaseFontSize,const,float,트레이 아이콘 내 대문자 폰트 크기
+Program.cs,AppConfig,-,ShowPointerWinDefault,field,bool,트레이 메뉴 표시 옵션: WIN Default Pointer
+Program.cs,AppConfig,-,ShowPointerWinColor,field,bool,트레이 메뉴 표시 옵션: WIN Color Pointer
+Program.cs,AppConfig,-,ShowPointerNewColor,field,bool,트레이 메뉴 표시 옵션: NEW Color Pointer
+Program.cs,AppConfig,-,ShowCapsHangul,field,bool,트레이 메뉴 표시 옵션: 한글 (기본)
+Program.cs,AppConfig,-,ShowCapsEngineer,field,bool,트레이 메뉴 표시 옵션: 공학용 특수기호
+Program.cs,AppConfig,-,ShowCapsPali,field,bool,트레이 메뉴 표시 옵션: Pali/Sanskrit
+Program.cs,AppConfig,-,ShowCapsJapanese1,field,bool,트레이 메뉴 표시 옵션: 일본어 1 (조합형)
+Program.cs,AppConfig,-,ShowCapsJapanese2,field,bool,트레이 메뉴 표시 옵션: 일본어 2 (조합형)
+Program.cs,AppConfig,-,ShowCapsJapanese3,field,bool,트레이 메뉴 표시 옵션: 일본어 3 (3Layer)
+Program.cs,AppConfig,-,ShowKeyboardlayoutMenu,field,bool,트레이 메뉴 표시 옵션: 키보드 배열창
+Program.cs,AppConfig,-,ShowTextOverlayMenu,field,bool,트레이 메뉴 표시 옵션: 입력문자 표시창
+Program.cs,AppConfig,-,ShowSmallCircleMenu,field,bool,트레이 메뉴 표시 옵션: 작은원 표시
+Program.cs,AppConfig,-,ShowCopilotMapMenu,field,bool,트레이 메뉴 표시 옵션: Copilot 키맵핑
+Program.cs,AppConfig,-,DefaultPointerMode,field,int,앱 시작 시 기본 포인터 모드 값
+Program.cs,AppConfig,-,DefaultCapsMode,field,int,앱 시작 시 기본 Caps 모드 값
+Program.cs,AppConfig,-,DefaultShowKeyboardLayout,field,bool,키보드 배열창의 초기 활성화 상태
+Program.cs,AppConfig,-,DefaultShowTextOverlay,field,bool,텍스트 오버레이의 초기 활성화 상태
+Program.cs,AppConfig,-,DefaultEnableMiniIndicator,field,bool,미니 인디케이터의 초기 활성화 상태
+Program.cs,AppConfig,-,DefaultEnableCopilotMap,field,bool,Copilot 키맵핑의 초기 활성화 상태
+Program.cs,AppConfig,-,EnableCopilotMap,field,bool,현재 Copilot 키맵핑 활성화 여부
+Program.cs,AppConfig,-,IsOverlayKey2Mode,field,bool,Lang.cs 연동용 OverlayKey2 모드 동작 여부
+Program.cs,AppConfig,-,Themes,readonly,dictionary,IME 상태(State)별 테마(Theme) 설정값 매핑 사전
+Program.cs,AppConfig.Theme,-,-,-,struct,트레이 아이콘 및 포인터의 테마 색상/텍스트를 정의하는 구조체
+Program.cs,AppConfig.Theme,-,PointerColor,field,Color,포인터(커서)에 적용될 색상
+Program.cs,AppConfig.Theme,-,TrayBgColor,field,Color,트레이 아이콘 배경 색상
+Program.cs,AppConfig.Theme,-,TrayTextColor,field,Color,트레이 아이콘 텍스트 색상
+Program.cs,AppConfig.Theme,-,TrayText,field,string,트레이 아이콘에 표시될 텍스트 (1글자)
+Program.cs,AppConfig.Theme,-,Description,field,string,해당 테마(상태)의 설명 텍스트
+Program.cs,AppConfig.Theme,-,IBeamColor,field,Color,텍스트 입력 커서(I-Beam)에 적용될 색상
+Program.cs,UiText,-,-,-,class,UI에 표시될 문자열 리소스를 모아둔 정적 클래스
+Program.cs,UiText,-,AppName,const,string,애플리케이션 이름 문자열
+Program.cs,UiText,-,AlreadyRunningMessage,const,string,중복 실행 방지 경고 메시지
+Program.cs,UiText,-,FatalErrorPrefix,const,string,치명적 오류 발생 시 접두사 문자열
+Program.cs,UiText,-,StatusChecking,const,string,상태 확인 중 메시지 문자열
+Program.cs,UiText,-,HangulCapsMode,property,string,현재 활성화된 한글 Caps 모드 이름 반환
+Program.cs,UiText,-,ExitMenu,const,string,종료 메뉴 문자열
+Program.cs,UiText,-,GithubUrl,const,string,프로젝트 Github 링크 URL
+Program.cs,UiText,TrayTooltip,-,-,string,트레이 아이콘 마우스 오버 시 표시할 툴팁 문자열 포맷팅
+Program.cs,UiText,StatusLabel,-,-,string,메뉴에 표시할 현재 상태 라벨 포맷팅
+Program.cs,Program,-,-,-,class,애플리케이션의 진입점을 포함하는 클래스
+Program.cs,Program,Main,-,-,void,"뮤텍스 확인, 예외 처리기 등록 및 메인 메시지 루프 실행"
+Program.cs,PointerGraphicsFactory,-,-,-,class,커서 및 포인터 그래픽(Bitmap)을 생성하고 조작하는 팩토리 클래스
+Program.cs,PointerGraphicsFactory,CreateColoredSystemPointer,-,-,IntPtr,지정된 색상과 크기로 시스템 포인터 핸들을 생성하여 반환
+Program.cs,PointerGraphicsFactory,AddSmoothOutline,-,-,Bitmap,I-Beam 커서 등을 위해 비트맵 이미지에 부드러운 윤곽선을 추가
+Program.cs,PointerGraphicsFactory,RenderPointerToArgbBitmap,-,-,Bitmap,아이콘/커서 핸들(IntPtr)을 32비트 ARGB Bitmap 객체로 렌더링
+Program.cs,PointerGraphicsFactory,RecolorCursorStraight,-,-,void,비트맵 픽셀 데이터에 직접 접근하여 목표 색상으로 변경(Recolor)
+Program.cs,PointerGraphicsFactory,BitmapToPointer,-,-,IntPtr,Bitmap 객체를 기반으로 시스템 아이콘/커서 핸들 생성
+Program.cs,KeyboardLayoutForm,-,-,-,class,키보드 자판 배열(이미지)을 화면에 띄우는 오버레이 폼 클래스
+Program.cs,KeyboardLayoutForm,-,_pbLayoutImage,readonly,PictureBox,자판 이미지를 렌더링할 PictureBox 컨트롤
+Program.cs,KeyboardLayoutForm,-,OnLayoutDoubleClicked,field,EventHandler,자판 이미지 더블클릭 이벤트 (가상 Shift 전환)
+Program.cs,KeyboardLayoutForm,-,OnClosedByUser,field,EventHandler,사용자가 폼을 명시적으로 닫았을 때 발생하는 이벤트
+Program.cs,KeyboardLayoutForm,-,_currentImageName,field,string,현재 로드된 이미지 리소스의 이름
+Program.cs,KeyboardLayoutForm,-,_currentImageSize,field,Size,현재 로드된 이미지의 크기 정보
+Program.cs,KeyboardLayoutForm,-,CreateParams,property,CreateParams,폼 생성 시 윈도우 스타일(WS_EX_NOACTIVATE 등) 오버라이드
+Program.cs,KeyboardLayoutForm,-,ShowWithoutActivation,property,bool,폼을 띄울 때 포커스를 뺏지 않도록 설정 (true)
+Program.cs,KeyboardLayoutForm,KeyboardLayoutForm,-,-,method,"폼 초기화, 크기/위치 설정 및 더블클릭 이벤트 연결 (생성자)"
+Program.cs,KeyboardLayoutForm,OnResize,-,-,void,창 크기 조절 시 원본 이미지 비율에 맞춰 폼 크기를 강제 조정
+Program.cs,KeyboardLayoutForm,OnFormClosing,-,-,void,폼 닫기 요청 시 파괴하지 않고 숨기기(Hide) 처리
+Program.cs,KeyboardLayoutForm,UpdateImage,-,-,void,리소스에서 키보드 배열 이미지를 읽어와 PictureBox 갱신
+Program.cs,TextOverlayForm,-,-,-,class,입력 문자 오버레이를 화면(캐럿 근처)에 표시하는 폼 클래스
+Program.cs,TextOverlayForm,-,_hideTimer,readonly,Timer,일정 시간 후 오버레이를 숨기기 위한 타이머
+Program.cs,TextOverlayForm,-,_displayText,field,string,화면에 렌더링할 텍스트 문자열
+Program.cs,TextOverlayForm,-,_displayFontSize,field,float,렌더링할 텍스트의 폰트 크기
+Program.cs,TextOverlayForm,-,CreateParams,property,CreateParams,"오버레이 윈도우 스타일(투명, 포커스 무시 등) 설정"
+Program.cs,TextOverlayForm,-,ShowWithoutActivation,property,bool,오버레이가 포커스를 가져가지 않게 설정 (true)
+Program.cs,TextOverlayForm,TextOverlayForm,-,-,method,타이머 초기화 및 페인트(Paint) 이벤트 연결 (생성자)
+Program.cs,TextOverlayForm,ShowOverlay,-,-,void,오버레이의 크기/위치를 갱신하고 타이머를 재시작하여 텍스트 표시
+Program.cs,TextOverlayForm,RenderOverlayText,-,-,void,PaintEventArgs를 사용해 화면 정중앙에 텍스트 렌더링
+Program.cs,TextOverlayForm,Clear,-,-,void,타이머를 정지하고 오버레이 폼을 숨김 처리
+Program.cs,RegistryManager,-,-,-,class,Copilot 키 등 레지스트리 키맵핑(Scancode Map)을 조작하는 도구 클래스
+Program.cs,RegistryManager,-,RegPath,const,string,키보드 레이아웃 레지스트리 경로
+Program.cs,RegistryManager,-,RegValue,const,string,수정할 레지스트리 값 이름 (Scancode Map)
+Program.cs,RegistryManager,-,MappingBytes,readonly,array,한자키 매핑을 위한 바이트 배열 데이터
+Program.cs,RegistryManager,IsAdmin,-,-,bool,현재 프로세스가 관리자 권한으로 실행되었는지 검사
+Program.cs,RegistryManager,IsMappingApplied,-,-,bool,레지스트리에 이미 키맵핑이 적용되어 있는지 확인
+Program.cs,RegistryManager,ToggleMapping,-,-,bool,키맵핑 데이터를 레지스트리에 추가하거나 제거
+Program.cs,MainForm,-,-,-,class,"앱의 메인 백그라운드 폼으로, 트레이/UI 제어 및 IME 상태 동기화를 담당"
+Program.cs,MainForm,-,Instance,property,MainForm,MainForm의 싱글톤 인스턴스 접근 속성
+Program.cs,MainForm,-,LastValidHwnd,property,IntPtr,마지막으로 확인된 유효한 윈도우 핸들 캐시
+Program.cs,MainForm,-,LastValidFocusHwnd,property,IntPtr,마지막으로 입력 포커스를 가진 컨트롤 핸들 캐시
+Program.cs,MainForm,-,HiddenFormSize,const,int,메인 폼을 숨기기 위한 최소 윈도우 크기
+Program.cs,MainForm,-,HiddenFormLocation,const,int,메인 폼을 화면 밖으로 치우기 위한 위치 좌표
+Program.cs,MainForm,-,PointerDiagonalFactor,const,float,포인터(화살표) 우하단 인디케이터 배치를 위한 대각선 비율
+Program.cs,MainForm,-,_assetCache,readonly,dictionary,각 ImeState별 렌더링된 커서와 아이콘 자원을 보관하는 캐시
+Program.cs,MainForm,-,_stateCheckTimer,readonly,Timer,IME 상태 변화를 주기적으로 모니터링하는 메인 루프 타이머
+Program.cs,MainForm,-,_sysTrayIcon,readonly,NotifyIcon,윈도우 작업 표시줄 트레이 아이콘 객체
+Program.cs,MainForm,-,_isTextOverlayEnabled,field,bool,현재 텍스트 오버레이 모드 활성화 여부
+Program.cs,MainForm,-,_activePointerMode,field,enum,"현재 선택된 포인터 변경 모드 (WinDefault, WinColor 등)"
+Program.cs,MainForm,-,_activeCapsMode,field,enum,현재 선택된 CapsLock 입력 맵핑 모드
+Program.cs,MainForm,PointerMode,-,-,enum,포인터 동작 방식을 정의하는 열거형
+Program.cs,MainForm,CapsMode,-,-,enum,"Caps 모드(공학, 팔리, 일본어 등)를 정의하는 열거형"
+Program.cs,MainForm.ActiveInputModeContext,-,-,-,struct,현재 활성화된 입력기 모드 및 상태 플래그를 담는 구조체
+Program.cs,MainForm.CapsModeStateMapping,-,-,-,struct,Caps 모드와 ImeState를 연결하는 매핑용 구조체
+Program.cs,MainForm.StateAssets,-,-,-,class,"각 상태별로 생성된 커서, 트레이 아이콘 등의 자원을 관리 (IDisposable)"
+Program.cs,MainForm,MainForm,-,-,method,"폼 숨김 처리, 트레이 아이콘/메뉴 빌드 및 글로벌 훅 등록 (생성자)"
+Program.cs,MainForm,BuildTrayMenu,-,-,void,우클릭 시 나타나는 트레이 컨텍스트 메뉴 동적 구성
+Program.cs,MainForm,AddMenuToggle,-,-,ToolStripMenuItem,토글형 메뉴 아이템을 생성하고 이벤트 핸들러를 바인딩하는 유틸리티
+Program.cs,MainForm,WndProc,-,-,void,윈도우 메시지 처리 (디스플레이 변경 감지 등)
+Program.cs,MainForm,OnLoad,-,-,void,프로그램 초기 로드 시 윈도우 상태 감지 및 타이머 시작
+Program.cs,MainForm,OnDisplaySettingsChanged,-,-,void,모니터 해상도/배율 변경 시 포인터 자원 재생성 스케줄링
+Program.cs,MainForm,UpdatePointerMode,-,-,void,포인터 모드 변경 및 UI 자원 동기화 트리거
+Program.cs,MainForm,UpdateCapsMode,-,-,void,Caps 모드 변경 및 대상 윈도우로 IME 강제 동기화 트리거
+Program.cs,MainForm,GetCapsModeOverlayText,-,-,string,현재 활성화된 Caps 모드의 이름을 한글 문자열로 반환
+Program.cs,MainForm,EnforceCapsModeToTarget,-,-,void,특정 윈도우에 선택된 Caps 모드(IME 한글 상태 포함)를 강제 주입
+Program.cs,MainForm,ProcessStateCheck,-,-,void,"(Timer Tick) 포그라운드 윈도우 감지, IME 감지, UI 오버레이 동기화 메인 로직"
+Program.cs,MainForm,SyncSystemHangulState,-,-,void,포커스가 바뀔 때 이전 윈도우와 현재 윈도우의 한글 상태를 동기화
+Program.cs,MainForm,ResolveInputModeContext,-,-,ActiveInputModeContext,감지된 ImeState와 설정된 CapsMode를 기반으로 현재 키보드 훅 컨텍스트를 결정
+Program.cs,MainForm,ShowOverlay,-,-,void,동적 DPI를 계산하여 입력 문자를 오버레이 창에 출력
+Program.cs,MainForm,ResolveCaretPosition,-,-,Point,"GUI 스레드 정보를 이용해 현재 텍스트 입력 캐럿(Caret)의 X,Y 화면 좌표 반환"
+Program.cs,MainForm,RebuildStateAssets,-,-,void,현재 디스플레이 DPI에 맞게 모든 테마의 커서 및 아이콘 에셋을 메모리에 렌더링/캐시
+Program.cs,MainForm,BuildTrayIcon,-,-,Icon,"주어진 배경색, 전경색, 텍스트(알파벳)를 합성하여 트레이용 Icon(ico) 객체 생성"
+Program.cs,MainForm,ApplyVisualState,-,-,void,인식된 상태(ImeState)에 맞춰 트레이 아이콘 변경 및 시스템 포인터(커서) 교체
+Program.cs,MainForm,RefreshKeyboardLayoutOverlay,-,-,void,현재 입력 모드 및 Shift(물리/가상) 키 상태에 맞춰 화면의 키보드 배열 이미지 갱신
+Program.cs,MainForm,RenderMiniIndicator,-,-,void,엑셀/한글 등 타겟 앱에서 포인터(화살표/IBeam) 위치를 추적하여 작은 원 인디케이터 렌더링
+Program.cs,MainForm,EvaluatePointerIsIBeam,-,-,bool,현재 마우스 포인터의 상태가 텍스트 입력 커서(I-Beam) 상태인지 판별
+Program.cs,MainForm,SearchFocusedInputHwnd,-,-,IntPtr,특정 윈도우 핸들(최상위)에서 실제 텍스트 입력 포커스를 가진 자식 핸들 검색
+Program.cs,MainForm,EvaluateTargetProcess,-,-,bool,"지정된 윈도우 핸들의 프로세스가 인디케이터 표시 대상(Excel, Hwp 등)인지 검사"
+Program.cs,MainForm,RestoreDefaults,-,-,void,운영체제 기본 마우스 시스템 포인터 설정으로 복구 (종료 시 등 호출)
+Program.cs,MainForm,UpdateLayeredIndicator,-,-,void,UpdateLayeredWindow API를 이용해 알파 채널을 가진 투명 미니 인디케이터를 화면에 배치
+Program.cs,MainForm,RenderIndicatorBuffer,-,-,void,미니 인디케이터(작은 원)를 메모리 DC에 GDI+ 기반 고품질 비트맵으로 렌더링
+file/DLL,class/struct/interface,method/function,constant/variable,category,data type,function or roles
+Lang.cs,-,-,-,-,file,Pali어/일본어/특수기호 자판 매핑 및 키 입력 처리 소스 파일
+Lang.cs,VirtualKeyCodes,-,-,-,class,가상 키 코드(Virtual Key Codes) 상수 정의 클래스
+Lang.cs,VirtualKeyCodes,-,Shift,const,int,Shift 키 가상 키 코드 (0x10)
+Lang.cs,VirtualKeyCodes,-,Ctrl,const,int,Control 키 가상 키 코드 (0x11)
+Lang.cs,VirtualKeyCodes,-,Right,const,int,오른쪽 화살표 키 가상 키 코드 (0x27)
+Lang.cs,VirtualKeyCodes,-,Escape,const,int,ESC 키 가상 키 코드 (0x1B)
+Lang.cs,VirtualKeyCodes,-,Backspace,const,int,Backspace 키 가상 키 코드 (0x08)
+Lang.cs,VirtualKeyCodes,-,LWin,const,int,왼쪽 Windows 키 가상 키 코드 (0x5B)
+Lang.cs,VirtualKeyCodes,-,RWin,const,int,오른쪽 Windows 키 가상 키 코드 (0x5C)
+Lang.cs,VirtualKeyCodes,-,vk_B,const,int,B 키 가상 키 코드 (0x42)
+Lang.cs,VirtualKeyCodes,-,vk_C,const,int,C 키 가상 키 코드 (0x43)
+Lang.cs,VirtualKeyCodes,-,vk_H,const,int,H 키 가상 키 코드 (0x48)
+Lang.cs,VirtualKeyCodes,-,vk_J,const,int,J 키 가상 키 코드 (0x4A)
+Lang.cs,VirtualKeyCodes,-,vk_K,const,int,K 키 가상 키 코드 (0x4B)
+Lang.cs,VirtualKeyCodes,-,vk_L,const,int,L 키 가상 키 코드 (0x4C)
+Lang.cs,VirtualKeyCodes,-,vk_M,const,int,M 키 가상 키 코드 (0x4D)
+Lang.cs,VirtualKeyCodes,-,vk_N,const,int,N 키 가상 키 코드 (0x4E)
+Lang.cs,VirtualKeyCodes,-,vk_P,const,int,P 키 가상 키 코드 (0x50)
+Lang.cs,VirtualKeyCodes,-,vk_Y,const,int,Y 키 가상 키 코드 (0x59)
+Lang.cs,VirtualKeyCodes,-,OemYen,const,int,엔화/원화 특수키 가상 키 코드 (0xDC)
+Lang.cs,VirtualKeyCodes,-,OemColon,const,int,콜론 특수키 가상 키 코드 (0xBA)
+Lang.cs,VirtualKeyCodes,-,OemComma,const,int,쉼표 특수키 가상 키 코드 (0xBC)
+Lang.cs,VirtualKeyCodes,-,OemPeriod,const,int,마침표 특수키 가상 키 코드 (0xBE)
+Lang.cs,VirtualKeyCodes,-,OemSlash,const,int,슬래시 특수키 가상 키 코드 (0xBF)
+Lang.cs,KeyboardLayoutAnalyzer,-,-,-,class,키보드 레이아웃 분석 및 문자 변환 유틸리티 클래스
+Lang.cs,KeyboardLayoutAnalyzer,CheckCopilotShift,-,method,bool,Copilot 매핑 활성화 시 Win 키 조합 조건 확인 및 Shift 상태 조정
+Lang.cs,KeyboardLayoutAnalyzer,GetChar,-,method,string,가상 키 코드와 Shift 상태를 조합하여 해당하는 문자열 반환
+Lang.cs,KeyboardLayoutAnalyzer,GetStandardShiftedSymbol,-,method,string,Shift 조합 시 기본 표준 기호 문자열 반환
+Lang.cs,KeyboardLayoutAnalyzer,IsSymbolOrNumber,-,method,bool,해당 키 코드가 숫자 또는 기호 키 영역인지 판별
+Lang.cs,KeyboardLayoutAnalyzer,IsSymbolOrNumberOrLetter,-,method,bool,해당 키 코드가 알파벳/숫자/기호 영역인지 판별
+Lang.cs,KeyboardLayoutAnalyzer,HandleGlobalKey2Mode,-,method,bool,글로벌 Key2 모드에서 기호/숫자/문자 입력 처리
+Lang.cs,IKeyProcessor,-,-,-,interface,키 입력 처리 모듈 작성을 위한 기본 인터페이스
+Lang.cs,IKeyProcessor,-,IsVirtualShift,property,bool,가상 Shift 상태 활성화 여부
+Lang.cs,IKeyProcessor,-,CurrentLayer,property,int,현재 레이어 단계 번호
+Lang.cs,IKeyProcessor,ProcessKeyDown,-,method,bool,키 누름(KeyDown) 이벤트 발생 시 언어별 입력 변환 처리
+Lang.cs,IKeyProcessor,ProcessHanjaKey,-,method,bool,한자 키 누름 이벤트 처리 및 IME 상태 전환
+Lang.cs,IKeyProcessor,OnMouseClick,-,method,void,마우스 클릭 발생 시 입력 상태 및 연속 조합 초기화
+Lang.cs,IKeyProcessor,ToggleVirtualShift,-,method,void,가상 Shift 상태 토글
+Lang.cs,KeyProcessorFactory,-,-,-,class,언어별 KeyProcessor 객체를 제공하는 싱글톤 팩토리 클래스
+Lang.cs,KeyProcessorFactory,-,Engineer,readonly,class,공학용 특수기호 키 프로세서 인스턴스
+Lang.cs,KeyProcessorFactory,-,Pali,readonly,class,Pali어 키 프로세서 인스턴스
+Lang.cs,KeyProcessorFactory,-,Japanese1,readonly,class,일본어1(조합형) 키 프로세서 인스턴스
+Lang.cs,KeyProcessorFactory,-,Japanese2,readonly,class,일본어2(조합형) 키 프로세서 인스턴스
+Lang.cs,KeyProcessorFactory,-,Japanese3,readonly,class,일본어3(3Layer) 키 프로세서 인스턴스
+Lang.cs,OverlayHelper,-,-,-,class,화면 오버레이 UI 제어를 위한 헬퍼 클래스
+Lang.cs,OverlayHelper,ClearOverlay,-,method,void,MainForm 오버레이 표시 초기화/지우기 실행
+Lang.cs,TextSelectionUtils,-,-,-,class,UI Automation 및 클립보드 기반 선택 텍스트 읽기/대체 유틸리티 클래스
+Lang.cs,TextSelectionUtils.ClipboardConfig,-,-,-,struct,클립보드 동작 및 타임아웃/재시도 상수 정의 구조체
+Lang.cs,TextSelectionUtils.ClipboardConfig,-,UnicodeTextFormat,const,int,Win32 클립보드 텍스트 포맷 (CF_UNICODETEXT=13)
+Lang.cs,TextSelectionUtils.ClipboardConfig,-,OpenRetryCount,const,int,클립보드 열기 재시도 횟수 (3회)
+Lang.cs,TextSelectionUtils.ClipboardConfig,-,OpenRetryDelayMs,const,int,클립보드 열기 재시도 대기 시간 (10ms)
+Lang.cs,TextSelectionUtils.ClipboardConfig,-,CopyPollingRetryCount,const,int,클립보드 복사 폴링 재시도 횟수 (20회)
+Lang.cs,TextSelectionUtils.ClipboardConfig,-,CopyPollingDelayMs,const,int,클립보드 복사 폴링 대기 시간 (20ms)
+Lang.cs,TextSelectionUtils.ClipboardConfig,-,RestoreDelayMs,const,int,클립보드 원래 복사본 복원 지연 시간 (400ms)
+Lang.cs,TextSelectionUtils.ClipboardConfig,-,SelectionCancelDelayMs,const,int,선택 영역 취소 동작 지연 시간 (20ms)
+Lang.cs,TextSelectionUtils,-,IsConverting,field,bool,텍스트 변환 작업 수행 중 여부 플래그
+Lang.cs,TextSelectionUtils,ForceReleaseCopilotModifiers,-,method,void,Copilot 키 입력 후 누르고 있던 조합키(Win Shift) 강제 해제
+Lang.cs,TextSelectionUtils,ExecuteOnStaThread,-,method,void,STA 단일 스레드 아파트먼트 모드로 지정 작업 실행
+Lang.cs,TextSelectionUtils,TransformAndReplaceText,-,method,void,선택된 텍스트/직전 출력 문자를 변환하여 덮어쓰기 수행
+Lang.cs,TextSelectionUtils,ReadSelectedText,-,method,void,UI Automation 및 Win32 클립보드를 이용해 현재 선택된 텍스트 읽기
+Lang.cs,TextSelectionUtils,RestoreClipboardAsync,-,method,void,백그라운드에서 이전 클립보드 데이터를 비동기 복원
+Lang.cs,TextSelectionUtils,CancelSelection,-,method,void,텍스트 선택 상태 해제(오른쪽 화살표 키 전송)
+Lang.cs,TextSelectionUtils,SendRight,-,method,void,오른쪽 방향키 키보드 입력 시뮬레이션
+Lang.cs,TextSelectionUtils,SendCtrlC,-,method,void,Ctrl+C 키보드 입력 시뮬레이션
+Lang.cs,TextSelectionUtils,SendInputsSafe,-,method,void,SendInput Win32 API를 사용한 안전한 키보드 이벤트 입력 전송
+Lang.cs,TextSelectionUtils,MakeKeyDown,-,method,struct,가상 키 코드 기반 KeyDown INPUT 구조체 생성
+Lang.cs,TextSelectionUtils,MakeKeyUp,-,method,struct,가상 키 코드 기반 KeyUp INPUT 구조체 생성
+Lang.cs,TextSelectionUtils,GetTextWin32,-,method,string,Win32 API를 사용하여 클립보드에서 텍스트 직접 추출
+Lang.cs,TextSelectionUtils,ClearWin32,-,method,bool,Win32 API를 사용하여 클립보드 비우기
+Lang.cs,JapaneseShared,-,-,-,class,일본어 자판 공통 히라가나/가타카나/탁음 변환 맵 및 로직 클래스
+Lang.cs,JapaneseShared,-,HiraToKata,readonly,dictionary,히라가나 -> 가타카나 일대일 변환 매핑 테이블
+Lang.cs,JapaneseShared,-,KataToHira,readonly,dictionary,가타카나 -> 히라가나 역방향 변환 매핑 테이블
+Lang.cs,JapaneseShared,-,TransformMap,readonly,dictionary,청음-탁음-반탁음-요음 간 상호 변환 매핑 테이블
+Lang.cs,JapaneseShared,-,YoonHiraganaChains,readonly,dictionary,히라가나 요음/탁음 순환 체인 데이터 구조
+Lang.cs,JapaneseShared,-,YoonKatakanaChains,readonly,dictionary,가타카나 요음/탁음 순환 체인 데이터 구조
+Lang.cs,JapaneseShared,GetYoonCategory,-,method,int,문자의 요음/탁음 체인 내 인덱스 카테고리 위치 반환
+Lang.cs,JapaneseShared,GetNextYoonChar,-,method,string,체인 내에서 다음 단계의 요음/탁음 문자로 순환 변환
+Lang.cs,JapaneseShared,ConvertYoonToCategory,-,method,string,지정한 카테고리 단계의 요음/탁음 문자로 변환
+Lang.cs,JapaneseShared,ApplyHiraganaKatakanaTransformation,-,method,string,문자열 전체에 대해 히라가나<->가타카나 상호 변환 적용
+Lang.cs,JapaneseShared,ApplyYoonTransformation,-,method,string,문자열 전체에 대해 요음/탁음 순환 변환 적용
+Lang.cs,PaliProcessor,-,-,-,class,Pali어 키 입력 및 오버레이 처리 클래스
+Lang.cs,PaliProcessor,-,_isVirtualShift,field,bool,Pali어 가상 Shift 상태 내부 필드
+Lang.cs,PaliProcessor,-,IsVirtualShift,property,bool,가상 Shift 상태 읽기 프로퍼티
+Lang.cs,PaliProcessor,-,CurrentLayer,property,int,현재 레이어 단계 (1 고정)
+Lang.cs,PaliProcessor,ToggleVirtualShift,-,method,void,가상 Shift 상태 토글
+Lang.cs,PaliProcessor,ProcessHanjaKey,-,method,bool,한자키 입력 시 Pali_Sanskrit 입력 모드 전환
+Lang.cs,PaliProcessor,ProcessKeyDown,-,method,bool,Pali어 키 입력 이벤트 처리 및 문자 조합 전송
+Lang.cs,PaliProcessor,OnMouseClick,-,method,void,마우스 클릭 시 마지막 출력 문자 초기화
+Lang.cs,PaliMap,-,-,-,class,Pali어 문자 매핑 테이블 및 변환 처리 static 클래스
+Lang.cs,PaliMap,-,_lastOutputChar,field,string,마지막으로 출력된 Pali 문자 저장 변수
+Lang.cs,PaliMap,-,TransformationRules,readonly,dictionary,Pali어 특수문자 단일 변환 규칙 매핑
+Lang.cs,PaliMap,-,_paliChains,readonly,dictionary,Pali어 알파벳별 특수기호 순환 체인 배열 매핑
+Lang.cs,PaliMap,-,_paliCategoryMap,readonly,dictionary,Pali어 특수문자 카테고리 인덱스 맵
+Lang.cs,PaliMap,-,_paliReverseChainMap,readonly,dictionary,Pali어 특수문자의 역방향 체인 배열 맵
+Lang.cs,PaliMap,-,Map,readonly,dictionary,가상 키 코드별 Pali어 Normal/Shift 대응 표
+Lang.cs,PaliMap,SetLastOutputChar,-,method,void,마지막 출력 문자 설정
+Lang.cs,PaliMap,ProcessKey,-,method,string,키 입력 코드를 받아서 해당하는 Pali 문자 생성 및 오버레이 표시
+Lang.cs,PaliMap,HandlePaliTransformation,-,method,void,Pali어 특수문자 변환/덮어쓰기 핸들러 실행
+Lang.cs,PaliMap,ApplyPaliTransformation,-,method,string,선택 영역 또는 문자열에 Pali어 특수기호 변환 규칙 적용
+Lang.cs,EngineerProcessor,-,-,-,class,공학용 특수기호 키 입력 처리 클래스
+Lang.cs,EngineerProcessor,-,_isVirtualShift,field,bool,공학용 기호 가상 Shift 상태 내부 변수
+Lang.cs,EngineerProcessor,-,IsVirtualShift,property,bool,가상 Shift 상태 프로퍼티
+Lang.cs,EngineerProcessor,-,CurrentLayer,property,int,현재 레이어 단계 (1 고정)
+Lang.cs,EngineerProcessor,ToggleVirtualShift,-,method,void,가상 Shift 상태 전환
+Lang.cs,EngineerProcessor,ProcessHanjaKey,-,method,bool,한자키 입력 시 공학용_특수기호 모드 전환
+Lang.cs,EngineerProcessor,ProcessKeyDown,-,method,bool,공학용 기호 키 입력 매핑 처리 및 Unicode 기호 출력
+Lang.cs,EngineerProcessor,OnMouseClick,-,method,void,마우스 클릭 이벤트 처리 (동작 없음)
+Lang.cs,EngineerMap,-,-,-,class,공학용 수학/과학 특수기호 매핑 클래스
+Lang.cs,EngineerMap,-,Map,readonly,dictionary,가상 키 코드별 Normal/Shift 공학용 특수기호 매핑 테이블
+Lang.cs,Japanese1Processor,-,-,-,class,일본어1(조합형) 키 입력 처리 클래스
+Lang.cs,Japanese1Processor,-,IsVirtualShift,property,bool,가타카나 모드 활성화 여부
+Lang.cs,Japanese1Processor,-,CurrentLayer,property,int,현재 레이어 단계 (1)
+Lang.cs,Japanese1Processor,ToggleVirtualShift,-,method,void,히라가나/가타카나 모드 토글
+Lang.cs,Japanese1Processor,ProcessHanjaKey,-,method,bool,한자키 입력 시 일본어1_조합형 모드 전환
+Lang.cs,Japanese1Processor,ProcessKeyDown,-,method,bool,일본어1 조합형 입력 처리 및 공용 매핑 호출
+Lang.cs,Japanese1Processor,OnMouseClick,-,method,void,마우스 클릭 시 조합 대기 상태 초기화
+Lang.cs,Japanese2Processor,-,-,-,class,일본어2(조합형) 키 입력 처리 클래스
+Lang.cs,Japanese2Processor,-,IsVirtualShift,property,bool,가타카나 모드 활성화 여부
+Lang.cs,Japanese2Processor,-,CurrentLayer,property,int,현재 레이어 단계 (2)
+Lang.cs,Japanese2Processor,ToggleVirtualShift,-,method,void,히라가나/가타카나 모드 토글
+Lang.cs,Japanese2Processor,ProcessHanjaKey,-,method,bool,한자키 입력 시 일본어2_조합형 모드 전환
+Lang.cs,Japanese2Processor,ProcessKeyDown,-,method,bool,일본어2 조합형 입력 처리 및 공용 매핑 호출
+Lang.cs,Japanese2Processor,OnMouseClick,-,method,void,마우스 클릭 시 조합 대기 상태 초기화
+Lang.cs,Japanese1Map,-,-,-,class,일본어 조합형(Layer1/2) 자음/모음 음소 조합 및 오버레이 관리 클래스
+Lang.cs,Japanese1Map,-,VK_Q,const,int,Q 키 가상키 코드 상수 (0x51)
+Lang.cs,Japanese1Map,-,VK_W,const,int,W 키 가상키 코드 상수 (0x57)
+Lang.cs,Japanese1Map,-,VK_E,const,int,E 키 가상키 코드 상수 (0x45)
+Lang.cs,Japanese1Map,-,VK_R,const,int,R 키 가상키 코드 상수 (0x52)
+Lang.cs,Japanese1Map,-,VK_A,const,int,A 키 가상키 코드 상수 (0x41)
+Lang.cs,Japanese1Map,-,VK_S,const,int,S 키 가상키 코드 상수 (0x53)
+Lang.cs,Japanese1Map,-,VK_D,const,int,D 키 가상키 코드 상수 (0x44)
+Lang.cs,Japanese1Map,-,VK_F,const,int,F 키 가상키 코드 상수 (0x46)
+Lang.cs,Japanese1Map,-,VK_Z,const,int,Z 키 가상키 코드 상수 (0x5A)
+Lang.cs,Japanese1Map,-,VK_X,const,int,X 키 가상키 코드 상수 (0x58)
+Lang.cs,Japanese1Map,-,VK_C,const,int,C 키 가상키 코드 상수 (0x43)
+Lang.cs,Japanese1Map,-,VK_V,const,int,V 키 가상키 코드 상수 (0x56)
+Lang.cs,Japanese1Map,-,VK_H,const,int,H 키 가상키 코드 상수 (0x48)
+Lang.cs,Japanese1Map,-,VK_J,const,int,J 키 가상키 코드 상수 (0x4A)
+Lang.cs,Japanese1Map,-,VK_K,const,int,K 키 가상키 코드 상수 (0x4B)
+Lang.cs,Japanese1Map,-,VK_L,const,int,L 키 가상키 코드 상수 (0x4C)
+Lang.cs,Japanese1Map,-,VK_Y,const,int,Y 키 가상키 코드 상수 (0x59)
+Lang.cs,Japanese1Map,-,VK_T,const,int,T 키 가상키 코드 상수 (0x54)
+Lang.cs,Japanese1Map,-,VK_U,const,int,U 키 가상키 코드 상수 (0x55)
+Lang.cs,Japanese1Map,-,VK_I,const,int,I 키 가상키 코드 상수 (0x49)
+Lang.cs,Japanese1Map,-,VK_O,const,int,O 키 가상키 코드 상수 (0x4F)
+Lang.cs,Japanese1Map,-,VK_G,const,int,G 키 가상키 코드 상수 (0x47)
+Lang.cs,Japanese1Map,-,VK_N,const,int,N 키 가상키 코드 상수 (0x4E)
+Lang.cs,Japanese1Map,-,VK_M,const,int,M 키 가상키 코드 상수 (0x4D)
+Lang.cs,Japanese1Map,-,VK_B,const,int,B 키 가상키 코드 상수 (0x42)
+Lang.cs,Japanese1Map,-,VK_P,const,int,P 키 가상키 코드 상수 (0x50)
+Lang.cs,Japanese1Map,-,_consonantKeys,readonly,list,자음 키 집합 (HashSet)
+Lang.cs,Japanese1Map,-,_vowelKeys,readonly,list,모음 키 집합 (HashSet)
+Lang.cs,Japanese1Map,-,_combineMap,readonly,dictionary,자음+모음 키 조합 시 생성되는 히라가나/가타카나 매핑
+Lang.cs,Japanese1Map,-,_soloMap,readonly,dictionary,단독 입력 키의 히라가나/가타카나 매핑
+Lang.cs,Japanese1Map,-,_previewMapL1,readonly,dictionary,Layer 1 자음 입력 시 미리고지 문자 매핑
+Lang.cs,Japanese1Map,-,_previewMapL2,readonly,dictionary,Layer 2 자음 입력 시 미리고지 문자 매핑
+Lang.cs,Japanese1Map,-,_isKatakana,field,bool,가타카나 입력 모드 설정 플래그
+Lang.cs,Japanese1Map,-,_waitingVowel,field,bool,모음 입력 대기(조합 중) 상태 플래그
+Lang.cs,Japanese1Map,-,_pendingConsonant,field,int,조합 대기 중인 자음 가상키 코드
+Lang.cs,Japanese1Map,-,_pendingChar,field,string,조합 대기 중 오버레이에 표시할 문자열
+Lang.cs,Japanese1Map,-,_lastOutputChar,field,string,마지막으로 출력된 일본어 문자 저장 변수
+Lang.cs,Japanese1Map,-,_ynToggleCount,field,string,B/N 키를 통한 탁음/요음 변환 횟수 카운터
+Lang.cs,Japanese1Map,-,CurrentLayer,property,int,현재 레이어 값 (1 또는 2)
+Lang.cs,Japanese1Map,-,IsWaitingVowel,property,bool,모음 대기 상태 여부 읽기 프로퍼티
+Lang.cs,Japanese1Map,-,PendingChar,property,string,현재 대기 문자열 읽기 프로퍼티
+Lang.cs,Japanese1Map,-,IsKatakana,property,bool,가타카나 모드 설정 여부 읽기 프로퍼티
+Lang.cs,Japanese1Map,SetLayer,-,method,void,현재 입력 레이어 설정
+Lang.cs,Japanese1Map,Reset,-,method,void,음소 조합 상태 및 오버레이 지우기 초기화
+Lang.cs,Japanese1Map,SetLastOutputChar,-,method,void,마지막 출력 문자 저장
+Lang.cs,Japanese1Map,TogglePendingHiraKataModeOnly,-,method,void,히라가나/가타카나 모드 전환
+Lang.cs,Japanese1Map,TogglePendingHiraKata,-,method,void,조합 대기 중인 문자의 히라가나<->가타카나 전환
+Lang.cs,Japanese1Map,TogglePendingYn,-,method,void,조합 대기 중인 문자의 탁음/요음 순환 전환
+Lang.cs,Japanese1Map,HandleHiraganaKatakanaTransformation,-,method,void,선택 문자열의 히라가나<->가타카나 변환 핸들러
+Lang.cs,Japanese1Map,HandleYoonTransformation,-,method,void,선택 문자열의 요음/탁음 변환 핸들러
+Lang.cs,Japanese1Map,ProcessKeyDownShared,-,method,bool,Japanese1/Japanese2 공용 키 입력 다운 이벤트 처리
+Lang.cs,Japanese1Map,ProcessKey,-,method,string,가상키 입력에 대한 일본어 음소 조합 및 문자 반환
+Lang.cs,Japanese1Map,GetPreview,-,method,string,현재 자음 키 입력에 대응하는 미리보기 문자 반환
+Lang.cs,Japanese3Map,-,-,-,class,일본어3(3Layer) 자판 매핑 static 클래스
+Lang.cs,Japanese3Map,-,_isKatakana,field,bool,가타카나 모드 여부
+Lang.cs,Japanese3Map,-,_lastOutputChar,field,string,마지막으로 출력된 일본어 문자 저장
+Lang.cs,Japanese3Map,-,CurrentLayer,property,int,현재 3Layer 단계
+Lang.cs,Japanese3Map,-,IsKatakana,property,bool,가타카나 모드 설정 값 읽기
+Lang.cs,Japanese3Map,SetLastOutputChar,-,method,void,마지막 출력 문자 저장
+Lang.cs,Japanese3Map,CycleLayerOrSwitchToEnglish,-,method,void,한자키 입력 시 Layer 1->2->3 순환 및 영문 소문자 모드 전환
+Lang.cs,Japanese3Map,TogglePendingHiraKataModeOnly,-,method,void,가타카나/히라가나 모드 전환
+Lang.cs,Japanese3Map,HandleHiraganaKatakanaTransformation,-,method,void,선택 문자열 히라가나<->가타카나 변환 실행
+Lang.cs,Japanese3Map,HandleYoonTransformation,-,method,void,선택 문자열 요음/탁음 순환 변환 실행
+Lang.cs,Japanese3Map,ProcessKey,-,method,string,Layer 1/2/3 매핑 규칙에 따라 가상키 코드를 일본어 문자로 변환
+Lang.cs,Japanese3Processor,-,-,-,class,일본어3(3Layer) 자판 입력 처리 클래스
+Lang.cs,Japanese3Processor,-,IsVirtualShift,property,bool,가타카나 모드 설정 프로퍼티
+Lang.cs,Japanese3Processor,-,CurrentLayer,property,int,현재 레이어 단계 프로퍼티
+Lang.cs,Japanese3Processor,ToggleVirtualShift,-,method,void,가타카나/히라가나 상태 토글
+Lang.cs,Japanese3Processor,ProcessHanjaKey,-,method,bool,한자키 입력 시 Layer 순환 및 영문 모드 전환 실행
+Lang.cs,Japanese3Processor,ProcessKeyDown,-,method,bool,Japanese3 자판의 키 입력 이벤트 변환 및 문자 출력
+Lang.cs,Japanese3Processor,OnMouseClick,-,method,void,마우스 클릭 시 마지막 출력 문자 초기화
+file/DLL,class/struct/interface,method/function,-,category,data type,function or roles
+ImeNativeCore.cs,-,-,-,file,file,IME 상태 감지 및 전역 입력 훅 처리를 담당하는 핵심 네이티브 C# 소스 파일
+ImeNativeCore.cs,ImeState,-,-,class,class,대상 창의 IME 입력 모드 감지 및 상태 변경 제어 클래스
+ImeNativeCore.cs,ImeState,-,State,enum,enum,입력 상태(영문 소문자/대문자/한글/Pali/일본어/공학용 등) 정의 열거형
+ImeNativeCore.cs,ImeState,-,MaxCacheSize,const,int,한글 상태 캐시 메모리 최대 크기 설정 상수 (100)
+ImeNativeCore.cs,ImeState,-,_hangulStateCache,readonly,dictionary,윈도우 핸들별 한글 상태 캐시 매핑 테이블
+ImeNativeCore.cs,ImeState,IsHangul,-,method,bool,주어진 입력 상태가 한글 기반 상태인지 여부를 판별
+ImeNativeCore.cs,ImeState,IsHangul,state,parameter,enum,판별할 IME 입력 상태 값
+ImeNativeCore.cs,ImeState,Detect,-,method,enum,현재 포커스된 창의 키보드 레이아웃과 IME 상태를 종합하여 입력 상태 반환
+ImeNativeCore.cs,ImeState,Detect,foregroundHwnd,parameter,object,포커스된 윈도우 핸들
+ImeNativeCore.cs,ImeState,Detect,enablePali,parameter,bool,Pali어 모드 활성화 플래그
+ImeNativeCore.cs,ImeState,Detect,enableJapanese1,parameter,bool,일본어1 모드 활성화 플래그
+ImeNativeCore.cs,ImeState,Detect,enableJapanese2,parameter,bool,일본어2 모드 활성화 플래그
+ImeNativeCore.cs,ImeState,Detect,enableJapanese3,parameter,bool,일본어3 모드 활성화 플래그
+ImeNativeCore.cs,ImeState,Detect,enableEngineer,parameter,bool,공학용 모드 활성화 플래그
+ImeNativeCore.cs,ImeState,Detect,capsOn,local,bool,CapsLock 활성화 상태 변수
+ImeNativeCore.cs,ImeState,Detect,threadId,local,int,포커스 창의 스레드 ID 변수
+ImeNativeCore.cs,ImeState,Detect,hklValue,local,int,키보드 레이아웃 핸들 값 변수
+ImeNativeCore.cs,ImeState,Detect,langId,local,int,언어 ID 값 변수
+ImeNativeCore.cs,ImeState,Detect,isHangul,local,bool,한글 입력 모드 판별 결과 변수
+ImeNativeCore.cs,ImeState,GetTargetImeWindow,-,method,object,주어진 윈도우 핸들에 해당하는 IME 기본 창 핸들 탐색 및 반환
+ImeNativeCore.cs,ImeState,GetTargetImeWindow,hWnd,parameter,object,대상 윈도우 핸들
+ImeNativeCore.cs,ImeState,GetTargetImeWindow,threadId,local,int,대상 창의 스레드 ID 변수
+ImeNativeCore.cs,ImeState,GetTargetImeWindow,focusWnd,local,object,포커스 또는 활성화된 창 핸들 변수
+ImeNativeCore.cs,ImeState,GetTargetImeWindow,gti,local,struct,GUI 스레드 정보 구조체 변수
+ImeNativeCore.cs,ImeState,GetTargetImeWindow,hIme,local,object,기본 IME 창 핸들 변수
+ImeNativeCore.cs,ImeState,IsHangulModeSystemWide,-,method,bool,시스템 전역에서 대상 창의 한글 입력 모드 여부 확인
+ImeNativeCore.cs,ImeState,IsHangulModeSystemWide,foregroundHwnd,parameter,object,전면 윈도우 핸들
+ImeNativeCore.cs,ImeState,CheckHangulPublic,-,method,bool,캐시 및 Win32 IME API 메시지를 조회하여 한글 모드 여부 검사
+ImeNativeCore.cs,ImeState,CheckHangulPublic,hWnd,parameter,object,대상 윈도우 핸들
+ImeNativeCore.cs,ImeState,CheckHangulPublic,hImeWnd,local,object,IME 창 핸들 변수
+ImeNativeCore.cs,ImeState,CheckHangulPublic,res,local,object,SendMessageTimeout 결과 반환 값 변수
+ImeNativeCore.cs,ImeState,CheckHangulPublic,result,local,object,IME 변환 모드 조회 결과 핸들 변수
+ImeNativeCore.cs,ImeState,CheckHangulPublic,isHangul,local,bool,한글 변환 모드 비트 설정 여부 변수
+ImeNativeCore.cs,ImeState,CheckHangulPublic,hIMC,local,object,입력 컨텍스트 핸들 변수
+ImeNativeCore.cs,ImeState,CheckHangulPublic,success,local,bool,변환 상태 조회 성공 여부 변수
+ImeNativeCore.cs,ImeState,CheckHangulPublic,conv,local,int,IME 변환 상태 비트 플래그 변수
+ImeNativeCore.cs,ImeState,CheckHangulPublic,cachedState,local,bool,캐시된 한글 상태 값 변수
+ImeNativeCore.cs,ImeState,SetHangulState,-,method,void,대상 윈도우의 IME 한글/영문 입력 상태를 강제로 변경
+ImeNativeCore.cs,ImeState,SetHangulState,hWnd,parameter,object,대상 윈도우 핸들
+ImeNativeCore.cs,ImeState,SetHangulState,setHangul,parameter,bool,설정할 한글 모드 플래그
+ImeNativeCore.cs,ImeState,SetHangulState,hImeWnd,local,object,IME 창 핸들 변수
+ImeNativeCore.cs,ImeState,SetHangulState,result,local,object,SendMessageTimeout 반환 결과 변수
+ImeNativeCore.cs,ImeState,SetHangulState,mode,local,int,현재 IME 변환 모드 비트 값 변수
+ImeNativeCore.cs,ImeState,SetHangulState,isHangul,local,bool,현재 한글 모드 설정 여부 변수
+ImeNativeCore.cs,GlobalInputHook,-,-,class,class,전역 키보드 및 마우스 입력을 가로채고 처리하는 시스템 훅 관리 클래스
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,-,-,struct,struct,훅 이벤트 발생 시점의 애플리케이션 상태 스냅샷 정보 저장 구조체
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,-,ContextHwnd,readonly,object,스냅샷 시점의 대상 윈도우 핸들
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,-,ContextLangId,readonly,int,스냅샷 시점의 언어 ID
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,-,IsHangulMode,readonly,bool,스냅샷 시점의 한글 모드 여부
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,-,ActiveProcessor,readonly,interface,스냅샷 시점의 활성 키 프로세서 객체
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,-,IsPaliModeActive,readonly,bool,Pali 모드 활성화 여부
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,-,IsEngineerModeActive,readonly,bool,공학용 모드 활성화 여부
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,-,IsJapanese1ModeActive,readonly,bool,일본어1 모드 활성화 여부
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,-,IsJapanese2ModeActive,readonly,bool,일본어2 모드 활성화 여부
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,-,IsJapanese3ModeActive,readonly,bool,일본어3 모드 활성화 여부
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,HookContextSnapshot,-,method,void,HookContextSnapshot 구조체 생성자
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,HookContextSnapshot,contextHwnd,parameter,object,스냅샷 대상 윈도우 핸들
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,HookContextSnapshot,contextLangId,parameter,int,스냅샷 언어 ID
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,HookContextSnapshot,isHangulMode,parameter,bool,스냅샷 한글 모드 여부
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,HookContextSnapshot,activeProcessor,parameter,interface,스냅샷 활성 키 프로세서
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,HookContextSnapshot,isPaliModeActive,parameter,bool,Pali 모드 활성 플래그
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,HookContextSnapshot,isEngineerModeActive,parameter,bool,공학용 모드 활성 플래그
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,HookContextSnapshot,isJapanese1ModeActive,parameter,bool,일본어1 모드 활성 플래그
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,HookContextSnapshot,isJapanese2ModeActive,parameter,bool,일본어2 모드 활성 플래그
+ImeNativeCore.cs,GlobalInputHook.HookContextSnapshot,HookContextSnapshot,isJapanese3ModeActive,parameter,bool,일본어3 모드 활성 플래그
+ImeNativeCore.cs,GlobalInputHook,-,IsEnabled,property,bool,전역 훅 활성화 상태 프로퍼티
+ImeNativeCore.cs,GlobalInputHook,-,_contextSnapshot,field,struct,현재 훅 컨텍스트 스냅샷 내부 필드
+ImeNativeCore.cs,GlobalInputHook,-,IsPaliModeActive,property,bool,Pali 모드 활성 스냅샷 읽기 프로퍼티
+ImeNativeCore.cs,GlobalInputHook,-,IsEngineerModeActive,property,bool,공학용 모드 활성 스냅샷 읽기 프로퍼티
+ImeNativeCore.cs,GlobalInputHook,-,IsJapanese1ModeActive,property,bool,일본어1 모드 활성 스냅샷 읽기 프로퍼티
+ImeNativeCore.cs,GlobalInputHook,-,IsJapanese2ModeActive,property,bool,일본어2 모드 활성 스냅샷 읽기 프로퍼티
+ImeNativeCore.cs,GlobalInputHook,-,IsJapanese3ModeActive,property,bool,일본어3 모드 활성 스냅샷 읽기 프로퍼티
+ImeNativeCore.cs,GlobalInputHook,-,ActiveProcessor,property,interface,활성 키 프로세서 객체 스냅샷 읽기 프로퍼티
+ImeNativeCore.cs,GlobalInputHook,-,ContextHwnd,property,object,스냅샷 윈도우 핸들 읽기 프로퍼티
+ImeNativeCore.cs,GlobalInputHook,-,ContextLangId,property,int,스냅샷 언어 ID 읽기 프로퍼티
+ImeNativeCore.cs,GlobalInputHook,-,CachedIsHangulMode,property,bool,캐시된 한글 모드 스냅샷 읽기 프로퍼티
+ImeNativeCore.cs,GlobalInputHook,-,IsSending,field,bool,문자열 전송 중 여부를 나타내는 volatile 필드
+ImeNativeCore.cs,GlobalInputHook,-,_kbdHookId,field,object,키보드 훅 핸들 저장 필드
+ImeNativeCore.cs,GlobalInputHook,-,_mouseHookId,field,object,마우스 훅 핸들 저장 필드
+ImeNativeCore.cs,GlobalInputHook,-,_lastResolvedContextHwnd,field,object,마지막으로 결정된 컨텍스트 윈도우 핸들 필드
+ImeNativeCore.cs,GlobalInputHook,Install,-,method,void,키보드 및 마우스 저수준 전역 훅 설치
+ImeNativeCore.cs,GlobalInputHook,Install,process,local,object,현재 프로세스 객체 변수
+ImeNativeCore.cs,GlobalInputHook,Install,module,local,object,메인 모듈 객체 변수
+ImeNativeCore.cs,GlobalInputHook,Install,hMod,local,object,모듈 핸들 변수
+ImeNativeCore.cs,GlobalInputHook,Install,kbdCb,local,object,키보드 콜백 함수 포인터 변수
+ImeNativeCore.cs,GlobalInputHook,Install,mouseCb,local,object,마우스 콜백 함수 포인터 변수
+ImeNativeCore.cs,GlobalInputHook,Uninstall,-,method,void,설치된 키보드 및 마우스 전역 훅 해제
+ImeNativeCore.cs,GlobalInputHook,UpdateContext,-,method,void,입력 훅 컨텍스트 스냅샷 업데이트
+ImeNativeCore.cs,GlobalInputHook,UpdateContext,snapshot,parameter,struct,업데이트할 컨텍스트 스냅샷 구조체
+ImeNativeCore.cs,GlobalInputHook,SendReplacement,-,method,void,지정된 개수의 백스페이스 전송 후 대체 텍스트 입력 시뮬레이션
+ImeNativeCore.cs,GlobalInputHook,SendReplacement,backCount,parameter,int,지울 문자 개수
+ImeNativeCore.cs,GlobalInputHook,SendReplacement,text,parameter,string,입력할 대체 문자열
+ImeNativeCore.cs,GlobalInputHook,SendReplacement,isShift,local,bool,Shift 키 누름 상태 변수
+ImeNativeCore.cs,GlobalInputHook,SendReplacement,isLWin,local,bool,왼쪽 Win 키 누름 상태 변수
+ImeNativeCore.cs,GlobalInputHook,SendReplacement,isRWin,local,bool,오른쪽 Win 키 누름 상태 변수
+ImeNativeCore.cs,GlobalInputHook,SendReplacement,i,local,int,백스페이스 루프 인덱스 변수
+ImeNativeCore.cs,GlobalInputHook,MouseHookCallback,-,method,object,마우스 클릭 이벤트를 감지하는 콜백 함수
+ImeNativeCore.cs,GlobalInputHook,MouseHookCallback,nCode,parameter,int,훅 코드 값
+ImeNativeCore.cs,GlobalInputHook,MouseHookCallback,wParam,parameter,object,마우스 메시지 식별자 핸들
+ImeNativeCore.cs,GlobalInputHook,MouseHookCallback,lParam,parameter,object,마우스 이벤트 정보 데이터 핸들
+ImeNativeCore.cs,GlobalInputHook,IsInterestedKeyboardMessage,-,method,bool,키 다운 또는 시스템 키 다운 메시지 여부 판별
+ImeNativeCore.cs,GlobalInputHook,IsInterestedKeyboardMessage,msg,parameter,int,검사할 키보드 메시지 ID
+ImeNativeCore.cs,GlobalInputHook,IsHanjaOrRightCtrl,-,method,bool,한자 키 또는 오른쪽 Ctrl 키 코드 여부 확인
+ImeNativeCore.cs,GlobalInputHook,IsHanjaOrRightCtrl,vkCode,parameter,int,가상 키 코드
+ImeNativeCore.cs,GlobalInputHook,HasBlockedModifierChord,-,method,bool,조합키(Ctrl Alt Win) 누름 상태에 따른 차단 여부 판단
+ImeNativeCore.cs,GlobalInputHook,HasBlockedModifierChord,allowCtrlForCurrentKey,parameter,bool,현재 키에 대한 Ctrl 키 허용 여부
+ImeNativeCore.cs,GlobalInputHook,HasBlockedModifierChord,isCtrl,local,bool,Ctrl 키 누름 상태 변수
+ImeNativeCore.cs,GlobalInputHook,HasBlockedModifierChord,isWin,local,bool,Win 키 누름 상태 변수
+ImeNativeCore.cs,GlobalInputHook,ResolveContextHwnd,-,method,object,유효한 대상 윈도우 핸들을 추적 및 탐색하여 반환
+ImeNativeCore.cs,GlobalInputHook,ResolveContextHwnd,hwnd,local,object,대상 윈도우 핸들 변수
+ImeNativeCore.cs,GlobalInputHook,BypassKeyboardHook,-,method,object,키보드 이벤트를 처리하지 않고 다음 훅 체인으로 전달
+ImeNativeCore.cs,GlobalInputHook,BypassKeyboardHook,nCode,parameter,int,훅 코드 값
+ImeNativeCore.cs,GlobalInputHook,BypassKeyboardHook,wParam,parameter,object,메시지 식별자 핸들
+ImeNativeCore.cs,GlobalInputHook,BypassKeyboardHook,lParam,parameter,object,이벤트 정보 데이터 핸들
+ImeNativeCore.cs,GlobalInputHook,ShouldBypassHook,-,method,bool,현재 키보드 이벤트를 우회(Pass-through)해야 하는지 검사
+ImeNativeCore.cs,GlobalInputHook,ShouldBypassHook,nCode,parameter,int,훅 코드 값
+ImeNativeCore.cs,GlobalInputHook,ShouldBypassHook,wParam,parameter,object,메시지 식별자 핸들
+ImeNativeCore.cs,GlobalInputHook,ShouldBypassHook,msg,local,int,키보드 메시지 ID 변수
+ImeNativeCore.cs,GlobalInputHook,TryResolveKeyboardContext,-,method,bool,키 입력 처리 시 필요한 컨텍스트 정보 단일 해결 시도
+ImeNativeCore.cs,GlobalInputHook,TryResolveKeyboardContext,vkCode,parameter,int,가상 키 코드
+ImeNativeCore.cs,GlobalInputHook,TryResolveKeyboardContext,hFore,parameter,object,전면 윈도우 핸들 출력 변수
+ImeNativeCore.cs,GlobalInputHook,TryResolveKeyboardContext,capsOn,parameter,bool,CapsLock 상태 출력 변수
+ImeNativeCore.cs,GlobalInputHook,TryResolveKeyboardContext,isHangulMode,parameter,bool,한글 모드 여부 출력 변수
+ImeNativeCore.cs,GlobalInputHook,TryResolveKeyboardContext,isHanjaOrRCtrl,parameter,bool,한자/오른쪽Ctrl 여부 출력 변수
+ImeNativeCore.cs,GlobalInputHook,HandleHanjaKey,-,method,object,한자 키 입력 시 언어별 모드 전환 및 키 프로세서 연동 처리
+ImeNativeCore.cs,GlobalInputHook,HandleHanjaKey,nCode,parameter,int,훅 코드 값
+ImeNativeCore.cs,GlobalInputHook,HandleHanjaKey,wParam,parameter,object,메시지 식별자 핸들
+ImeNativeCore.cs,GlobalInputHook,HandleHanjaKey,lParam,parameter,object,이벤트 정보 데이터 핸들
+ImeNativeCore.cs,GlobalInputHook,HandleHanjaKey,hFore,parameter,object,전면 윈도우 핸들
+ImeNativeCore.cs,GlobalInputHook,HandleHanjaKey,capsOn,parameter,bool,CapsLock 상태
+ImeNativeCore.cs,GlobalInputHook,HandleHanjaKey,isHangulMode,parameter,bool,한글 모드 여부
+ImeNativeCore.cs,GlobalInputHook,HandleHanjaKey,hanjaProcessor,local,interface,한자 처리 키 프로세서 객체 변수
+ImeNativeCore.cs,GlobalInputHook,HandleLanguageProcessorKey,-,method,object,언어별 KeyProcessor를 통해 특수 문자/자판 변환 처리
+ImeNativeCore.cs,GlobalInputHook,HandleLanguageProcessorKey,nCode,parameter,int,훅 코드 값
+ImeNativeCore.cs,GlobalInputHook,HandleLanguageProcessorKey,wParam,parameter,object,메시지 식별자 핸들
+ImeNativeCore.cs,GlobalInputHook,HandleLanguageProcessorKey,lParam,parameter,object,이벤트 정보 데이터 핸들
+ImeNativeCore.cs,GlobalInputHook,HandleLanguageProcessorKey,vkCode,parameter,int,가상 키 코드
+ImeNativeCore.cs,GlobalInputHook,HandleLanguageProcessorKey,hFore,parameter,object,전면 윈도우 핸들
+ImeNativeCore.cs,GlobalInputHook,HandleLanguageProcessorKey,capsOn,parameter,bool,CapsLock 상태
+ImeNativeCore.cs,GlobalInputHook,HandleLanguageProcessorKey,isHangulMode,parameter,bool,한글 모드 여부
+ImeNativeCore.cs,GlobalInputHook,HandleLanguageProcessorKey,keyProcessor,local,interface,언어 키 프로세서 객체 변수
+ImeNativeCore.cs,GlobalInputHook,HandleLanguageProcessorKey,isShift,local,bool,Shift 키 누름 상태 변수
+ImeNativeCore.cs,GlobalInputHook,KbdHookCallback,-,method,object,저수준 키보드 이벤트 가로채기 핵심 콜백 함수
+ImeNativeCore.cs,GlobalInputHook,KbdHookCallback,nCode,parameter,int,훅 코드 값
+ImeNativeCore.cs,GlobalInputHook,KbdHookCallback,wParam,parameter,object,메시지 식별자 핸들
+ImeNativeCore.cs,GlobalInputHook,KbdHookCallback,lParam,parameter,object,이벤트 정보 데이터 핸들
+ImeNativeCore.cs,GlobalInputHook,KbdHookCallback,vkCode,local,int,가상 키 코드 변수
+ImeNativeCore.cs,GlobalInputHook,KbdHookCallback,hFore,local,object,전면 윈도우 핸들 변수
+ImeNativeCore.cs,GlobalInputHook,KbdHookCallback,capsOn,local,bool,CapsLock 상태 변수
+ImeNativeCore.cs,GlobalInputHook,KbdHookCallback,isHangulMode,local,bool,한글 모드 여부 변수
+ImeNativeCore.cs,GlobalInputHook,KbdHookCallback,isHanjaOrRCtrl,local,bool,한자/오른쪽Ctrl 키 여부 변수
+file/DLL,class/struct/interface,method/function,constant/variable,category,data type,function or roles
+NativeMethods.cs,-,-,-,file,file,전역에서 사용되는 Win32 P/Invoke API 선언부를 통합 관리하는 C# 소스 파일[cite: 40]
+NativeMethods.cs,NativeMethods,-,-,class,class,Win32 API 상수 구조체 외부 함수 및 헬퍼 메서드를 정의하는 내부 정적 클래스[cite: 40]
+NativeMethods.cs,NativeMethods,-,VK_CAPITAL,const,int,Caps Lock 키의 가상 키 코드[cite: 40]
+NativeMethods.cs,NativeMethods,-,WM_IME_CONTROL,const,int,IME 제어 메시지 상수[cite: 40]
+NativeMethods.cs,NativeMethods,-,IMC_GETCONVERSIONMODE,const,int,IME 변환 모드 가져오기 상수[cite: 40]
+NativeMethods.cs,NativeMethods,-,IMC_SETCONVERSIONMODE,const,int,IME 변환 모드 설정 상수[cite: 40]
+NativeMethods.cs,NativeMethods,-,IME_CMODE_NATIVE,const,int,IME 변환 모드: 한글 모드 상수[cite: 40]
+NativeMethods.cs,NativeMethods,-,SMTO_ABORTIFHUNG,const,int,SendMessageTimeout 플래그: 응답이 없으면 중단[cite: 40]
+NativeMethods.cs,NativeMethods,-,OCR_NORMAL,const,int,일반 커서 상수[cite: 40]
+NativeMethods.cs,NativeMethods,-,OCR_IBEAM,const,int,I-beam 커서 상수[cite: 40]
+NativeMethods.cs,NativeMethods,-,SPI_SETCURSORS,const,int,시스템 커서 설정 상수[cite: 40]
+NativeMethods.cs,NativeMethods,-,SPIF_SENDCHANGE,const,int,시스템 파라미터 변경 시 모든 창에 알림 플래그[cite: 40]
+NativeMethods.cs,NativeMethods,-,WH_KEYBOARD_LL,const,int,Low-level keyboard hook 상수[cite: 40]
+NativeMethods.cs,NativeMethods,-,WH_MOUSE_LL,const,int,Low-level mouse hook 상수[cite: 40]
+NativeMethods.cs,NativeMethods,-,WM_KEYDOWN,const,int,Key down 메시지 상수[cite: 40]
+NativeMethods.cs,NativeMethods,-,WM_SYSKEYDOWN,const,int,System Key down 메시지 상수[cite: 40]
+NativeMethods.cs,NativeMethods,-,WM_LBUTTONDOWN,const,int,Left mouse button down 메시지 상수[cite: 40]
+NativeMethods.cs,NativeMethods,-,INPUT_KEYBOARD,const,int,키보드 입력 유형 플래그[cite: 40]
+NativeMethods.cs,NativeMethods,-,KEYEVENTF_UNICODE,const,int,Unicode 키 이벤트 플래그[cite: 40]
+NativeMethods.cs,NativeMethods,-,KEYEVENTF_KEYUP,const,int,키 업 이벤트 플래그[cite: 40]
+NativeMethods.cs,NativeMethods,-,MDT_EFFECTIVE_DPI,const,int,모니터 DPI 가져오기: 실제 DPI[cite: 40]
+NativeMethods.cs,NativeMethods,-,MONITOR_DEFAULTTONEAREST,const,int,기본 모니터: 가장 가까운 모니터 플래그[cite: 40]
+NativeMethods.cs,NativeMethods,-,IMAGE_CURSOR,const,int,LoadImage에서 커서 이미지를 로드할 때 사용하는 플래그[cite: 40]
+NativeMethods.cs,NativeMethods,-,LR_SHARED,const,int,LoadImage에서 공유 리소스를 로드할 때 사용하는 플래그[cite: 40]
+NativeMethods.cs,NativeMethods,-,LR_DEFAULTSIZE,const,int,LoadImage에서 기본 크기로 이미지를 로드할 때 사용하는 플래그[cite: 40]
+NativeMethods.cs,NativeMethods,-,SM_CXCURSOR,const,int,커서의 너비 시스템 메트릭스 인덱스[cite: 40]
+NativeMethods.cs,NativeMethods,-,SM_CYCURSOR,const,int,커서의 높이 시스템 메트릭스 인덱스[cite: 40]
+NativeMethods.cs,NativeMethods.POINT,-,-,struct,struct,좌표 정보를 담는 Win32 POINT 구조체[cite: 40]
+NativeMethods.cs,NativeMethods.POINT,-,X,field,int,X 좌표 필드[cite: 40]
+NativeMethods.cs,NativeMethods.POINT,-,Y,field,int,Y 좌표 필드[cite: 40]
+NativeMethods.cs,NativeMethods.SIZE,-,-,struct,struct,크기 정보를 담는 Win32 SIZE 구조체[cite: 40]
+NativeMethods.cs,NativeMethods.SIZE,-,cx,field,int,너비 필드[cite: 40]
+NativeMethods.cs,NativeMethods.SIZE,-,cy,field,int,높이 필드[cite: 40]
+NativeMethods.cs,NativeMethods.BLENDFUNCTION,-,-,struct,struct,알파 블렌딩 정보를 담는 Win32 BLENDFUNCTION 구조체[cite: 40]
+NativeMethods.cs,NativeMethods.BLENDFUNCTION,-,BlendOp,field,int,블렌드 연산 코드[cite: 40]
+NativeMethods.cs,NativeMethods.BLENDFUNCTION,-,BlendFlags,field,int,블렌드 플래그[cite: 40]
+NativeMethods.cs,NativeMethods.BLENDFUNCTION,-,SourceConstantAlpha,field,int,소스 알파 값[cite: 40]
+NativeMethods.cs,NativeMethods.BLENDFUNCTION,-,AlphaFormat,field,int,알파 포맷[cite: 40]
+NativeMethods.cs,NativeMethods.ICONINFO,-,-,struct,struct,아이콘 정보를 담는 Win32 ICONINFO 구조체[cite: 40]
+NativeMethods.cs,NativeMethods.ICONINFO,-,fIcon,field,int,아이콘 여부 플래그[cite: 40]
+NativeMethods.cs,NativeMethods.ICONINFO,-,xHotspot,field,int,X 핫스팟 좌표[cite: 40]
+NativeMethods.cs,NativeMethods.ICONINFO,-,yHotspot,field,int,Y 핫스팟 좌표[cite: 40]
+NativeMethods.cs,NativeMethods.ICONINFO,-,hbmMask,field,object,마스크 비트맵 핸들[cite: 40]
+NativeMethods.cs,NativeMethods.ICONINFO,-,hbmColor,field,object,컬러 비트맵 핸들[cite: 40]
+NativeMethods.cs,NativeMethods.GUITHREADINFO,-,-,struct,struct,GUI 스레드 정보를 담는 Win32 구조체[cite: 40]
+NativeMethods.cs,NativeMethods.GUITHREADINFO,-,cbSize,field,int,구조체 크기[cite: 40]
+NativeMethods.cs,NativeMethods.GUITHREADINFO,-,flags,field,int,스레드 상태 플래그[cite: 40]
+NativeMethods.cs,NativeMethods.GUITHREADINFO,-,hwndActive,field,object,활성 창 핸들[cite: 40]
+NativeMethods.cs,NativeMethods.GUITHREADINFO,-,hwndFocus,field,object,포커스 창 핸들[cite: 40]
+NativeMethods.cs,NativeMethods.GUITHREADINFO,-,hwndCapture,field,object,캡처 창 핸들[cite: 40]
+NativeMethods.cs,NativeMethods.GUITHREADINFO,-,hwndMenuOwner,field,object,메뉴 소유자 창 핸들[cite: 40]
+NativeMethods.cs,NativeMethods.GUITHREADINFO,-,hwndMoveSize,field,object,이동/크기 조절 창 핸들[cite: 40]
+NativeMethods.cs,NativeMethods.GUITHREADINFO,-,hwndCaret,field,object,캐럿 창 핸들[cite: 40]
+NativeMethods.cs,NativeMethods.GUITHREADINFO,-,rectLeft,field,int,캐럿 사각형 왼쪽 좌표[cite: 40]
+NativeMethods.cs,NativeMethods.GUITHREADINFO,-,rectTop,field,int,캐럿 사각형 위쪽 좌표[cite: 40]
+NativeMethods.cs,NativeMethods.GUITHREADINFO,-,rectRight,field,int,캐럿 사각형 오른쪽 좌표[cite: 40]
+NativeMethods.cs,NativeMethods.GUITHREADINFO,-,rectBottom,field,int,캐럿 사각형 아래쪽 좌표[cite: 40]
+NativeMethods.cs,NativeMethods.BITMAPINFO,-,-,struct,struct,비트맵 정보를 담는 Win32 구조체[cite: 40]
+NativeMethods.cs,NativeMethods.BITMAPINFO,-,biSize,field,int,구조체 크기[cite: 40]
+NativeMethods.cs,NativeMethods.BITMAPINFO,-,biWidth,field,int,비트맵 너비[cite: 40]
+NativeMethods.cs,NativeMethods.BITMAPINFO,-,biHeight,field,int,비트맵 높이[cite: 40]
+NativeMethods.cs,NativeMethods.BITMAPINFO,-,biPlanes,field,int,색상 평면 수[cite: 40]
+NativeMethods.cs,NativeMethods.BITMAPINFO,-,biBitCount,field,int,픽셀당 비트 수[cite: 40]
+NativeMethods.cs,NativeMethods.BITMAPINFO,-,biCompression,field,int,압축 유형[cite: 40]
+NativeMethods.cs,NativeMethods.BITMAPINFO,-,biSizeImage,field,int,이미지 크기[cite: 40]
+NativeMethods.cs,NativeMethods.BITMAPINFO,-,biXPelsPerMeter,field,int,X축 미터당 픽셀 수[cite: 40]
+NativeMethods.cs,NativeMethods.BITMAPINFO,-,biYPelsPerMeter,field,int,Y축 미터당 픽셀 수[cite: 40]
+NativeMethods.cs,NativeMethods.BITMAPINFO,-,biClrUsed,field,int,사용된 색상 수[cite: 40]
+NativeMethods.cs,NativeMethods.BITMAPINFO,-,biClrImportant,field,int,중요 색상 수[cite: 40]
+NativeMethods.cs,NativeMethods.CURSORINFO,-,-,struct,struct,커서 정보를 담는 Win32 구조체[cite: 40]
+NativeMethods.cs,NativeMethods.CURSORINFO,-,cbSize,field,int,구조체 크기[cite: 40]
+NativeMethods.cs,NativeMethods.CURSORINFO,-,flags,field,int,커서 상태 플래그[cite: 40]
+NativeMethods.cs,NativeMethods.CURSORINFO,-,hCursor,field,object,커서 핸들[cite: 40]
+NativeMethods.cs,NativeMethods.CURSORINFO,-,ptScreenPos,field,struct,화면 상의 커서 좌표[cite: 40]
+NativeMethods.cs,NativeMethods.INPUT,-,-,struct,struct,입력 이벤트를 정의하는 Win32 구조체[cite: 40]
+NativeMethods.cs,NativeMethods.INPUT,-,type,field,int,입력 이벤트 유형[cite: 40]
+NativeMethods.cs,NativeMethods.INPUT,-,U,field,struct,입력 이벤트 상세 데이터를 포함하는 공용체[cite: 40]
+NativeMethods.cs,NativeMethods.InputUnion,-,-,struct,struct,입력 이벤트 데이터를 담는 명시적 레이아웃 공용체 구조체[cite: 40]
+NativeMethods.cs,NativeMethods.InputUnion,-,mi,field,struct,마우스 입력 구조체 데이터[cite: 40]
+NativeMethods.cs,NativeMethods.InputUnion,-,ki,field,struct,키보드 입력 구조체 데이터[cite: 40]
+NativeMethods.cs,NativeMethods.InputUnion,-,hi,field,struct,하드웨어 입력 구조체 데이터[cite: 40]
+NativeMethods.cs,NativeMethods.MOUSEINPUT,-,-,struct,struct,마우스 입력 이벤트를 정의하는 Win32 구조체[cite: 40]
+NativeMethods.cs,NativeMethods.MOUSEINPUT,-,dx,field,int,X 이동량 또는 절대 좌표[cite: 40]
+NativeMethods.cs,NativeMethods.MOUSEINPUT,-,dy,field,int,Y 이동량 또는 절대 좌표[cite: 40]
+NativeMethods.cs,NativeMethods.MOUSEINPUT,-,mouseData,field,int,마우스 휠 이동량 등 데이터[cite: 40]
+NativeMethods.cs,NativeMethods.MOUSEINPUT,-,dwFlags,field,int,마우스 이벤트 플래그[cite: 40]
+NativeMethods.cs,NativeMethods.MOUSEINPUT,-,time,field,int,이벤트 발생 타임스탬프[cite: 40]
+NativeMethods.cs,NativeMethods.MOUSEINPUT,-,dwExtraInfo,field,object,추가 정보 핸들[cite: 40]
+NativeMethods.cs,NativeMethods.KEYBDINPUT,-,-,struct,struct,키보드 입력 이벤트를 정의하는 Win32 구조체[cite: 40]
+NativeMethods.cs,NativeMethods.KEYBDINPUT,-,wVk,field,int,가상 키 코드[cite: 40]
+NativeMethods.cs,NativeMethods.KEYBDINPUT,-,wScan,field,int,하드웨어 스캔 코드[cite: 40]
+NativeMethods.cs,NativeMethods.KEYBDINPUT,-,dwFlags,field,int,키보드 이벤트 플래그[cite: 40]
+NativeMethods.cs,NativeMethods.KEYBDINPUT,-,time,field,int,이벤트 발생 타임스탬프[cite: 40]
+NativeMethods.cs,NativeMethods.KEYBDINPUT,-,dwExtraInfo,field,object,추가 정보 핸들[cite: 40]
+NativeMethods.cs,NativeMethods.HARDWAREINPUT,-,-,struct,struct,하드웨어 입력 이벤트를 정의하는 Win32 구조체[cite: 40]
+NativeMethods.cs,NativeMethods.HARDWAREINPUT,-,uMsg,field,int,메시지 유형[cite: 40]
+NativeMethods.cs,NativeMethods.HARDWAREINPUT,-,wParamL,field,int,메시지 파라미터 하위 워드[cite: 40]
+NativeMethods.cs,NativeMethods.HARDWAREINPUT,-,wParamH,field,int,메시지 파라미터 상위 워드[cite: 40]
+NativeMethods.cs,NativeMethods,ClientToScreen,-,method,bool,클라이언트 좌표를 화면 좌표로 변환[cite: 40]
+NativeMethods.cs,NativeMethods,LoadImage,-,method,object,이미지 커서 또는 아이콘을 로드[cite: 40]
+NativeMethods.cs,NativeMethods,SetWindowsHookEx,-,method,object,애플리케이션 시스템 훅(Hook) 프로시저를 설치[cite: 40]
+NativeMethods.cs,NativeMethods,UnhookWindowsHookEx,-,method,bool,설치된 시스템 훅을 제거[cite: 40]
+NativeMethods.cs,NativeMethods,CallNextHookEx,-,method,object,훅 체인에 있는 다음 훅 프로시저로 정보를 전달[cite: 40]
+NativeMethods.cs,NativeMethods,SendInput,-,method,int,키보드 및 마우스 입력을 합성하여 시스템에 전송[cite: 40]
+NativeMethods.cs,NativeMethods,GetDpiForSystem,-,method,int,시스템 DPI 값을 가져옴[cite: 40]
+NativeMethods.cs,NativeMethods,MonitorFromWindow,-,method,object,지정된 윈도우와 교차하는 모니터 핸들을 반환[cite: 40]
+NativeMethods.cs,NativeMethods,GetCursorInfo,-,method,bool,전역 커서 정보를 조회[cite: 40]
+NativeMethods.cs,NativeMethods,GetIconInfo,-,method,bool,아이콘 또는 커서에 대한 세부 정보를 검색[cite: 40]
+NativeMethods.cs,NativeMethods,GetForegroundWindow,-,method,object,사용자가 현재 작업 중인 창의 핸들을 가져옴[cite: 40]
+NativeMethods.cs,NativeMethods,GetWindowThreadProcessId,-,method,int,지정된 창을 생성한 스레드의 식별자를 검색[cite: 40]
+NativeMethods.cs,NativeMethods,GetKeyboardLayout,-,method,object,지정된 스레드의 키보드 레이아웃 핸들을 반환[cite: 40]
+NativeMethods.cs,NativeMethods,GetKeyState,-,method,int,지정된 가상 키의 상태(눌림 또는 토글)를 조회[cite: 40]
+NativeMethods.cs,NativeMethods,GetCursorPos,-,method,bool,마우스 커서의 화면 좌표를 조회[cite: 40]
+NativeMethods.cs,NativeMethods,SendMessageTimeout,-,method,object,지정된 창에 메시지를 보내고 타임아웃 동안 응답을 대기[cite: 40]
+NativeMethods.cs,NativeMethods,SetSystemCursor,-,method,bool,시스템 커서 모양을 변경[cite: 40]
+NativeMethods.cs,NativeMethods,CopyIcon,-,method,object,지정된 아이콘 또는 커서를 복사[cite: 40]
+NativeMethods.cs,NativeMethods,CreateIconIndirect,-,method,object,ICONINFO 구조체로부터 아이콘이나 커서를 생성[cite: 40]
+NativeMethods.cs,NativeMethods,GetClassName,-,method,int,지정된 윈도우의 클래스 이름을 반환[cite: 40]
+NativeMethods.cs,NativeMethods,SetForegroundWindow,-,method,bool,지정된 윈도우를 백그라운드에서 포어그라운드로 이동[cite: 40]
+NativeMethods.cs,NativeMethods,UpdateLayeredWindow,-,method,bool,레이어드 윈도우의 위치 크기 모양 내용 알파를 업데이트[cite: 40]
+NativeMethods.cs,NativeMethods,GetSystemMetrics,-,method,int,시스템 메트릭 정보 및 시스템 구성 설정을 조회[cite: 40]
+NativeMethods.cs,NativeMethods,GetDC,-,method,object,지정된 윈도우의 디바이스 컨텍스트(DC) 핸들을 가져옴[cite: 40]
+NativeMethods.cs,NativeMethods,ReleaseDC,-,method,int,디바이스 컨텍스트를 해제[cite: 40]
+NativeMethods.cs,NativeMethods,DrawIconEx,-,method,bool,지정된 아이콘 또는 커서를 디바이스 컨텍스트에 그림[cite: 40]
+NativeMethods.cs,NativeMethods,DestroyCursor,-,method,bool,생성된 커서를 파괴하고 리소스를 해제[cite: 40]
+NativeMethods.cs,NativeMethods,DestroyIcon,-,method,bool,생성된 아이콘을 파괴하고 리소스를 해제[cite: 40]
+NativeMethods.cs,NativeMethods,SystemParametersInfo,-,method,bool,시스템 전역 매개변수를 질의하거나 설정[cite: 40]
+NativeMethods.cs,NativeMethods,GetGUIThreadInfo,-,method,bool,특정 GUI 스레드의 상태 정보를 조회[cite: 40]
+NativeMethods.cs,NativeMethods,keybd_event,-,method,void,키보드 이벤트를 합성하여 전송 (구형 API)[cite: 40]
+NativeMethods.cs,NativeMethods,ToUnicodeEx,-,method,int,가상 키 코드 및 스캔 코드를 유니코드 문자로 변환[cite: 40]
+NativeMethods.cs,NativeMethods,MapVirtualKeyEx,-,method,int,가상 키 코드 스캔 코드 또는 문자 값을 서로 변환[cite: 40]
+NativeMethods.cs,NativeMethods,GetKeyboardState,-,method,bool,모든 가상 키의 현재 키보드 상태를 복사[cite: 40]
+NativeMethods.cs,NativeMethods,OpenClipboard,-,method,bool,클립보드를 열어 현재 창에서 검사하고 비울 수 있도록 함[cite: 40]
+NativeMethods.cs,NativeMethods,CloseClipboard,-,method,bool,열린 클립보드를 닫음[cite: 40]
+NativeMethods.cs,NativeMethods,EmptyClipboard,-,method,bool,클립보드의 내용을 비우고 메모리를 해제[cite: 40]
+NativeMethods.cs,NativeMethods,GetClipboardData,-,method,object,클립보드에서 지정된 형식의 데이터를 가져옴[cite: 40]
+NativeMethods.cs,NativeMethods,IsClipboardFormatAvailable,-,method,bool,클립보드에 지정된 형식의 데이터가 포함되어 있는지 판별[cite: 40]
+NativeMethods.cs,NativeMethods,CreateCompatibleDC,-,method,object,지정된 디바이스와 호환되는 메모리 디바이스 컨텍스트 생성[cite: 40]
+NativeMethods.cs,NativeMethods,DeleteDC,-,method,bool,지정된 디바이스 컨텍스트를 삭제[cite: 40]
+NativeMethods.cs,NativeMethods,CreateDIBSection,-,method,object,애플리케이션이 직접 쓸 수 있는 DIB 생성 및 비트 포인터 반환[cite: 40]
+NativeMethods.cs,NativeMethods,SelectObject,-,method,object,디바이스 컨텍스트로 객체를 선택[cite: 40]
+NativeMethods.cs,NativeMethods,DeleteObject,-,method,bool,펜 브러시 비트맵 등의 논리 객체를 삭제[cite: 40]
+NativeMethods.cs,NativeMethods,ImmGetDefaultIMEWnd,-,method,object,기본 IME 창 핸들을 검색[cite: 40]
+NativeMethods.cs,NativeMethods,ImmGetContext,-,method,object,지정된 윈도우와 연관된 입력 컨텍스트(IME)를 가져옴[cite: 40]
+NativeMethods.cs,NativeMethods,ImmGetConversionStatus,-,method,bool,현재 IME의 변환 상태를 가져옴[cite: 40]
+NativeMethods.cs,NativeMethods,ImmReleaseContext,-,method,bool,가져온 입력 컨텍스트(IME)를 해제[cite: 40]
+NativeMethods.cs,NativeMethods,GetModuleHandle,-,method,object,호출하는 프로세스의 주소 공간에 매핑된 지정된 모듈의 핸들 반환[cite: 40]
+NativeMethods.cs,NativeMethods,GetDpiForMonitor,-,method,int,특정 모니터에 대한 DPI 값을 조회[cite: 40]
+NativeMethods.cs,NativeMethods,GlobalLock,-,method,object,전역 메모리 객체를 잠그고 첫 번째 바이트를 가리키는 포인터 반환[cite: 40]
+NativeMethods.cs,NativeMethods,GlobalUnlock,-,method,bool,GlobalLock으로 잠근 전역 메모리 객체의 잠금을 해제[cite: 40]
+NativeMethods.cs,NativeMethods,SimulateCapsLock,-,method,void,Caps Lock 키 입력을 시뮬레이션하는 메서드[cite: 40]
+NativeMethods.cs,NativeMethods,SimulateCapsLock,inputs,local,array,Caps Lock 키 입력을 시뮬레이션하기 위한 INPUT 구조체 배열[cite: 40]
+NativeMethods.cs,NativeMethods,SendBackspace,-,method,void,백스페이스 키 입력을 시뮬레이션하는 메서드[cite: 40]
+NativeMethods.cs,NativeMethods,SendBackspace,inputs,local,array,백스페이스 키 입력을 시뮬레이션하기 위한 INPUT 구조체 배열[cite: 40]
+NativeMethods.cs,NativeMethods,SendUnicodeString,-,method,void,유니코드 문자열을 입력으로 보내는 메서드[cite: 40]
+NativeMethods.cs,NativeMethods,SendUnicodeString,text,parameter,string,입력 시뮬레이션으로 전송할 대상 유니코드 문자열[cite: 40]
+NativeMethods.cs,NativeMethods,SendUnicodeString,inputs,local,array,문자열 입력을 시뮬레이션하기 위해 생성된 INPUT 구조체 배열[cite: 40]
+NativeMethods.cs,NativeMethods,SendUnicodeString,i,local,int,문자열을 순회하기 위해 사용되는 루프 인덱스 변수[cite: 40]

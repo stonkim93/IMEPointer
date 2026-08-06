@@ -2,10 +2,10 @@
 
 # 🌍 IMEPointer
 
-### I'm e-Pointer that utilizes color pointers & multi-language key-layouts 
+### I'm e-Pointer that utilizes color pointers & multi-language keyboard input.
 (English, Korean, Pali, Japanese)
 
-### 컬러 마우스 포인터와 다국어 입력 모드를 지원하는 고성능 IME 상태추적 유틸리티
+### 다국어 입력 상태를 컬러 마우스 포인터로 즉각 표시해주는 경량 IME 상태 추적 유틸리티
 
 ![Platform](https://img.shields.io/badge/platform-Windows-0078D4?logo=windows11&logoColor=white)
 ![Framework](https://img.shields.io/badge/.NET-10.0--windows-512BD4?logo=dotnet&logoColor=white)
@@ -698,11 +698,11 @@ dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=
 
 - **IMEPointer** : Full Packages.
 
-- **IMEPali** : Pali input system in the English mode not Korean CAPS mode.
+- [**IMEPali**](https://apps.microsoft.com/detail/9PNFCVSWJNS5?hl=ko-kr&gl=KR&ocid=pdpshare) : Pali input system in the English mode.
 
-- **IMEJapanese** : Japanese1 + Japanese2 + Japanese3 input system. 
+- [**IMEJapanese**](https://apps.microsoft.com/detail/9PMHRZSFVCZ2?hl=ko-kr&gl=KR&ocid=pdpshare) : Japanese1 + Japanese2 + Japanese3 input system in the Korean CAPS mode. 
 
-- **IMCPointer** : Color Pointer Only.
+- [**IMCPointer**](https://apps.microsoft.com/detail/9MX9NMQ6LP3H?hl=ko-kr&gl=KR&ocid=pdpshare) : Color Pointer Only.
 
 
 ## 📜 라이선스 (License)
