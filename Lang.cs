@@ -435,7 +435,7 @@ namespace IMEPointer
             {"ぱ","パ"},{"ぴ","ピ"},{"ぷ","プ"},{"ぺ","ペ"},{"ぽ","ポ"},
             {"ぁ","ァ"},{"ぃ","ィ"},{"ぅ","ゥ"},{"ぇ","ェ"},{"ぉ","ォ"},
             {"ゃ","ャ"},{"ゅ","ュ"},{"ょ","ョ"},{"ゎ","ヮ"},{"っ","ッ"},
-            {"ん","ン"},{"ゔ","ヴ"}
+            {"ゕ","ヵ"},{"ゖ","ヶ"},{"ゔ","ヴ"},{"ん","ン"},
         };
 
         public static readonly Dictionary<string, string> KataToHira = HiraToKata.ToDictionary(kv => kv.Value, kv => kv.Key);
@@ -444,13 +444,13 @@ namespace IMEPointer
         {
             {"あ","ぁ"},{"ぁ","あ"},{"い","ぃ"},{"ぃ","い"},{"え","ぇ"},{"ぇ","え"},{"お","ぉ"},{"ぉ","お"},{"う","ゔ"},{"ゔ","ぅ"},{"ぅ","う"},
             {"や","ゃ"},{"ゃ","や"},{"ゆ","ゅ"},{"ゅ","ゆ"},{"よ","ょ"},{"ょ","よ"},{"わ","ゎ"},{"ゎ","わ"},
-            {"か","が"},{"が","か"},{"き","ぎ"},{"ぎ","き"},{"く","ぐ"},{"ぐ","く"},{"け","げ"},{"げ","け"},{"こ","ご"},{"ご","こ"},
+            {"か","が"},{"が","ゕ"},{"ゕ","か"},{"き","ぎ"},{"ぎ","き"},{"く","ぐ"},{"ぐ","く"},{"け","げ"},{"げ","ゖ"},{"ゖ","け"},{"こ","ご"},{"ご","こ"},
             {"さ","ざ"},{"ざ","さ"},{"し","じ"},{"じ","し"},{"す","ず"},{"ず","す"},{"せ","ぜ"},{"ぜ","せ"},{"そ","ぞ"},{"ぞ","そ"},
             {"た","だ"},{"だ","た"},{"ち","ぢ"},{"ぢ","ち"},{"て","で"},{"で","て"},{"つ","づ"},{"づ","っ"},{"っ","つ"},{"と","ど"},{"ど","と"},
             {"は","ば"},{"ば","ぱ"},{"ぱ","は"},{"ひ","び"},{"び","ぴ"},{"ぴ","ひ"},{"ふ","ぶ"},{"ぶ","ぷ"},{"ぷ","ふ"},{"へ","べ"},{"べ","ぺ"},{"ぺ","へ"},{"ほ","ぼ"},{"ぼ","ぽ"},{"ぽ","ほ"},
             {"ア","ァ"},{"ァ","ア"},{"イ","ィ"},{"ィ","イ"},{"エ","ェ"},{"ェ","エ"},{"オ","ォ"},{"ォ","オ"},{"ウ","ヴ"},{"ヴ","ゥ"},{"ゥ","ウ"},
             {"ヤ","ャ"},{"ャ","ヤ"},{"ユ","ュ"},{"ュ","ユ"},{"ヨ","ョ"},{"ョ","ヨ"},{"ワ","ヮ"},{"ヮ","ワ"},
-            {"カ","ガ"},{"ガ","カ"},{"キ","ギ"},{"ギ","キ"},{"ク","グ"},{"グ","ク"},{"ケ","ゲ"},{"ゲ","ケ"},{"コ","ゴ"},{"ゴ","コ"},
+            {"カ","ガ"},{"ガ","ヵ"},{"ヵ","カ"},{"キ","ギ"},{"ギ","キ"},{"ク","グ"},{"グ","ク"},{"ケ","ゲ"},{"ゲ","ヶ"},{"ヶ","ケ"},{"コ","ゴ"},{"ゴ","コ"},
             {"サ","ザ"},{"ザ","サ"},{"シ","ジ"},{"ジ","シ"},{"ス","ズ"},{"ズ","ス"},{"セ","ゼ"},{"ゼ","セ"},{"ソ","ゾ"},{"ゾ","ソ"},
             {"タ","ダ"},{"ダ","タ"},{"チ","ヂ"},{"ヂ","チ"},{"テ","デ"},{"デ","テ"},{"ツ","ヅ"},{"ヅ","ッ"},{"ッ","ツ"},{"ト","ド"},{"ド","ト"},
             {"ハ","バ"},{"バ","パ"},{"パ","ハ"},{"ヒ","ビ"},{"ビ","ピ"},{"ピ","ヒ"},{"フ","ブ"},{"ブ","プ"},{"プ","フ"},{"ヘ","ベ"},{"ベ","ペ"},{"ペ","ヘ"},{"ホ","ボ"},{"ボ","ポ"},{"ポ","ホ"},
@@ -460,11 +460,11 @@ namespace IMEPointer
         {
             {"あ", new string?[]{"あ",null,null,"ぁ"}}, {"い", new string?[]{"い",null,null,"ぃ"}}, {"う", new string?[]{"う","ゔ",null,"ぅ"}}, {"え", new string?[]{"え",null,null,"ぇ"}}, {"お", new string?[]{"お",null,null,"ぉ"}},
             {"や", new string?[]{"や",null,null,"ゃ"}}, {"ゆ", new string?[]{"ゆ",null,null,"ゅ"}}, {"よ", new string?[]{"よ",null,null,"ょ"}}, {"わ", new string?[]{"わ",null,null,"ゎ"}},
-            {"か", new string?[]{"か","が",null,null}}, {"き", new string?[]{"き","ぎ",null,null}}, {"く", new string?[]{"く","ぐ",null,null}}, {"け", new string?[]{"け","げ",null,null}}, {"こ", new string?[]{"こ","ご",null,null}},
+            {"か", new string?[]{"か","が",null,"ゕ"}}, {"き", new string?[]{"き","ぎ",null,null}}, {"く", new string?[]{"く","ぐ",null,null}}, {"け", new string?[]{"け","げ",null,"ゖ"}}, {"こ", new string?[]{"こ","ご",null,null}},
             {"さ", new string?[]{"さ","ざ",null,null}}, {"し", new string?[]{"し","じ",null,null}}, {"す", new string?[]{"す","ず",null,null}}, {"せ", new string?[]{"せ","ぜ",null,null}}, {"そ", new string?[]{"そ","ぞ",null,null}},
             {"た", new string?[]{"た","だ",null,null}}, {"ち", new string?[]{"ち","ぢ",null,null}}, {"て", new string?[]{"て","で",null,null}}, {"つ", new string?[]{"つ","づ",null,"っ"}}, {"と", new string?[]{"と","ど",null,null}},
             {"は", new string?[]{"は","ば","ぱ",null}}, {"ひ", new string?[]{"ひ","び","ぴ",null}}, {"ふ", new string?[]{"ふ","ぶ","ぷ",null}}, {"へ", new string?[]{"へ","べ","ぺ",null}}, {"ほ", new string?[]{"ほ","ぼ","ぽ",null}},
-            {"が", new string?[]{"か","が",null,null}}, {"ぎ", new string?[]{"き","ぎ",null,null}}, {"ぐ", new string?[]{"く","ぐ",null,null}}, {"げ", new string?[]{"け","げ",null,null}}, {"ご", new string?[]{"こ","ご",null,null}},
+            {"が", new string?[]{"か","が",null,"ゕ"}}, {"ぎ", new string?[]{"き","ぎ",null,null}}, {"ぐ", new string?[]{"く","ぐ",null,null}}, {"げ", new string?[]{"け","げ",null,"ゖ"}}, {"ご", new string?[]{"こ","ご",null,null}},
             {"ざ", new string?[]{"さ","ざ",null,null}}, {"じ", new string?[]{"し","じ",null,null}}, {"ず", new string?[]{"す","ず",null,null}}, {"ぜ", new string?[]{"せ","ぜ",null,null}}, {"ぞ", new string?[]{"そ","ぞ",null,null}},
             {"だ", new string?[]{"た","だ",null,null}}, {"ぢ", new string?[]{"ち","ぢ",null,null}}, {"づ", new string?[]{"つ","づ",null,"っ"}}, {"で", new string?[]{"て","で",null,null}}, {"ど", new string?[]{"と","ど",null,null}},
             {"ば", new string?[]{"は","ば","ぱ",null}}, {"び", new string?[]{"ひ","び","ぴ",null}}, {"ぶ", new string?[]{"ふ","ぶ","ぷ",null}}, {"べ", new string?[]{"へ","べ","ぺ",null}}, {"ぼ", new string?[]{"ほ","ぼ","ぽ",null}},
@@ -472,7 +472,7 @@ namespace IMEPointer
             {"ゔ", new string?[]{"う","ゔ",null,"ぅ"}},
             {"ぁ", new string?[]{"あ",null,null,"ぁ"}}, {"ぃ", new string?[]{"い",null,null,"ぃ"}}, {"ぅ", new string?[]{"う","ゔ",null,"ぅ"}}, {"ぇ", new string?[]{"え",null,null,"ぇ"}}, {"ぉ", new string?[]{"お",null,null,"ぉ"}},
             {"ゃ", new string?[]{"や",null,null,"ゃ"}}, {"ゅ", new string?[]{"ゆ",null,null,"ゅ"}}, {"ょ", new string?[]{"よ",null,null,"ょ"}}, {"ゎ", new string?[]{"わ",null,null,"ゎ"}}, 
-            {"っ", new string?[]{"つ","づ",null,"っ"}},
+            {"っ", new string?[]{"つ","づ",null,"っ"}}, {"ゕ", new string?[]{"か","が",null,"ゕ"}}, {"ゖ", new string?[]{"け","げ",null,"ゖ"}}
         };
 
         private static readonly Dictionary<string, string?[]> YoonKatakanaChains = new();
@@ -1286,7 +1286,7 @@ namespace IMEPointer
                     0x51 => useKatakana ? "ゲ" : "げ", 0x57 => useKatakana ? "ゴ" : "ご", 0x45 => useKatakana ? "グ" : "ぐ", 0x52 => useKatakana ? "ギ" : "ぎ", 0x54 => useKatakana ? "ガ" : "が", 
                     0x59 => useKatakana ? "バ" : "ば", 0x55 => useKatakana ? "ビ" : "び", 0x49 => useKatakana ? "ブ" : "ぶ", 0x4F => useKatakana ? "ボ" : "ぼ", 0x50 => useKatakana ? "ベ" : "べ", 
                     0x41 => useKatakana ? "デ" : "で", 0x53 => useKatakana ? "ド" : "ど", 0x44 => useKatakana ? "ヅ" : "づ", 0x46 => useKatakana ? "ヂ" : "ぢ", 0x47 => useKatakana ? "ダ" : "だ",
-                    0x48 => useKatakana ? "ヴ" : "ゔ", 0x4A => useKatakana ? "ョ" : "ょ", 0x4B => useKatakana ? "ュ" : "ゅ", 0x4C => useKatakana ? "ャ" : "ゃ", 
+                    0x48 => useKatakana ? "ヴ" : "ヶ", 0x4A => useKatakana ? "ョ" : "ょ", 0x4B => useKatakana ? "ュ" : "ゅ", 0x4C => useKatakana ? "ャ" : "ゃ", 
                     0x5A => useKatakana ? "ゼ" : "ぜ", 0x58 => useKatakana ? "ゾ" : "ぞ", 0x43 => useKatakana ? "ズ" : "ず", 0x56 => useKatakana ? "ジ" : "じ", 0x42 => useKatakana ? "ザ" : "ざ", 
                     _ => null
                 };
