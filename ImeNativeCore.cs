@@ -253,6 +253,51 @@ namespace IMEPointer
             _contextSnapshot = snapshot;
         }
 
+        // ─────────────────────────────────────────────────────────────────
+        // [ 조합 버퍼 관리 메서드 ] Keymaps(일본어 입력기)에서 호출하여
+        //   한자 변환(Space 키)을 위해 최근 히라가나 출력 이력을 누적합니다.
+        // ─────────────────────────────────────────────────────────────────
+
+        /// <summary>최근에 출력된 히라가나/가타카나 문자열을 조합 버퍼에 누적합니다.</summary>
+        private static readonly System.Text.StringBuilder _compositionBuffer = new();
+        public static string CompositionBuffer => _compositionBuffer.ToString();
+
+        public static void AppendComposition(string text)
+        {
+            _compositionBuffer.Append(text);
+            // 버퍼가 너무 길어지는 것을 방지 (AppConfig.MaxKanjiConversionLength 기준)
+            if (_compositionBuffer.Length > AppConfig.MaxKanjiConversionLength)
+            {
+                int excess = _compositionBuffer.Length - AppConfig.MaxKanjiConversionLength;
+                _compositionBuffer.Remove(0, excess);
+            }
+        }
+
+        /// <summary>조합 버퍼를 초기화합니다. (마우스 클릭, 커서 이동 등 조합 연속성이 끊길 때 호출)</summary>
+        public static void ClearCompositionBuffer()
+        {
+            _compositionBuffer.Clear();
+        }
+
+        /// <summary>
+        /// 현재 조합 버퍼의 히라가나를 한자로 변환 확정합니다. (Space 키 한자변환 완료 후 호출)
+        /// 백스페이스로 기존 입력을 지우고, 변환된 문자열을 새로 출력한 뒤 버퍼를 초기화합니다.
+        /// </summary>
+        public static void CommitKanjiConversion(string originalKana, string convertedKanji, bool isReplacingSelection = false)
+        {
+            if (string.IsNullOrEmpty(convertedKanji)) return;
+            IsSending = true;
+            if (!isReplacingSelection && !string.IsNullOrEmpty(originalKana))
+            {
+                // 선택 영역 대체가 아닐 때만 기존 히라가나 글자 수만큼 백스페이스
+                for (int i = 0; i < originalKana.Length; i++) NativeMethods.SendBackspace();
+            }
+            // 변환된 한자 출력
+            NativeMethods.SendUnicodeString(convertedKanji);
+            IsSending = false;
+            ClearCompositionBuffer();
+        }
+
         /// <summary>
         /// 지정된 횟수만큼 백스페이스를 전송한 후 새로운 텍스트를 입력합니다.
         /// </summary>
