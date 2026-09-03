@@ -1,12 +1,13 @@
-// Program.cs - IMEJapanese
+// Program.cs - IMEPointer
 #nullable enable
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
+//using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,7 +40,7 @@ namespace IMEPointer
 
             if (!isPointerFirst || !isPaliFirst || !isJapaneseFirst)
             {
-                MessageBox.Show("IMEJapanese 앱이 이미 실행 중입니다.", "IMEJapanese", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("IMEPointer 앱이 이미 실행 중입니다.", "IMEPointer", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -48,7 +49,7 @@ namespace IMEPointer
             // [최적화 1] 불필요하게 중첩된 try-catch 블록 제거 및 정리
             try
             {
-                string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "IMEJapanese.log");
+                string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "IMEPointer.log");
                 var listener = new TextWriterTraceListener(logPath);
                 Trace.Listeners.Add(listener);
                 Trace.AutoFlush = true;
@@ -97,13 +98,16 @@ namespace IMEPointer
 
         private const int HiddenFormSize = 16;
         private const int HiddenFormLocation = -100;
+        private const int HiddenLayeredWindowLocation = -10000;  // 인디케이터 레이어 창을 화면 밖으로 숨길 때 사용
         private const int WindowPosChangedMessage = 0x001A;
         private const int TrayContextMenuForegroundDelayRetryMs = 60;
         private const int RebuildRetryAfterWindowPosChangedMs = 800;
         private const int RebuildRetryAfterScaleChangeMs = 1500;
         private const int DisplaySettingsChangedDelayMs = 400;
         private const int UserPreferenceChangedDelayMs = 600;
-
+        private const float PointerDiagonalFactor = 0.7071f;
+        private const float IBeamIndicatorYOffsetFactor = 0.65f;
+        private const float IndicatorBottomMargin = 4f;
         private static readonly RectangleF TrayIconTextRectLower = new RectangleF(-2.0f, -5.0f, 36f, 36f);
         private static readonly RectangleF TrayIconTextRectUpper = new RectangleF(-2.0f, -3.5f, 36f, 36f);
 
@@ -114,16 +118,24 @@ namespace IMEPointer
         private readonly ToolStripMenuItem _menuItemStatus;
         private bool _isTextOverlayEnabled = AppConfig.DefaultShowTextOverlay;
 
-        internal enum CapsMode { Engineer = 1, Pali = 2, Japanese1 = 3, Japanese2 = 4, Japanese3 = 5 }
+        internal enum PointerMode { WinDefault = 0, WinColor = 1, NewColor = 2 }
+        internal enum CapsMode { WinDefault = 0, Engineer = 1, Pali = 2, Japanese1 = 3, Japanese2 = 4, Japanese3 = 5 }
 
+        private PointerMode _activePointerMode = (PointerMode)AppConfig.DefaultPointerMode;
         private CapsMode _activeCapsMode = (CapsMode)AppConfig.DefaultCapsMode;
+        private bool _isMiniIndicatorEnabled = AppConfig.DefaultEnableMiniIndicator;
         private bool _isKeyboardLayoutOverlayEnabled = AppConfig.DefaultShowKeyboardLayout;
 
+        private ToolStripMenuItem _menuItemPointerWinDefault = null!;
+        private ToolStripMenuItem _menuItemPointerWinColor = null!;
+        private ToolStripMenuItem _menuItemPointerNewColor = null!;
+        private ToolStripMenuItem _menuItemCapsWinDefault = null!;
         private ToolStripMenuItem _menuItemCapsEngineer = null!;
         private ToolStripMenuItem _menuItemCapsPali = null!;
         private ToolStripMenuItem _menuItemCapsJapanese1 = null!;
         private ToolStripMenuItem _menuItemCapsJapanese2 = null!;
         private ToolStripMenuItem _menuItemCapsJapanese3 = null!;
+        private ToolStripMenuItem _menuItemToggleIndicator = null!;
 
         private ToolStripMenuItem _menuItemUseMozc = null!;
         private ToolStripMenuItem _menuItemUseGoogleApi = null!;
@@ -134,16 +146,35 @@ namespace IMEPointer
 
         private bool _isShiftVisualInverted = false;
         private bool _lastHangulSyncState = false;
+        private bool _isCurrentProcessTarget = false;   // 현재 포그라운드 창이 타겟 앱인지 여부
         private KeyboardLayoutForm? _frmKeyboardLayout;
         private TextOverlayForm? _frmTextOverlay;
         private Point _lastKeyboardLayoutLocation = Point.Empty;
 
         private ImeState.State _previousImeState = (ImeState.State)(-1);
+        private Color _currentIndicatorColor = Color.White;
+        private Color _lastRenderedIndicatorColor = Color.Empty;
         private IntPtr _lastForegroundHwnd = IntPtr.Zero;
         private IntPtr _currentContextHwnd = IntPtr.Zero;
         private IntPtr _lastPolledHwnd = IntPtr.Zero;
 
+        // 그래픽 자원
+        private IntPtr _dcIndicatorScreen = IntPtr.Zero;
+        private IntPtr _dcIndicatorMem = IntPtr.Zero;
+        private IntPtr _hBmpIndicator = IntPtr.Zero;
+        private IntPtr _hBmpIndicatorOld = IntPtr.Zero;
+        private bool _isIndicatorRendered = false;
+        private bool _isPointerInIBeamCell = false;
+        private int _lastIndicatorX = int.MinValue;
+        private int _lastIndicatorY = int.MinValue;
+
         private float _currentDpiScale = 1.0f;
+        private float _physIndicatorOffsetX = 0f;
+        private int _indicatorCanvasSize = 16;
+        private int _pointerPhysicalSize = 32;
+
+        private IntPtr _lastAppliedArrowHandle = IntPtr.Zero;
+        private static readonly unsafe int s_bmiSize = sizeof(NativeMethods.BITMAPINFO);
         private static readonly uint s_currentProcessId = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
 
         private readonly struct ActiveInputModeContext
@@ -176,10 +207,26 @@ namespace IMEPointer
 
         private class StateAssets : IDisposable
         {
+            public IntPtr ArrowNewPtr = IntPtr.Zero;
+            public IntPtr IBeamNewPtr = IntPtr.Zero;
+            public IntPtr ArrowWinPtr = IntPtr.Zero;
+            public IntPtr IBeamWinPtr = IntPtr.Zero;
+            public IntPtr IBeamCompareHandleNew = IntPtr.Zero;
+            public IntPtr IBeamCompareHandleWin = IntPtr.Zero;
             public Icon? TrayIcon;
+            public Color DotColor;
             public string Description = "";
 
-            public void Dispose() => TrayIcon?.Dispose();
+            public void Dispose()
+            {
+                if (ArrowNewPtr != IntPtr.Zero) NativeMethods.DestroyCursor(ArrowNewPtr);
+                if (IBeamNewPtr != IntPtr.Zero) NativeMethods.DestroyCursor(IBeamNewPtr);
+                if (ArrowWinPtr != IntPtr.Zero) NativeMethods.DestroyCursor(ArrowWinPtr);
+                if (IBeamWinPtr != IntPtr.Zero) NativeMethods.DestroyCursor(IBeamWinPtr);
+                if (IBeamCompareHandleNew != IntPtr.Zero) NativeMethods.DestroyCursor(IBeamCompareHandleNew);
+                if (IBeamCompareHandleWin != IntPtr.Zero) NativeMethods.DestroyCursor(IBeamCompareHandleWin);
+                TrayIcon?.Dispose();
+            }
         }
 
         protected override CreateParams CreateParams
@@ -366,7 +413,7 @@ namespace IMEPointer
 
         private void BuildTrayMenu()
         {
-            var titleMenuItem = new ToolStripMenuItem(UiText.AppName, null, (s, e) =>
+            var titleMenuItem = new ToolStripMenuItem("IMEPointer", null, (s, e) =>
             {
                 try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = UiText.GithubUrl, UseShellExecute = true }); }
                 catch (Exception ex) { MessageBox.Show($"웹페이지를 열 수 없습니다.\n{ex.Message}", UiText.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error); }
@@ -376,10 +423,20 @@ namespace IMEPointer
             _trayContextMenu.Items.Add(_menuItemStatus);
             _trayContextMenu.Items.Add(new ToolStripSeparator());
 
+            _menuItemPointerWinDefault = AddMenuToggle("WIN Default Pointer", AppConfig.ShowPointerWinDefault, (s, e) => UpdatePointerMode(PointerMode.WinDefault));
+            _menuItemPointerWinColor   = AddMenuToggle("WIN Color Pointer",   AppConfig.ShowPointerWinColor,   (s, e) => UpdatePointerMode(PointerMode.WinColor));
+            _menuItemPointerNewColor   = AddMenuToggle("NEW Color Pointer",   AppConfig.ShowPointerNewColor,   (s, e) => UpdatePointerMode(PointerMode.NewColor));
+            SyncPointerMenuChecks();
+            _trayContextMenu.Items.Add(new ToolStripSeparator());
+
+            _menuItemCapsWinDefault = AddMenuToggle("한글_Default", AppConfig.ShowCapsHangul, (s, e) => UpdateCapsMode(CapsMode.WinDefault));
+            SyncCapsMenuChecks();
+            _menuItemCapsEngineer = AddMenuToggle("특수기호_공학용", AppConfig.ShowCapsEngineer, (s, e) => UpdateCapsMode(CapsMode.Engineer));
+            _menuItemCapsPali = AddMenuToggle("Pali_Sanskrit", AppConfig.ShowCapsPali, (s, e) => UpdateCapsMode(CapsMode.Pali));
             _menuItemCapsJapanese1 = AddMenuToggle("일본어1_조합형_대표자음", AppConfig.ShowCapsJapanese1, (s, e) => UpdateCapsMode(CapsMode.Japanese1));
             _menuItemCapsJapanese2 = AddMenuToggle("일본어2_조합형_최빈자음", AppConfig.ShowCapsJapanese2, (s, e) => UpdateCapsMode(CapsMode.Japanese2));
             _menuItemCapsJapanese3 = AddMenuToggle("일본어3_완성형_3Layer", AppConfig.ShowCapsJapanese3, (s, e) => UpdateCapsMode(CapsMode.Japanese3));
-            AddMenuSeparatorIf(AppConfig.ShowCapsJapanese1 || AppConfig.ShowCapsJapanese2 || AppConfig.ShowCapsJapanese3);
+            AddMenuSeparatorIf(AppConfig.ShowCapsJapanese1 || AppConfig.ShowCapsJapanese2 || AppConfig.ShowCapsJapanese3 || AppConfig.ShowCapsEngineer || AppConfig.ShowCapsPali);
 
             _menuItemUseMozc = new ToolStripMenuItem("Mozc 오프라인 한자변환", null, async (s, e) =>
             {
@@ -456,7 +513,7 @@ namespace IMEPointer
             _trayContextMenu.Items.Add(_menuItemUseGoogleApi);
             _trayContextMenu.Items.Add(new ToolStripSeparator());
 
-            _menuItemToggleKeyboardLayout = AddMenuToggle("일본어 키보드 배열창", AppConfig.ShowKeyboardlayoutMenu, (s, e) =>
+            _menuItemToggleKeyboardLayout = AddMenuToggle("한글CAPS 키보드 배열창", AppConfig.ShowKeyboardlayoutMenu, (s, e) =>
             {
                 _isKeyboardLayoutOverlayEnabled = _menuItemToggleKeyboardLayout.Checked;
                 if (!_isKeyboardLayoutOverlayEnabled) CloseAllLayoutForms();
@@ -465,13 +522,22 @@ namespace IMEPointer
             _menuItemToggleKeyboardLayout.CheckOnClick = true;
             _menuItemToggleKeyboardLayout.Checked = _isKeyboardLayoutOverlayEnabled;
 
-            _menuItemToggleTextOverlay = AddMenuToggle("일본어 입력문자 표시창", AppConfig.ShowTextOverlayMenu, (s, e) =>
+            _menuItemToggleTextOverlay = AddMenuToggle("한글CAPS 입력문자 표시창", AppConfig.ShowTextOverlayMenu, (s, e) =>
             {
                 _isTextOverlayEnabled = _menuItemToggleTextOverlay.Checked;
                 if (!_isTextOverlayEnabled) _frmTextOverlay?.Clear();
             });
             _menuItemToggleTextOverlay.CheckOnClick = true;
             _menuItemToggleTextOverlay.Checked = _isTextOverlayEnabled;
+
+            _menuItemToggleIndicator = AddMenuToggle("엑셀/한글 작은원 표시", AppConfig.ShowSmallCircleMenu, (s, e) =>
+            {
+                _isMiniIndicatorEnabled = _menuItemToggleIndicator.Checked;
+                if (!_isMiniIndicatorEnabled)
+                    UpdateLayeredIndicator(Color.Transparent, -10000, -10000);
+            });
+            _menuItemToggleIndicator.CheckOnClick = true;
+            _menuItemToggleIndicator.Checked = _isMiniIndicatorEnabled;
 
             _menuItemToggleCopilotMap = AddMenuToggle("한자키 적용/복원 키맵핑", AppConfig.ShowCopilotMapMenu, (s, e) =>
             {
@@ -496,7 +562,7 @@ namespace IMEPointer
             AppConfig.EnableCopilotMap = RegistryManager.IsMappingApplied();
 
             AddMenuSeparatorIf(AppConfig.ShowKeyboardlayoutMenu || AppConfig.ShowTextOverlayMenu || AppConfig.ShowCopilotMapMenu);
-            _trayContextMenu.Items.Add(new ToolStripMenuItem(UiText.ExitMenu, null, (s, e) => this.Close()));
+            _trayContextMenu.Items.Add(new ToolStripMenuItem("종료 (Exit)", null, (s, e) => this.Close()));
 
             SyncCapsMenuChecks();
             SyncDictionaryApiMenuChecks();
@@ -595,11 +661,34 @@ namespace IMEPointer
 
         private void SyncCapsMenuChecks()
         {
+            if (_menuItemCapsWinDefault != null) _menuItemCapsWinDefault.Checked = (_activeCapsMode == CapsMode.WinDefault);
             if (_menuItemCapsEngineer != null) _menuItemCapsEngineer.Checked = (_activeCapsMode == CapsMode.Engineer);
             if (_menuItemCapsPali != null) _menuItemCapsPali.Checked = (_activeCapsMode == CapsMode.Pali);
             if (_menuItemCapsJapanese1 != null) _menuItemCapsJapanese1.Checked = (_activeCapsMode == CapsMode.Japanese1);
             if (_menuItemCapsJapanese2 != null) _menuItemCapsJapanese2.Checked = (_activeCapsMode == CapsMode.Japanese2);
             if (_menuItemCapsJapanese3 != null) _menuItemCapsJapanese3.Checked = (_activeCapsMode == CapsMode.Japanese3);
+        }
+
+        // ---------------------------------------------------------
+        // 포인터 모드 제어
+        // ---------------------------------------------------------
+        private void UpdatePointerMode(PointerMode mode)
+        {
+            _activePointerMode = mode;
+            SyncPointerMenuChecks();
+            _previousImeState = (ImeState.State)(-1);
+            // WinColor 모드는 색상 커서 생성이 필요하므로 에셋을 다시 빌드합니다.
+            if (mode == PointerMode.WinColor)
+            {
+                _stateCheckTimer.Stop(); RebuildStateAssets(); _stateCheckTimer.Start();
+            }
+        }
+
+        private void SyncPointerMenuChecks()
+        {
+            if (_menuItemPointerWinDefault != null) _menuItemPointerWinDefault.Checked = (_activePointerMode == PointerMode.WinDefault);
+            if (_menuItemPointerWinColor   != null) _menuItemPointerWinColor.Checked   = (_activePointerMode == PointerMode.WinColor);
+            if (_menuItemPointerNewColor   != null) _menuItemPointerNewColor.Checked   = (_activePointerMode == PointerMode.NewColor);
         }
 
         private void ApplyCapsModeBase(IntPtr targetHwnd)
@@ -676,6 +765,12 @@ namespace IMEPointer
                 ApplyVisualState(currentState);
             }
 
+            // 엑셀/한글 작은원 인디케이터를 현재 마우스 커서 위치에 렌더링
+            if (_isCurrentProcessTarget)
+                RenderMiniIndicator(currentState);
+            else
+                UpdateLayeredIndicator(Color.Transparent, HiddenLayeredWindowLocation, HiddenLayeredWindowLocation);
+
             RefreshKeyboardLayoutOverlay();
         }
 
@@ -741,9 +836,32 @@ namespace IMEPointer
         {
             if (contextHwnd != _currentContextHwnd)
             {
-                if (!isTaskbar && !isTrayOrApp && !isLayoutForm) _lastForegroundHwnd = contextHwnd;
+                if (!isTaskbar && !isTrayOrApp && !isLayoutForm)
+                {
+                    _lastForegroundHwnd = contextHwnd;
+                    _isCurrentProcessTarget = EvaluateTargetProcess(contextHwnd);
+                    _isPointerInIBeamCell = false;
+                }
                 _currentContextHwnd = contextHwnd;
             }
+        }
+
+        private static bool EvaluateTargetProcess(IntPtr hWnd)
+        {
+            if (hWnd == IntPtr.Zero) return false;
+            NativeMethods.GetWindowThreadProcessId(hWnd, out uint pid); 
+            if (pid == 0) return false;
+            
+            try 
+            { 
+                string n = System.Diagnostics.Process.GetProcessById((int)pid).ProcessName; 
+                foreach (string a in AppConfig.IndicatorTargetApps) 
+                {
+                    if (n.Equals(a, StringComparison.OrdinalIgnoreCase)) return true; 
+                }
+            } 
+            catch { } 
+            return false;
         }
 
         private ActiveInputModeContext ResolveInputModeContext(ImeState.State state)
@@ -840,7 +958,7 @@ namespace IMEPointer
             try { trayWasVisible = _sysTrayIcon?.Visible ?? false; } catch { }
 
             foreach (var asset in _assetCache.Values) try { asset.Dispose(); } catch { }
-            _assetCache.Clear();
+            _assetCache.Clear(); RestoreDefaults();
 
             float dpi = 96f;
             IntPtr hFore = NativeMethods.GetForegroundWindow();
@@ -852,13 +970,36 @@ namespace IMEPointer
             else { uint sysDpi = NativeMethods.GetDpiForSystem(); if (sysDpi > 0) dpi = sysDpi; }
 
             _currentDpiScale = dpi / 96f;
+            int sysCursorWidth = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXCURSOR);
+            _pointerPhysicalSize = sysCursorWidth > 0 ? sysCursorWidth : Math.Max(32, (int)Math.Round(32 * _currentDpiScale));
+            _physIndicatorOffsetX = _pointerPhysicalSize * 0.5f;
 
+            bool winColorFailed = false;
+
+            // Program.cs 내 RebuildStateAssets 메서드의 커서 생성 부분 수정
             foreach (ImeState.State state in Enum.GetValues(typeof(ImeState.State)))
             {
                 if (!AppConfig.Themes.TryGetValue(state, out AppConfig.Theme t)) continue;
                 try
                 {
-                    _assetCache[state] = new StateAssets { Description = t.Description, TrayIcon = BuildTrayIcon(t.TrayText, t.TrayBgColor, t.TrayTextColor) };
+                    // [수정] Config.cs에 정의된 t.IBeamColor를 그대로 사용하도록 강제 변환 로직 제거
+                    IntPtr hArrowNew = PointerGraphicsFactory.CreateColoredSystemPointer(NativeMethods.OCR_NORMAL, t.PointerColor, _pointerPhysicalSize);
+                    IntPtr hIBeamNew = PointerGraphicsFactory.CreateColoredSystemPointer(NativeMethods.OCR_IBEAM,  t.IBeamColor,   _pointerPhysicalSize);
+                    IntPtr hArrowWin = PointerGraphicsFactory.CreateColoredSystemPointer(NativeMethods.OCR_NORMAL, t.PointerColor, _pointerPhysicalSize);
+                    IntPtr hIBeamWin = PointerGraphicsFactory.CreateColoredSystemPointer(NativeMethods.OCR_IBEAM,  t.IBeamColor,   _pointerPhysicalSize);
+
+                    if (hArrowWin == IntPtr.Zero) { hArrowWin = NativeMethods.CopyIcon(hArrowNew); winColorFailed = true; }
+                    if (hIBeamWin == IntPtr.Zero) { hIBeamWin = NativeMethods.CopyIcon(hIBeamNew); winColorFailed = true; }
+
+                    _assetCache[state] = new StateAssets
+                    {
+                        DotColor = t.PointerColor, Description = t.Description,
+                        ArrowNewPtr = hArrowNew, IBeamNewPtr = hIBeamNew,
+                        ArrowWinPtr = hArrowWin, IBeamWinPtr = hIBeamWin,
+                        TrayIcon = BuildTrayIcon(t.TrayText, t.TrayBgColor, t.TrayTextColor),
+                        IBeamCompareHandleNew = NativeMethods.CopyIcon(hIBeamNew),
+                        IBeamCompareHandleWin = NativeMethods.CopyIcon(hIBeamWin)
+                    };
                 }
                 catch { }
             }
@@ -873,7 +1014,14 @@ namespace IMEPointer
                 }
             }
             catch { }
+
+            // WinColor 모드에서 커서 생성 실패 시 NewColor로 자동 전환
+            if (_activePointerMode == PointerMode.WinColor && winColorFailed)
+            {
+                _activePointerMode = PointerMode.NewColor; SyncPointerMenuChecks(); _previousImeState = (ImeState.State)(-1);
+            }
         }
+
 
         private static Icon BuildTrayIcon(string text, Color bg, Color fg)
         {
@@ -904,8 +1052,26 @@ namespace IMEPointer
         private void ApplyVisualState(ImeState.State state)
         {
             if (!_assetCache.TryGetValue(state, out StateAssets? assets)) return;
+            _currentIndicatorColor = assets.DotColor;
+
             try { if (assets.TrayIcon != null && (_sysTrayIcon.Icon == null || _sysTrayIcon.Icon.Handle != assets.TrayIcon.Handle)) _sysTrayIcon.Icon = assets.TrayIcon; }
             catch { _sysTrayIcon.Icon = assets.TrayIcon; }
+
+            // 포인터 모드에 따라 마우스 커서 적용
+            switch (_activePointerMode)
+            {
+                case PointerMode.WinDefault:
+                    RestoreDefaults(); _lastAppliedArrowHandle = IntPtr.Zero; break;
+                case PointerMode.WinColor:
+                case PointerMode.NewColor:
+                    IntPtr hArr = NativeMethods.CopyIcon(_activePointerMode == PointerMode.WinColor ? assets.ArrowWinPtr : assets.ArrowNewPtr);
+                    IntPtr hIb  = NativeMethods.CopyIcon(_activePointerMode == PointerMode.WinColor ? assets.IBeamWinPtr : assets.IBeamNewPtr);
+                    _lastAppliedArrowHandle = hArr;
+                    if (hArr != IntPtr.Zero) { if (!NativeMethods.SetSystemCursor(hArr, NativeMethods.OCR_NORMAL)) NativeMethods.DestroyCursor(hArr); }
+                    if (hIb  != IntPtr.Zero) { if (!NativeMethods.SetSystemCursor(hIb,  NativeMethods.OCR_IBEAM))  NativeMethods.DestroyCursor(hIb); }
+                    break;
+            }
+
             _sysTrayIcon.Text = UiText.TrayTooltip(assets.Description);
             _menuItemStatus.Text = UiText.StatusLabel(assets.Description);
         }
@@ -921,13 +1087,36 @@ namespace IMEPointer
             bool isVirtShift = processor != null ? processor.IsVirtualShift : _isShiftVisualInverted;
             string suffix = (isPhyShift ^ isVirtShift) ? "2" : "1";
             string? name = null;
-
-            if (_previousImeState == ImeState.State.EnglishLower || _previousImeState == ImeState.State.EnglishUpper || _previousImeState == ImeState.State.JapaneseIME) name = $"EnglishKey{suffix}.png";
-            else if (_previousImeState == ImeState.State.Hangul) name = $"KoreanKey{suffix}.png";
-            else if (_activeCapsMode == CapsMode.Japanese1) name = $"Japan1Key{suffix}.png";
-            else if (_activeCapsMode == CapsMode.Japanese2) name = $"Japan2Key{suffix}.png";
-            else if (_activeCapsMode == CapsMode.Japanese3) name = $"Japan3Layer{(processor?.CurrentLayer ?? 1)}Key{suffix}.png";
-            else name = $"KoreanKey{suffix}.png";
+            switch (_previousImeState)
+            {
+                case ImeState.State.EnglishLower:
+                case ImeState.State.EnglishUpper:
+                case ImeState.State.JapaneseIME:
+                    name = $"EnglishKey{suffix}.png";
+                    break;
+                case ImeState.State.Hangul:
+                    name = $"KoreanKey{suffix}.png";
+                    break;
+                case ImeState.State.PaliUS:
+                case ImeState.State.PaliHangul:
+                    name = $"PaliKey{suffix}.png";
+                    break;
+                case ImeState.State.Engineer:
+                    name = $"EngineerKey{suffix}.png";
+                    break;
+                case ImeState.State.JapaneseHangul1:
+                    name = $"Japan1Key{suffix}.png";
+                    break;
+                case ImeState.State.JapaneseHangul2:
+                    name = $"Japan2Key{suffix}.png";
+                    break;
+                case ImeState.State.JapaneseHangul3:
+                    name = $"Japan3Layer{(processor?.CurrentLayer ?? 1)}Key{suffix}.png";
+                    break;
+                default:
+                    name = $"KoreanKey{suffix}.png";
+                    break;
+            }
 
             if (name == null) return;
 
@@ -947,6 +1136,146 @@ namespace IMEPointer
         {
             if (_frmKeyboardLayout != null) { _lastKeyboardLayoutLocation = _frmKeyboardLayout.Location; _frmKeyboardLayout.Close(); _frmKeyboardLayout = null; }
         }
+
+        // ---------------------------------------------------------
+        // 포인터 복원 및 커서 상태 감지
+        // ---------------------------------------------------------
+
+        /// <summary>시스템 기본 커서로 복원합니다 (Windows 기본 포인터 모드 및 종료 시 호출).</summary>
+        public static void RestoreDefaults() => NativeMethods.SystemParametersInfo(NativeMethods.SPI_SETCURSORS, 0, IntPtr.Zero, NativeMethods.SPIF_SENDCHANGE);
+
+        // ---------------------------------------------------------
+        // 작은원(Mini Indicator) 렌더링 - 엑셀/한글 커서 옆에 작은 색상 원 표시
+        // ---------------------------------------------------------
+
+        private void RenderMiniIndicator(ImeState.State state)
+        {
+            if (!NativeMethods.GetCursorPos(out NativeMethods.POINT pt)) return;
+            
+            if (_isCurrentProcessTarget && _isMiniIndicatorEnabled)
+            {
+                bool isIBeam = EvaluatePointerIsIBeam(state);
+                if (isIBeam != _isPointerInIBeamCell) 
+                { 
+                    UpdateLayeredIndicator(Color.Transparent, HiddenLayeredWindowLocation, HiddenLayeredWindowLocation); 
+                    _isPointerInIBeamCell = isIBeam; 
+                }
+                
+                if (!_isPointerInIBeamCell)
+                {
+                    float tx = pt.X + (EvaluatePointerIsArrow() ? PointerDiagonalFactor * AppConfig.IndicatorOffset * (_pointerPhysicalSize / 32f) : _physIndicatorOffsetX);
+                    float ty = pt.Y + (EvaluatePointerIsArrow() ? PointerDiagonalFactor * AppConfig.IndicatorOffset * (_pointerPhysicalSize / 32f) : _pointerPhysicalSize * IBeamIndicatorYOffsetFactor);
+                    if (ty < pt.Y + _pointerPhysicalSize + IndicatorBottomMargin) ty = pt.Y + _pointerPhysicalSize + IndicatorBottomMargin;
+                    
+                    UpdateLayeredIndicator(_currentIndicatorColor, (int)Math.Round(tx - _indicatorCanvasSize / 2f), (int)Math.Round(ty - _indicatorCanvasSize / 2f));
+                }
+                else 
+                {
+                    UpdateLayeredIndicator(Color.Transparent, HiddenLayeredWindowLocation, HiddenLayeredWindowLocation);
+                }
+            }
+            else 
+            {
+                UpdateLayeredIndicator(Color.Transparent, HiddenLayeredWindowLocation, HiddenLayeredWindowLocation);
+            }
+        }
+
+        private void UpdateLayeredIndicator(Color c, int x, int y)
+        {
+            bool update = false;
+            if (c != _lastRenderedIndicatorColor) 
+            { 
+                _lastRenderedIndicatorColor = c; 
+                if (c != Color.Transparent) RenderIndicatorBuffer(c); 
+                update = true; 
+            }
+            if (x != _lastIndicatorX || y != _lastIndicatorY) 
+            { 
+                _lastIndicatorX = x; 
+                _lastIndicatorY = y; 
+                update = true; 
+            }
+            if (!update) return;
+
+            NativeMethods.SIZE sz = new() { cx = _indicatorCanvasSize, cy = _indicatorCanvasSize };
+            NativeMethods.POINT src = new() { X = 0, Y = 0 }, dst = new() { X = x, Y = y };
+            NativeMethods.BLENDFUNCTION bf = new() { BlendOp = 0, BlendFlags = 0, SourceConstantAlpha = 255, AlphaFormat = 1 };
+
+            if (c == Color.Transparent || !_isIndicatorRendered)
+            {
+                if (_dcIndicatorMem != IntPtr.Zero)
+                {
+                    dst.X = -10000; dst.Y = -10000; bf.SourceConstantAlpha = 0;
+                    IntPtr sDc = NativeMethods.GetDC(IntPtr.Zero);
+                    _ = NativeMethods.UpdateLayeredWindow(this.Handle, sDc, ref dst, ref sz, _dcIndicatorMem, ref src, 0, ref bf, 2);
+                    _ = NativeMethods.ReleaseDC(IntPtr.Zero, sDc);
+                }
+                return;
+            }
+            IntPtr curDc = NativeMethods.GetDC(IntPtr.Zero);
+            _ = NativeMethods.UpdateLayeredWindow(this.Handle, curDc, ref dst, ref sz, _dcIndicatorMem, ref src, 0, ref bf, 2);
+            _ = NativeMethods.ReleaseDC(IntPtr.Zero, curDc);
+        }
+
+        private void RenderIndicatorBuffer(Color c)
+        {
+            if (_dcIndicatorMem != IntPtr.Zero) { if (_hBmpIndicatorOld != IntPtr.Zero) NativeMethods.SelectObject(_dcIndicatorMem, _hBmpIndicatorOld); NativeMethods.DeleteDC(_dcIndicatorMem); _dcIndicatorMem = IntPtr.Zero; }
+            if (_hBmpIndicator != IntPtr.Zero) { NativeMethods.DeleteObject(_hBmpIndicator); _hBmpIndicator = IntPtr.Zero; }
+            if (_dcIndicatorScreen != IntPtr.Zero) { NativeMethods.ReleaseDC(IntPtr.Zero, _dcIndicatorScreen); _dcIndicatorScreen = IntPtr.Zero; }
+            if (c == Color.Transparent) { _isIndicatorRendered = false; return; }
+
+            float sz = AppConfig.IndicatorSize * _currentDpiScale, pW = 1.0f;
+            _indicatorCanvasSize = (int)Math.Ceiling(sz + (pW * 2) + 6); if (_indicatorCanvasSize % 2 != 0) _indicatorCanvasSize++;
+
+            using Bitmap bmp = new(_indicatorCanvasSize, _indicatorCanvasSize, PixelFormat.Format32bppArgb);
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias; g.PixelOffsetMode = PixelOffsetMode.HighQuality; g.Clear(Color.Transparent);
+                float ct = _indicatorCanvasSize / 2f, r = sz / 2f;
+                using SolidBrush b = new(c); g.FillEllipse(b, ct - r, ct - r, sz, sz);
+                using Pen p = new(c == Color.White ? Color.Black : (c == Color.Black ? Color.White : Color.Black), pW); g.DrawEllipse(p, ct - r, ct - r, sz, sz);
+            }
+            
+            _dcIndicatorScreen = NativeMethods.GetDC(IntPtr.Zero); _dcIndicatorMem = NativeMethods.CreateCompatibleDC(_dcIndicatorScreen);
+            NativeMethods.BITMAPINFO bmi = new() { biSize = s_bmiSize, biWidth = bmp.Width, biHeight = -bmp.Height, biPlanes = 1, biBitCount = 32, biCompression = 0 };
+            _hBmpIndicator = NativeMethods.CreateDIBSection(_dcIndicatorScreen, ref bmi, 0, out IntPtr pBits, IntPtr.Zero, 0);
+            
+            if (_hBmpIndicator != IntPtr.Zero)
+            {
+                var dat = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppPArgb);
+                int b = Math.Abs(dat.Stride) * bmp.Height; unsafe { Buffer.MemoryCopy((void*)dat.Scan0, (void*)pBits, b, b); } bmp.UnlockBits(dat);
+            }
+            _hBmpIndicatorOld = NativeMethods.SelectObject(_dcIndicatorMem, _hBmpIndicator); _isIndicatorRendered = true;
+        }
+
+        private bool EvaluatePointerIsIBeam(ImeState.State state)
+        {
+            NativeMethods.CURSORINFO ci = new() { cbSize = Marshal.SizeOf<NativeMethods.CURSORINFO>() };
+            if (!NativeMethods.GetCursorInfo(ref ci) || ci.hCursor == IntPtr.Zero || !_assetCache.TryGetValue(state, out var a)) return false;
+            return ci.hCursor == (_activePointerMode == PointerMode.WinColor ? a.IBeamCompareHandleWin : a.IBeamCompareHandleNew);
+        }
+
+        private bool EvaluatePointerIsArrow()
+        {
+            if (_activePointerMode == PointerMode.WinDefault)
+            {
+                try
+                {
+                    var ci = new NativeMethods.CURSORINFO { cbSize = Marshal.SizeOf<NativeMethods.CURSORINFO>() };
+                    if (NativeMethods.GetCursorInfo(ref ci) && NativeMethods.GetIconInfo(ci.hCursor, out var ii))
+                    {
+                        bool isArr = ii.xHotspot == 0 && ii.yHotspot == 0;
+                        if (ii.hbmMask != IntPtr.Zero) NativeMethods.DeleteObject(ii.hbmMask);
+                        if (ii.hbmColor != IntPtr.Zero) NativeMethods.DeleteObject(ii.hbmColor);
+                        return isArr;
+                    }
+                } catch { } return false;
+            }
+            if (_previousImeState == (ImeState.State)(-1) || !_assetCache.TryGetValue(_previousImeState, out var a)) return false;
+            var cInfo = new NativeMethods.CURSORINFO { cbSize = Marshal.SizeOf<NativeMethods.CURSORINFO>() };
+            return NativeMethods.GetCursorInfo(ref cInfo) && cInfo.hCursor != IntPtr.Zero && cInfo.hCursor != (_activePointerMode == PointerMode.WinColor ? a.IBeamCompareHandleWin : a.IBeamCompareHandleNew);
+        }
+
 
         private static IntPtr SearchFocusedInputHwnd(IntPtr hWnd)
         {

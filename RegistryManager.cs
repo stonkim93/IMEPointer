@@ -1,4 +1,4 @@
-// RegistryManager.cs - IMEJapanese
+// RegistryManager.cs - IMEPointer
 #nullable enable
 using System;
 using System.Windows.Forms;

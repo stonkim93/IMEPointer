@@ -1,4 +1,4 @@
-// Config.cs - IMEJapanese 설정 통합 파일
+// Config.cs - IMEPointer 설정 통합 파일
 #nullable enable
 using System.Collections.Generic;
 using System.Drawing;
@@ -18,8 +18,11 @@ namespace IMEPointer
         public static int PollingInterval = 100;
 
         // --------------------------------------------------------
-        // 화면 오버레이(알림창) UI 시각적 설정
+        // 화면 오버레이(알림창) 및 인디케이터 UI 시각적 설정
         // --------------------------------------------------------
+        public static readonly string[] IndicatorTargetApps = { "excel", "hwp" };
+        public const float IndicatorSize = 8.0f;
+        public const float IndicatorOffset = 20.0f;
         /// <summary>텍스트 오버레이가 화면에 표시되는 기본 지속 시간(ms)</summary>
         public const int OverlayDefaultDurationMs = 1500;
         
@@ -84,8 +87,16 @@ namespace IMEPointer
         /// <summary>트레이 메뉴에서 '입력모드 알림 표시' 항목 노출 여부</summary>
         public static bool ShowTextOverlayMenu = true;
         
+        /// <summary>트레이 메뉴에서 '엑셀/한글 작은원 표시' 항목 노출 여부</summary>
+        public static bool ShowSmallCircleMenu = true;
+
         /// <summary>트레이 메뉴에서 'Copilot 맵핑' 항목 노출 여부</summary>
         public static bool ShowCopilotMapMenu = true;
+
+        public static bool ShowPointerWinDefault = true;           
+        public static bool ShowPointerWinColor = true;          
+        public static bool ShowPointerNewColor = true;          
+        public static bool ShowCapsHangul = true;
 
 #if ENABLE_CAPS_ENGINEER
         public static bool ShowCapsEngineer = true;
@@ -111,6 +122,12 @@ namespace IMEPointer
         /// <summary>앱 시작 시 입력모드 전환 오버레이(화면 알림) 기능을 기본으로 활성화할지 여부</summary>
         public static bool DefaultShowTextOverlay = true;
         
+        /// <summary>앱 시작 시 기본으로 켜질 마우스 포인터 모드 (0: WinDefault, 1: WinColor, 2: NewColor)</summary>
+        public static int DefaultPointerMode = 2;
+
+        /// <summary>앱 시작 시 엑셀/한글 작은원(인디케이터) 기본 활성화 여부</summary>
+        public static bool DefaultEnableMiniIndicator = true;
+
         /// <summary>앱 시작 시 Copilot 맵핑을 기본으로 활성화할지 여부</summary>
         public static bool DefaultEnableCopilotMap = false;
         
@@ -144,6 +161,8 @@ namespace IMEPointer
 
         public struct Theme
         {
+            public Color PointerColor;   // 화살표(기본) 커서에 적용할 색상
+            public Color IBeamColor;     // 텍스트(IBeam) 커서에 적용할 색상
             public Color TrayBgColor;
             public Color TrayTextColor;
             public string TrayText;
@@ -152,13 +171,16 @@ namespace IMEPointer
 
         public static readonly Dictionary<ImeState.State, Theme> Themes = new()
         {
-            [ImeState.State.EnglishLower] = new Theme { TrayBgColor = Color.Black, TrayTextColor = Color.White, TrayText = "e", Description = "영어 소문자 [e]" },
-            [ImeState.State.EnglishUpper] = new Theme { TrayBgColor = Color.Black, TrayTextColor = Color.DeepSkyBlue, TrayText = "E", Description = "영어 대문자 [E]" },
-            [ImeState.State.Hangul] = new Theme { TrayBgColor = Color.Red, TrayTextColor = Color.White, TrayText = "K", Description = "한글 (Caps Off) [K]" },
-            [ImeState.State.JapaneseIME] = new Theme { TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "j", Description = "Japanese IME [j]" },
-            [ImeState.State.JapaneseHangul1] = new Theme { TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "일본어1_조합형 [J]" },
-            [ImeState.State.JapaneseHangul2] = new Theme { TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "일본어2_조합형 [J]" },
-            [ImeState.State.JapaneseHangul3] = new Theme { TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "일본어3_3Layer [J]" }
+            [ImeState.State.EnglishLower] = new Theme { PointerColor = Color.White, TrayBgColor = Color.Black, TrayTextColor = Color.White, TrayText = "e", Description = "영어 소문자 [e]", IBeamColor = Color.Black },
+            [ImeState.State.EnglishUpper] = new Theme { PointerColor = Color.DeepSkyBlue, TrayBgColor = Color.Black, TrayTextColor = Color.DeepSkyBlue, TrayText = "E", Description = "영어 대문자 [E]", IBeamColor = Color.DeepSkyBlue },
+            [ImeState.State.Hangul] = new Theme { PointerColor = Color.Red, TrayBgColor = Color.Red, TrayTextColor = Color.White, TrayText = "K", Description = "한글 (Caps Off) [K]", IBeamColor = Color.Red },
+            [ImeState.State.PaliUS] = new Theme { PointerColor = Color.Orange, TrayBgColor = Color.Black, TrayTextColor = Color.Orange, TrayText = "p", Description = "Pali어 Unicode [p]", IBeamColor = Color.Orange },
+            [ImeState.State.Engineer] = new Theme { PointerColor = Color.Orange, TrayBgColor = Color.Black, TrayTextColor = Color.Orange, TrayText = "S", Description = "한글CAPS 공학용 특수기호 [S]", IBeamColor = Color.Orange },
+            [ImeState.State.PaliHangul] = new Theme { PointerColor = Color.Orange, TrayBgColor = Color.Black, TrayTextColor = Color.Orange, TrayText = "P", Description = "한글CAPS Pali어 [P]", IBeamColor = Color.Orange },
+            [ImeState.State.JapaneseIME] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "j", Description = "Japanese IME [j]", IBeamColor = Color.Lime },
+            [ImeState.State.JapaneseHangul1] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "일본어1_조합형 [J]", IBeamColor = Color.Lime },
+            [ImeState.State.JapaneseHangul2] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "일본어2_조합형 [J]", IBeamColor = Color.Lime },
+            [ImeState.State.JapaneseHangul3] = new Theme { PointerColor = Color.Lime, TrayBgColor = Color.Black, TrayTextColor = Color.Lime, TrayText = "J", Description = "일본어3_완성형 [J]", IBeamColor = Color.Lime }
         };
     }
     #endregion
@@ -166,13 +188,13 @@ namespace IMEPointer
     #region [ 문자열 리소스 (UiText) ]
     internal static class UiText
     {
-        public const string AppName = "IMEJapanese";
+        public const string AppName = "IMEPointer";
         public const string AlreadyRunningMessage = "이미 실행 중입니다.";
         public const string FatalErrorPrefix = "치명적 오류:\n";
         public const string StatusChecking = "현재 상태: 확인 중...";
         public static string HangulCapsMode => MainForm.Instance?.GetCapsModeOverlayText() ?? "일본어 입력모드";
         public const string ExitMenu = "종료(Exit)";
-        public const string GithubUrl = "https://github.com/stonkim93/IMEJapanese";
+        public const string GithubUrl = "https://github.com/stonkim93/IMEPointer";
 
         public static string TrayTooltip(string description) => $"{AppName}: {description}";
         public static string StatusLabel(string description) => $"현재 상태: {description}";

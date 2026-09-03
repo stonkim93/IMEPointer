@@ -1,4 +1,4 @@
-// UIComponents.cs - IMEJapanese
+// UIComponents.cs - IMEPointer
 #nullable enable
 using System;
 using System.Collections.Generic;
@@ -41,7 +41,7 @@ namespace IMEPointer
             this.MinimizeBox = true;
             this.ShowInTaskbar = true;
             this.TopMost = true;
-            this.Text = "IMEJapanese 자판 배열창";
+            this.Text = "IMEPointer 자판 배열창";
 
             int screenWidth = Screen.PrimaryScreen?.WorkingArea.Width ?? 800;
             this.StartPosition = FormStartPosition.Manual;
@@ -50,7 +50,7 @@ namespace IMEPointer
             try
             {
                 var assembly = typeof(Program).Assembly;
-                using Stream? stream = assembly.GetManifestResourceStream("IMEJapanese.images.IMEJapanese.ico");
+                using Stream? stream = assembly.GetManifestResourceStream("IMEPointer.images.IMEPointer.ico");
                 if (stream != null) this.Icon = new Icon(stream);
             }
             catch { }
@@ -98,7 +98,7 @@ namespace IMEPointer
             try
             {
                 var assembly = typeof(Program).Assembly;
-                string resourceName = $"IMEJapanese.images.{imageName}";
+                string resourceName = $"IMEPointer.images.{imageName}";
                 using Stream? stream = assembly.GetManifestResourceStream(resourceName);
 
                 Image? oldImg = _pbLayoutImage.Image;

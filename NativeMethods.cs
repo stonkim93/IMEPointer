@@ -25,9 +25,6 @@ namespace IMEPointer
         public const uint SPIF_SENDCHANGE = 0x0002;         // 시스템 파라미터 변경 시 모든 창에 알림
         public const int WH_KEYBOARD_LL = 13;               // Low-level keyboard hook
         public const int WH_MOUSE_LL = 14;                  // Low-level mouse hook
-        public const int WM_KEYDOWN = 0x0100;               // Key down 메시지
-        public const int WM_SYSKEYDOWN = 0x0104;            // System Key down 메시지
-        public const int WM_LBUTTONDOWN = 0x0201;           // Left mouse button down 메시지
         public const uint INPUT_KEYBOARD = 1;               // 키보드 입력 유형
         public const uint KEYEVENTF_UNICODE = 0x0004;       // Unicode 키 이벤트 플래그
         public const uint KEYEVENTF_KEYUP = 0x0002;         // 키 업 이벤트 플래그
@@ -38,6 +35,14 @@ namespace IMEPointer
         public const uint LR_DEFAULTSIZE = 0x00000040;       // LoadImage에서 기본 크기로 이미지를 로드할 때 사용
         public const int SM_CXCURSOR = 13;                  // 커서의 너비
         public const int SM_CYCURSOR = 14;                  // 커서의 높이
+        // Keyboard Messages
+        public const int WM_KEYDOWN = 0x0100;
+        public const int WM_KEYUP = 0x0101;
+        public const int WM_SYSKEYDOWN = 0x0104;
+        public const int WM_SYSKEYUP = 0x0105;
+        // Mouse Messages
+        public const int WM_LBUTTONDOWN = 0x0201;
+        public const int WM_RBUTTONDOWN = 0x0204;
         #endregion
 
         #region Structs

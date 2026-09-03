@@ -6,9 +6,9 @@ using System.Collections.Concurrent; // [최적화 추가] 인메모리 캐싱�
 using System.IO;
 using System.Text;
 // KanjiCandidateOverlay.cs
-using System.Drawing;
+//using System.Drawing;
 using System.Linq;
-using System.Windows.Forms;
+//using System.Windows.Forms;
 using System.Diagnostics;
 // GoogleJapaneseInputApi.cs
 using System.Net.Http;
@@ -65,7 +65,8 @@ namespace IMEPointer
                 string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mozc_dict_connect.db");
                 if (!File.Exists(dbPath))
                 {
-                    throw new FileNotFoundException($"[MozcDictionary] DB 파일을 찾을 수 없습니다. 경로: {dbPath}");
+                    if (AppConfig.LogLevel >= 1) Debug.WriteLine($"[MozcDictionary] DB 파일을 찾을 수 없습니다. 경로: {dbPath}");
+                    return;
                 }
 
                 string connectionString = $"Data Source={dbPath}";
@@ -91,7 +92,6 @@ namespace IMEPointer
             catch (Exception ex)
             {
                 if (AppConfig.LogLevel >= 1) Debug.WriteLine($"[MozcDictionary] 사전 로드 중 오류 발생: {ex}");
-                MessageBox.Show($"DB 로드 실패:\n{ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -455,8 +455,8 @@ namespace IMEPointer
             try
             {
                 string encodedText = Uri.EscapeDataString(text);
-                string url = $"[http://www.google.com/transliterate?langpair=ja-Hira](http://www.google.com/transliterate?langpair=ja-Hira)|ja&text={encodedText}";
-
+                //string url = $"[http://www.google.com/transliterate?langpair=ja-Hira](http://www.google.com/transliterate?langpair=ja-Hira)|ja&text={encodedText}";
+                string url = $"https://www.google.com/transliterate?langpair=ja-Hira|ja&text={encodedText}";
                 using var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
                 response.EnsureSuccessStatusCode();
 

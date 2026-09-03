@@ -4,6 +4,11 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Diagnostics;
+//using System.Windows.Forms;
+//using System.Windows.Automation;
+using System.Linq;
 
 namespace IMEPointer
 {
@@ -34,6 +39,7 @@ namespace IMEPointer
         /// <summary>
         /// 현재 포커스된 창의 키보드 레이아웃과 IME 상태를 종합하여 현재 입력 상태를 판별합니다.
         /// </summary>
+        // ImeNativeCore.cs 내 ImeState.Detect 메서드 수정
         public static State Detect(IntPtr foregroundHwnd,
             bool enablePali = false, bool enableJapanese1 = false, bool enableJapanese2 = false, bool enableJapanese3 = false, bool enableEngineer = false)
         {
@@ -44,7 +50,11 @@ namespace IMEPointer
             long hklValue = NativeMethods.GetKeyboardLayout(threadId).ToInt64();
             ushort langId = (ushort)(hklValue & 0xFFFF);
 
-            if (langId == 0x0409) return State.PaliUS;
+            // [수정] 0x0409(US 배열)일 때 무조건 PaliUS가 아닌, enablePali 여부에 따라 판별
+            if (langId == 0x0409) 
+            {
+                return enablePali ? State.PaliUS : (capsOn ? State.EnglishUpper : State.EnglishLower);
+            }
             if (langId == 0x0411) return State.JapaneseIME;
 
             if (langId == 0x0412) // 한국어 레이아웃
@@ -163,11 +173,20 @@ namespace IMEPointer
     /// </summary>
     internal static class GlobalInputHook
     {
-        // [수정: keybd_event가 NativeMethods.cs로 이동됨]
+        // Virtual Key Constants
+        private const int VK_SPACE = 0x20;
+        private const int VK_BACK = 0x08;
+        private const int VK_RETURN = 0x0D;
+        private const int VK_ESCAPE = 0x1B;
+        private const int VK_TAB = 0x09;
+        private const int VK_HANJA = 0x19;
+        private const int VK_RCONTROL = 0xA3;
+        private const int VK_LSHIFT = 0x10;
+        private const int VK_LCONTROL = 0x11;
+        private const int VK_LMENU = 0x12; // Alt
+        private const int VK_LWIN = 0x5B;
+        private const int VK_RWIN = 0x5C;
 
-        /// <summary>
-        /// 훅 이벤트 발생 시점의 애플리케이션 상태 스냅샷입니다.
-        /// </summary>
         internal readonly struct HookContextSnapshot
         {
             public readonly IntPtr ContextHwnd;
@@ -219,6 +238,7 @@ namespace IMEPointer
         public static bool CachedIsHangulMode => _contextSnapshot.IsHangulMode;
 
         public static volatile bool IsSending = false;
+        public static volatile bool IsReplacingSelection = false;
         private static IntPtr _kbdHookId = IntPtr.Zero;
         private static IntPtr _mouseHookId = IntPtr.Zero;
         private static IntPtr _lastResolvedContextHwnd = IntPtr.Zero;
@@ -253,74 +273,134 @@ namespace IMEPointer
             _contextSnapshot = snapshot;
         }
 
-        // ─────────────────────────────────────────────────────────────────
-        // [ 조합 버퍼 관리 메서드 ] Keymaps(일본어 입력기)에서 호출하여
-        //   한자 변환(Space 키)을 위해 최근 히라가나 출력 이력을 누적합니다.
-        // ─────────────────────────────────────────────────────────────────
-
-        /// <summary>최근에 출력된 히라가나/가타카나 문자열을 조합 버퍼에 누적합니다.</summary>
-        private static readonly System.Text.StringBuilder _compositionBuffer = new();
-        public static string CompositionBuffer => _compositionBuffer.ToString();
+        private static readonly System.Text.StringBuilder _compositionBuffer = new System.Text.StringBuilder();
+        private static readonly object _compositionLock = new object();
+        public static string CompositionBuffer
+        {
+            get
+            {
+                lock (_compositionLock) { return _compositionBuffer.ToString(); }
+            }
+        }
 
         public static void AppendComposition(string text)
         {
-            _compositionBuffer.Append(text);
-            // 버퍼가 너무 길어지는 것을 방지 (AppConfig.MaxKanjiConversionLength 기준)
-            if (_compositionBuffer.Length > AppConfig.MaxKanjiConversionLength)
+            if (string.IsNullOrEmpty(text)) return;
+            lock (_compositionLock)
             {
-                int excess = _compositionBuffer.Length - AppConfig.MaxKanjiConversionLength;
-                _compositionBuffer.Remove(0, excess);
+                IsReplacingSelection = false;
+                _compositionBuffer.Append(text);
+                if (AppConfig.LogLevel >= 2) Debug.WriteLine($"[CompositionBuffer] Appended '{text}' -> current: '{_compositionBuffer}'");
             }
         }
 
-        /// <summary>조합 버퍼를 초기화합니다. (마우스 클릭, 커서 이동 등 조합 연속성이 끊길 때 호출)</summary>
+        public static void RemoveLastCompositionChar()
+        {
+            lock (_compositionLock)
+            {
+                if (_compositionBuffer.Length > 0)
+                {
+                    if (_compositionBuffer.Length >= 2 && char.IsSurrogatePair(_compositionBuffer[_compositionBuffer.Length - 2], _compositionBuffer[_compositionBuffer.Length - 1]))
+                    {
+                        _compositionBuffer.Remove(_compositionBuffer.Length - 2, 2);
+                    }
+                    else
+                    {
+                        _compositionBuffer.Remove(_compositionBuffer.Length - 1, 1);
+                    }
+                    if (AppConfig.LogLevel >= 2) Debug.WriteLine($"[CompositionBuffer] Removed last char -> current: '{_compositionBuffer}'");
+                }
+            }
+        }
+
         public static void ClearCompositionBuffer()
         {
-            _compositionBuffer.Clear();
-        }
-
-        /// <summary>
-        /// 현재 조합 버퍼의 히라가나를 한자로 변환 확정합니다. (Space 키 한자변환 완료 후 호출)
-        /// 백스페이스로 기존 입력을 지우고, 변환된 문자열을 새로 출력한 뒤 버퍼를 초기화합니다.
-        /// </summary>
-        public static void CommitKanjiConversion(string originalKana, string convertedKanji, bool isReplacingSelection = false)
-        {
-            if (string.IsNullOrEmpty(convertedKanji)) return;
-            IsSending = true;
-            if (!isReplacingSelection && !string.IsNullOrEmpty(originalKana))
+            lock (_compositionLock)
             {
-                // 선택 영역 대체가 아닐 때만 기존 히라가나 글자 수만큼 백스페이스
-                for (int i = 0; i < originalKana.Length; i++) NativeMethods.SendBackspace();
+                IsReplacingSelection = false;
+                if (_compositionBuffer.Length > 0)
+                {
+                    _compositionBuffer.Clear();
+                    if (AppConfig.LogLevel >= 2) Debug.WriteLine("[CompositionBuffer] Cleared");
+                }
             }
-            // 변환된 한자 출력
-            NativeMethods.SendUnicodeString(convertedKanji);
-            IsSending = false;
-            ClearCompositionBuffer();
         }
 
-        /// <summary>
-        /// 지정된 횟수만큼 백스페이스를 전송한 후 새로운 텍스트를 입력합니다.
-        /// </summary>
+        public static string GetCompositionText()
+        {
+            lock (_compositionLock)
+            {
+                return _compositionBuffer.ToString();
+            }
+        }
+
+        public static void CommitKanjiConversion(string originalText, string selectedText, bool isReplacingSelection = false)
+        {
+            if (string.IsNullOrEmpty(selectedText))
+            {
+                IsReplacingSelection = false;
+                return;
+            }
+
+            int backCount = 0;
+            if (isReplacingSelection || IsReplacingSelection)
+            {
+                backCount = 0;
+            }
+            else
+            {
+                string textToMeasure = string.IsNullOrEmpty(originalText) ? GetCompositionText() : originalText;
+                backCount = new System.Globalization.StringInfo(textToMeasure).LengthInTextElements;
+            }
+
+            IsReplacingSelection = false;
+
+            if (AppConfig.LogLevel >= 2) Debug.WriteLine($"CommitKanjiConversion: backCount={backCount}, selectedText='{selectedText}'");
+            SendReplacement(backCount, selectedText);
+            ClearCompositionBuffer();
+
+            IntPtr hFore = ResolveContextHwnd();
+            if (hFore != IntPtr.Zero)
+            {
+                bool isHangul = ImeState.CheckHangulPublic(hFore);
+                if (!isHangul)
+                {
+                    ImeState.SetHangulState(hFore, true);
+                }
+            }
+        }
+
         public static void SendReplacement(int backCount, string text)
         {
             IsSending = true;
 
             if (AppConfig.EnableCopilotMap)
             {
-                Thread.Sleep(50); 
-                
-                bool isShift = (NativeMethods.GetKeyState(0x10) & 0x8000) != 0;
-                bool isLWin = (NativeMethods.GetKeyState(0x5B) & 0x8000) != 0;
-                bool isRWin = (NativeMethods.GetKeyState(0x5C) & 0x8000) != 0;
-                
-                // [수정: 분리된 NativeMethods 사용]
-                if (isShift) NativeMethods.keybd_event(0x10, 0, 0x0002, UIntPtr.Zero); // KEYEVENTF_KEYUP
-                if (isLWin) NativeMethods.keybd_event(0x5B, 0, 0x0002, UIntPtr.Zero);
-                if (isRWin) NativeMethods.keybd_event(0x5C, 0, 0x0002, UIntPtr.Zero);
+                Thread.Sleep(50);
+                bool isShift = (NativeMethods.GetKeyState(VK_LSHIFT) & 0x8000) != 0;
+                bool isLWin = (NativeMethods.GetKeyState(VK_LWIN) & 0x8000) != 0;
+                bool isRWin = (NativeMethods.GetKeyState(VK_RWIN) & 0x8000) != 0;
+
+                if (isShift) NativeMethods.keybd_event(VK_LSHIFT, 0, 0x0002, UIntPtr.Zero);
+                if (isLWin) NativeMethods.keybd_event(VK_LWIN, 0, 0x0002, UIntPtr.Zero);
+                if (isRWin) NativeMethods.keybd_event(VK_RWIN, 0, 0x0002, UIntPtr.Zero);
             }
 
             for (int i = 0; i < backCount; i++) NativeMethods.SendBackspace();
             if (!string.IsNullOrEmpty(text)) NativeMethods.SendUnicodeString(text);
+            IsSending = false;
+        }
+
+        private static void SendSpaceKey()
+        {
+            IsSending = true;
+            NativeMethods.INPUT[] inputs = new NativeMethods.INPUT[2];
+            inputs[0].type = NativeMethods.INPUT_KEYBOARD;
+            inputs[0].U.ki.wVk = VK_SPACE; 
+            inputs[1].type = NativeMethods.INPUT_KEYBOARD;
+            inputs[1].U.ki.wVk = VK_SPACE;
+            inputs[1].U.ki.dwFlags = NativeMethods.KEYEVENTF_KEYUP;
+            NativeMethods.SendInput(2, inputs, System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.INPUT>());
             IsSending = false;
         }
 
@@ -329,9 +409,20 @@ namespace IMEPointer
         {
             try
             {
-                if (nCode >= 0 && wParam.ToInt32() == NativeMethods.WM_LBUTTONDOWN)
+                if (nCode >= 0 && (wParam.ToInt32() == NativeMethods.WM_LBUTTONDOWN || wParam.ToInt32() == NativeMethods.WM_RBUTTONDOWN))
                 {
-                    ActiveProcessor?.OnMouseClick();
+                    if (KanjiCandidateOverlay.IsActive)
+                    {
+                        int mouseX = Marshal.ReadInt32(lParam, 0);
+                        int mouseY = Marshal.ReadInt32(lParam, 4);
+                        var clickPoint = new System.Drawing.Point(mouseX, mouseY);
+                        KanjiCandidateOverlay.HandleMouseClickFromHook(clickPoint);
+                    }
+                    else
+                    {
+                        ActiveProcessor?.OnMouseClick();
+                        ClearCompositionBuffer();
+                    }
                 }
             }
             catch { }
@@ -339,142 +430,351 @@ namespace IMEPointer
         }
 
         private static bool IsInterestedKeyboardMessage(int msg) =>
-            msg == NativeMethods.WM_KEYDOWN || msg == NativeMethods.WM_SYSKEYDOWN;
+            msg == NativeMethods.WM_KEYDOWN || msg == NativeMethods.WM_SYSKEYDOWN ||
+            msg == NativeMethods.WM_KEYUP || msg == NativeMethods.WM_SYSKEYUP;
 
-        private static bool IsHanjaOrRightCtrl(int vkCode) => vkCode == 0x19 || vkCode == 0xA3; // VK_HANJA, VK_RCONTROL
+        private static bool IsHanjaOrRightCtrl(int vkCode) => vkCode == VK_HANJA || vkCode == VK_RCONTROL;
 
         private static bool HasBlockedModifierChord(bool allowCtrlForCurrentKey)
         {
-            bool isCtrl = (NativeMethods.GetKeyState(0x11) & 0x8000) != 0;
+            bool isCtrl = (NativeMethods.GetKeyState(VK_LCONTROL) & 0x8000) != 0;
             if (isCtrl && !allowCtrlForCurrentKey) return true;
-            if ((NativeMethods.GetKeyState(0x12) & 0x8000) != 0) return true; // Alt
+            if ((NativeMethods.GetKeyState(VK_LMENU) & 0x8000) != 0) return true;
 
-            bool isWin = (NativeMethods.GetKeyState(0x5B) & 0x8000) != 0
-                || (NativeMethods.GetKeyState(0x5C) & 0x8000) != 0;
-
-            if (AppConfig.EnableCopilotMap && isWin) 
-            {
-                isWin = false; 
-            }
-
+            bool isWin = (NativeMethods.GetKeyState(VK_LWIN) & 0x8000) != 0 || (NativeMethods.GetKeyState(VK_RWIN) & 0x8000) != 0;
+            if (AppConfig.EnableCopilotMap && isWin) isWin = false;
             return isWin;
         }
 
         private static IntPtr ResolveContextHwnd()
         {
             IntPtr hwnd = ContextHwnd;
-            if (hwnd != IntPtr.Zero)
-            {
-                _lastResolvedContextHwnd = hwnd;
-                return hwnd;
-            }
-
-            if (_lastResolvedContextHwnd != IntPtr.Zero)
-                return _lastResolvedContextHwnd;
-
+            if (hwnd != IntPtr.Zero) { _lastResolvedContextHwnd = hwnd; return hwnd; }
+            if (_lastResolvedContextHwnd != IntPtr.Zero) return _lastResolvedContextHwnd;
             hwnd = NativeMethods.GetForegroundWindow();
-            if (hwnd != IntPtr.Zero)
-                _lastResolvedContextHwnd = hwnd;
-
+            if (hwnd != IntPtr.Zero) _lastResolvedContextHwnd = hwnd;
             return hwnd;
         }
 
-        private static IntPtr BypassKeyboardHook(int nCode, IntPtr wParam, IntPtr lParam) =>
-            NativeMethods.CallNextHookEx(_kbdHookId, nCode, wParam, lParam);
+        private static IntPtr BypassKeyboardHook(int nCode, IntPtr wParam, IntPtr lParam) => NativeMethods.CallNextHookEx(_kbdHookId, nCode, wParam, lParam);
 
         private static bool ShouldBypassHook(int nCode, IntPtr wParam)
         {
-            if (nCode < 0 || IsSending || !IsEnabled)
-                return true;
-
-            int msg = wParam.ToInt32();
-            return !IsInterestedKeyboardMessage(msg);
+            if (nCode < 0 || IsSending || !IsEnabled) return true;
+            return !IsInterestedKeyboardMessage(wParam.ToInt32());
         }
 
         private static bool TryResolveKeyboardContext(int vkCode, out IntPtr hFore, out bool capsOn, out bool isHangulMode, out bool isHanjaOrRCtrl)
         {
             isHanjaOrRCtrl = IsHanjaOrRightCtrl(vkCode);
-
-            if (HasBlockedModifierChord(isHanjaOrRCtrl))
-            {
-                hFore = IntPtr.Zero;
-                capsOn = false;
-                isHangulMode = false;
-                return false;
-            }
-
+            if (!isHanjaOrRCtrl && HasBlockedModifierChord(false)) { hFore = IntPtr.Zero; capsOn = false; isHangulMode = false; return false; }
             hFore = ResolveContextHwnd();
-            if (hFore == IntPtr.Zero)
-            {
-                capsOn = false;
-                isHangulMode = false;
-                return false;
-            }
+            if (hFore == IntPtr.Zero) { capsOn = false; isHangulMode = false; return false; }
 
             capsOn = (NativeMethods.GetKeyState(NativeMethods.VK_CAPITAL) & 0x0001) != 0;
-            isHangulMode = CachedIsHangulMode;
+            isHangulMode = ImeState.CheckHangulPublic(hFore);
             return true;
         }
 
-        private static IntPtr HandleHanjaKey(int nCode, IntPtr wParam, IntPtr lParam, IntPtr hFore, bool capsOn, bool isHangulMode)
+        private static IntPtr HandleHanjaKey(int nCode, IntPtr wParam, IntPtr lParam, int msg, IntPtr hFore, bool capsOn, bool isHangulMode)
         {
-            if (isHangulMode & !capsOn) 
-            { 
-                return BypassKeyboardHook(nCode, wParam, lParam); 
-            }
+            if (isHangulMode & !capsOn) return BypassKeyboardHook(nCode, wParam, lParam);
 
-            if (!isHangulMode)
+            if (msg == NativeMethods.WM_KEYDOWN || msg == NativeMethods.WM_SYSKEYDOWN)
             {
-                ImeState.SetHangulState(hFore, true);
-                if (!capsOn) NativeMethods.SimulateCapsLock();
-                MainForm.Instance?.ShowOverlay(UiText.HangulCapsMode);
-                return (IntPtr)1; // 입력 가로챔
-            }
+                if (!isHangulMode)
+                {
+                    ImeState.SetHangulState(hFore, true);
+                    if (!capsOn) NativeMethods.SimulateCapsLock();
+                    MainForm.Instance?.ShowOverlay(UiText.HangulCapsMode, mode: OverlayPositionMode.ModeSwitch);
+                    return (IntPtr)1;
+                }
 
-            IKeyProcessor? hanjaProcessor = ActiveProcessor;
-            if (hanjaProcessor != null && hanjaProcessor.ProcessHanjaKey(hFore, capsOn, isHangulMode))
+                IKeyProcessor? hanjaProcessor = ActiveProcessor;
+                if (hanjaProcessor != null && hanjaProcessor.ProcessHanjaKey(hFore, capsOn, isHangulMode))
+                {
+                    MainForm.Instance?.RequestLayoutRefresh();
+                    return (IntPtr)1;
+                }
+            }
+            else if (msg == NativeMethods.WM_KEYUP || msg == NativeMethods.WM_SYSKEYUP)
             {
-                MainForm.Instance?.RequestLayoutRefresh();
-                return (IntPtr)1; // 입력 가로챔
+                return (IntPtr)1;
             }
 
             return BypassKeyboardHook(nCode, wParam, lParam);
         }
 
-        private static IntPtr HandleLanguageProcessorKey(int nCode, IntPtr wParam, IntPtr lParam, int vkCode, IntPtr hFore, bool capsOn, bool isHangulMode)
+        private static IntPtr HandleLanguageProcessorKey(int nCode, IntPtr wParam, IntPtr lParam, int msg, int vkCode, IntPtr hFore, bool capsOn, bool isHangulMode)
         {
             IKeyProcessor? keyProcessor = ActiveProcessor;
-            if (keyProcessor == null || ContextLangId != 0x0412) // 0x0412: 한국어
-                return BypassKeyboardHook(nCode, wParam, lParam);
+            if (keyProcessor == null) return BypassKeyboardHook(nCode, wParam, lParam);
 
-            bool isShift = (NativeMethods.GetKeyState(0x10) & 0x8000) != 0;
-            if (keyProcessor.ProcessKeyDown(vkCode, isShift, capsOn, hFore, isHangulMode))
-                return (IntPtr)1; // 입력 가로챔
+            uint threadId = NativeMethods.GetWindowThreadProcessId(hFore, out _);
+            ushort langId = (ushort)(NativeMethods.GetKeyboardLayout(threadId).ToInt64() & 0xFFFF);
+            if (langId != 0x0412) return BypassKeyboardHook(nCode, wParam, lParam);
+
+            if (msg == NativeMethods.WM_KEYDOWN || msg == NativeMethods.WM_SYSKEYDOWN)
+            {
+                bool isShift = (NativeMethods.GetKeyState(VK_LSHIFT) & 0x8000) != 0;
+                if (keyProcessor.ProcessKeyDown(vkCode, isShift, capsOn, hFore, isHangulMode)) return (IntPtr)1;
+            }
+            else if (msg == NativeMethods.WM_KEYUP || msg == NativeMethods.WM_SYSKEYUP)
+            {
+                if (capsOn && isHangulMode && ((vkCode >= 0x41 && vkCode <= 0x5A) || KeyboardLayoutAnalyzer.IsSymbolOrNumber(vkCode) || vkCode == VK_SPACE))
+                {
+                    return (IntPtr)1;
+                }
+            }
 
             return BypassKeyboardHook(nCode, wParam, lParam);
+        }
+
+        private static bool _lastCapsOn = false;
+        private static bool _lastIsHangulMode = false;
+        private static IntPtr _lastContextHwndForReset = IntPtr.Zero;
+
+        private static void UpdateStateTracking(IntPtr hFore, bool capsOn, bool isHangulMode)
+        {
+            if (_lastContextHwndForReset != hFore || capsOn != _lastCapsOn)
+            {
+                ActiveProcessor?.OnMouseClick();
+            }
+            _lastCapsOn = capsOn;
+            _lastIsHangulMode = isHangulMode;
+            _lastContextHwndForReset = hFore;
         }
 
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvStdcall) })]
         private static IntPtr KbdHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (ShouldBypassHook(nCode, wParam))
-                return BypassKeyboardHook(nCode, wParam, lParam);
+            if (ShouldBypassHook(nCode, wParam)) return BypassKeyboardHook(nCode, wParam, lParam);
 
             try
             {
                 int vkCode = Marshal.ReadInt32(lParam);
+                int msg = wParam.ToInt32();
+                if (AppConfig.LogLevel >= 2) Debug.WriteLine($"KbdHookCallback: vkCode={vkCode} wParam={wParam}");
+
+                if (KanjiCandidateOverlay.IsActive)
+                {
+                    if (msg == NativeMethods.WM_KEYDOWN || msg == NativeMethods.WM_SYSKEYDOWN)
+                    {
+                        if (KanjiCandidateOverlay.HandleKeyFromHook(vkCode))
+                        {
+                            return (IntPtr)1;
+                        }
+                    }
+                    else if (msg == NativeMethods.WM_KEYUP || msg == NativeMethods.WM_SYSKEYUP)
+                    {
+                        return (IntPtr)1;
+                    }
+                }
+
+                if (vkCode == VK_SPACE) 
+                {
+                    if (TryResolveKeyboardContext(vkCode, out IntPtr hForeSpc, out bool capsOnSpc, out bool isHangulModeSpc, out _))
+                    {
+                        UpdateStateTracking(hForeSpc, capsOnSpc, isHangulModeSpc);
+
+                        if (capsOnSpc && isHangulModeSpc)
+                        {
+                            if (msg == NativeMethods.WM_KEYDOWN || msg == NativeMethods.WM_SYSKEYDOWN)
+                            {
+                                bool isShiftSpc = (NativeMethods.GetKeyState(VK_LSHIFT) & 0x8000) != 0;
+                                ActiveProcessor?.ProcessKeyDown(vkCode, isShiftSpc, capsOnSpc, hForeSpc, isHangulModeSpc);
+                                
+                                string compText = GetCompositionText();
+                                if (AppConfig.LogLevel >= 2) Debug.WriteLine($"KbdHookCallback: Space key detected, compositionBuffer='{compText}'");
+
+                                if (!string.IsNullOrEmpty(compText))
+                                {
+                                    try
+                                    {
+                                        if (HandleKanjiConversion(hForeSpc, compText, false))
+                                        {
+                                            return (IntPtr)1;
+                                        }
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        if (AppConfig.LogLevel >= 1) Debug.WriteLine($"KbdHookCallback: HandleKanjiConversion threw: {ex}");
+                                    }
+                                }
+                                else
+                                {
+                                    Task.Run(() =>
+                                    {
+                                        try
+                                        {
+                                            string? selectedText = TextSelectionUtils.ReadSelectedText();
+                                            if (AppConfig.LogLevel >= 2) Trace.WriteLine($"[Space] selectedText='{selectedText}'");
+
+                                            if (!string.IsNullOrEmpty(selectedText) && MozcDictionary.IsJapaneseText(selectedText))
+                                            {
+                                                IsReplacingSelection = true;
+                                                bool converted = HandleKanjiConversion(hForeSpc, selectedText, true);
+                                                if (!converted)
+                                                {
+                                                    IsReplacingSelection = false;
+                                                    TextSelectionUtils.CancelSelection();
+                                                    SendSpaceKey();
+                                                }
+                                            }
+                                            else
+                                            {
+                                                SendSpaceKey();
+                                            }
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            if (AppConfig.LogLevel >= 1) Trace.WriteLine($"[Space] selectedText conversion error: {ex.Message}");
+                                            SendSpaceKey();
+                                        }
+                                    });
+                                    return (IntPtr)1;
+                                }
+                            }
+                            else if (msg == NativeMethods.WM_KEYUP || msg == NativeMethods.WM_SYSKEYUP)
+                            {
+                                return (IntPtr)1;
+                            }
+                        }
+                    }
+                }
+
+                if (msg == NativeMethods.WM_KEYDOWN)
+                {
+                    if (vkCode == VK_BACK)
+                    {
+                        RemoveLastCompositionChar();
+                    }
+                    else if (vkCode is VK_RETURN or VK_ESCAPE or VK_TAB or (>= 0x21 and <= 0x28))
+                    {
+                        ClearCompositionBuffer();
+                    }
+                }
 
                 if (!TryResolveKeyboardContext(vkCode, out IntPtr hFore, out bool capsOn, out bool isHangulMode, out bool isHanjaOrRCtrl))
                     return BypassKeyboardHook(nCode, wParam, lParam);
 
-                if (isHanjaOrRCtrl)
-                    return HandleHanjaKey(nCode, wParam, lParam, hFore, capsOn, isHangulMode);
+                UpdateStateTracking(hFore, capsOn, isHangulMode);
 
-                return HandleLanguageProcessorKey(nCode, wParam, lParam, vkCode, hFore, capsOn, isHangulMode);
+                if (isHanjaOrRCtrl) return HandleHanjaKey(nCode, wParam, lParam, msg, hFore, capsOn, isHangulMode);
+
+                return HandleLanguageProcessorKey(nCode, wParam, lParam, msg, vkCode, hFore, capsOn, isHangulMode);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                if (AppConfig.LogLevel >= 1) Trace.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Error in KbdHookCallback: {ex.Message}\n{ex.StackTrace}");
+            }
 
             return BypassKeyboardHook(nCode, wParam, lParam);
+        }
+
+        private static bool HandleKanjiConversion(IntPtr hFore, string? inputComp = null, bool isReplacingSelection = false)
+        {
+            try
+            {
+                if (AppConfig.LogLevel >= 2) Trace.WriteLine($"HandleKanjiConversion: hFore={hFore}");
+                string? fullText = !string.IsNullOrEmpty(inputComp) ? inputComp : GetCompositionText();
+                if (AppConfig.LogLevel >= 2) Trace.WriteLine($"HandleKanjiConversion: fullText='{fullText}'");
+
+                if (string.IsNullOrEmpty(fullText)) return false;
+
+                string targetToConvert = fullText;
+                string preservedPrefix = string.Empty;
+                string preservedSuffix = string.Empty;
+
+                if (fullText.Length > AppConfig.MaxKanjiConversionLength)
+                {
+                    int maxLen = AppConfig.MaxKanjiConversionLength;
+                    if (!isReplacingSelection)
+                    {
+                        targetToConvert = fullText.Substring(fullText.Length - maxLen);
+                        preservedPrefix = fullText.Substring(0, fullText.Length - maxLen);
+                    }
+                    else
+                    {
+                        targetToConvert = fullText.Substring(0, maxLen);
+                        preservedSuffix = fullText.Substring(maxLen);
+                    }
+                }
+
+                if (!MozcDictionary.IsJapaneseText(targetToConvert)) return false;
+
+                Task.Run(async () =>
+                {
+                    if (!MozcDictionary.IsLoaded)
+                    {
+                        try
+                        {
+                            MozcDictionary.LoadDictionary();
+                            int waited = 0;
+                            while (!MozcDictionary.IsLoaded && waited < 2000)
+                            {
+                                Thread.Sleep(120);
+                                waited += 120;
+                            }
+                            MozcDictionary.PrintStatistics();
+                        }
+                        catch (Exception ex) { if (AppConfig.LogLevel >= 1) Trace.WriteLine($"HandleKanjiConversion: LoadDictionary failed: {ex}"); }
+                    }
+
+                    bool foundCandidates = false;
+                    try
+                    {
+                        if (AppConfig.UseGoogleApi)
+                        {
+                            var googleCandidates = await GoogleJapaneseInputApi.GetCandidatesAsync(targetToConvert);
+                            if (AppConfig.LogLevel >= 2) Trace.WriteLine($"HandleKanjiConversion: Google API candidates count={googleCandidates?.Count}");
+                            if (googleCandidates != null && googleCandidates.Count > 0)
+                            {
+                                var finalCandidates = googleCandidates
+                                    .Select(c => preservedPrefix + c + preservedSuffix)
+                                    .ToList();
+
+                                MainForm.Instance?.BeginInvoke(new Action(() => 
+                                    MainForm.Instance.ShowKanjiCandidateAsync(finalCandidates, fullText, isReplacingSelection)));
+                                foundCandidates = true;
+                                return;
+                            }
+                        }
+
+                        if (AppConfig.EnableLocalConversion)
+                        {
+                            var entries = KanjiConverter.GetKanjiCandidatesOptimized(targetToConvert);
+
+                            if (AppConfig.LogLevel >= 2) Trace.WriteLine($"HandleKanjiConversion: Local candidates count={entries.Count}");
+                            if (entries.Count > 0)
+                            {
+                                var finalLocalCandidates = entries
+                                    .Select(e => preservedPrefix + e.Kanji + preservedSuffix)
+                                    .ToList();
+
+                                if (AppConfig.LogLevel >= 2) Trace.WriteLine("HandleKanjiConversion: showing local candidates");
+                                MainForm.Instance?.BeginInvoke(new Action(() => 
+                                    MainForm.Instance.ShowKanjiCandidateAsync(finalLocalCandidates, fullText, isReplacingSelection)));
+                                foundCandidates = true;
+                                return;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        if (AppConfig.LogLevel >= 1) Debug.WriteLine($"HandleKanjiConversion: lookup failed: {ex}");
+                    }
+
+                    if (!foundCandidates)
+                    {
+                        ClearCompositionBuffer();
+                        SendSpaceKey();
+                    }
+                });
+
+                return true;
+            }
+            catch { return false; }
         }
     }
 

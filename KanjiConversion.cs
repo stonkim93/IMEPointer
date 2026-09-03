@@ -1,4 +1,4 @@
-// KanjiConversion.cs - IMEJapanese
+// KanjiConversion.cs - IMEPointer
 #nullable enable
 using System;
 using System.Collections.Generic;

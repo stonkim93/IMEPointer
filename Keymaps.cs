@@ -1,10 +1,10 @@
-// Lang.cs - IMEJapanese
+// Lang.cs - IMEPointer
 // 일본어1(조합형) / 일본어2(조합형) / 일본어3(3Layer) 자판 매핑 및 처리.
 #nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
+//using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;

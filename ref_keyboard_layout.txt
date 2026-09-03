@@ -1,0 +1,80 @@
+    public class KeyboardLayoutForm : Form
+    {
+        private readonly PictureBox _pbLayoutImage;
+        public event EventHandler? OnLayoutDoubleClicked;
+        public event EventHandler? OnClosedByUser;
+        private string _currentImageName = "";
+        private Size _currentImageSize = new Size(600, 200);
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams cp = base.CreateParams;
+                cp.Style |= 0x00020000;   
+                cp.Style |= 0x00080000;   
+                cp.ExStyle |= 0x00040000; 
+                cp.ExStyle |= 0x08000000; 
+                return cp;
+            }
+        }
+
+        protected override bool ShowWithoutActivation => true;
+
+        public KeyboardLayoutForm()
+        {
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
+            this.MinimizeBox = true;
+            this.ShowInTaskbar = true;
+            this.TopMost = true; 
+            this.Text = "IMEPointer 자판 배열창";
+            
+            int screenWidth = Screen.PrimaryScreen?.WorkingArea.Width ?? 800;
+            this.StartPosition = FormStartPosition.Manual;
+            this.Location = new Point(Math.Max(0, (screenWidth - this.Width) / 2), 50);
+
+            try 
+            { 
+                var assembly = typeof(Program).Assembly;
+                using (Stream? stream = assembly.GetManifestResourceStream("IMEPointer.images.IMEPointer.ico"))
+                {
+                    if (stream != null) this.Icon = new Icon(stream);
+                }
+            } 
+            catch { }
+
+            _pbLayoutImage = new PictureBox
+            {
+                Dock = DockStyle.Fill,
+                SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.White
+            };
+
+            _pbLayoutImage.DoubleClick += (s, e) => OnLayoutDoubleClicked?.Invoke(this, EventArgs.Empty);
+            this.Controls.Add(_pbLayoutImage);
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            if (this.WindowState == FormWindowState.Normal)
+            {
+                if (this.ClientSize != _currentImageSize && _currentImageSize.Width > 0 && _currentImageSize.Height > 0)
+                {
+                    this.ClientSize = _currentImageSize;
+                }
+            }
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (e.CloseReason == CloseReason.UserClosing)
+            {
+                e.Cancel = true;
+                this.Hide();
+                OnClosedByUser?.Invoke(this, EventArgs.Empty);
+            }
+            base.OnFormClosing(e);
+        }
+
