@@ -28,7 +28,7 @@ namespace IMEPointer {
                 if (iiPointer.hbmMask != IntPtr.Zero) NativeMethods.DeleteObject(iiPointer.hbmMask);
             }
 
-            using Bitmap? rendered = RenderPointerToArgbBitmap(hPointer, renderSize, out int actualWidth, out int actualHeight);
+            using Bitmap? rendered = RenderPointerToArgbBitmap(hPointer, out int actualWidth, out int actualHeight);
             if (rendered == null) return IntPtr.Zero;
 
             RecolorCursorStraight(rendered, targetColor, ocrId);
@@ -44,12 +44,28 @@ namespace IMEPointer {
                 finalBitmap = outlined;
             }
 
+            Bitmap? scaledBitmap = null;
+            if (finalBitmap.Width != renderSize || finalBitmap.Height != renderSize)
+            {
+                scaledBitmap = new Bitmap(renderSize, renderSize, PixelFormat.Format32bppArgb);
+                using (Graphics g = Graphics.FromImage(scaledBitmap))
+                {
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                    g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+                    g.DrawImage(finalBitmap, new Rectangle(0, 0, renderSize, renderSize));
+                }
+                finalBitmap = scaledBitmap;
+            }
+
             float scaleX = (float)renderSize / actualWidth;
             float scaleY = (float)renderSize / actualHeight;
             int scaledHotX = (int)Math.Round(hotX * scaleX);
             int scaledHotY = (int)Math.Round(hotY * scaleY);
 
             IntPtr ptr = BitmapToPointer(finalBitmap, scaledHotX, scaledHotY);
+            
+            scaledBitmap?.Dispose();
             outlined?.Dispose();
             return ptr;
         }
@@ -119,10 +135,10 @@ namespace IMEPointer {
             return result;
         }
 
-        private static unsafe Bitmap? RenderPointerToArgbBitmap(IntPtr hPointer, int targetSize, out int actualWidth, out int actualHeight)
+        private static unsafe Bitmap? RenderPointerToArgbBitmap(IntPtr hPointer, out int actualWidth, out int actualHeight)
         {
-            actualWidth = targetSize;
-            actualHeight = targetSize;
+            actualWidth = 32;
+            actualHeight = 32;
             
             if (NativeMethods.GetIconInfo(hPointer, out NativeMethods.ICONINFO ii))
             {
@@ -139,7 +155,7 @@ namespace IMEPointer {
                 if (ii.hbmMask != IntPtr.Zero) NativeMethods.DeleteObject(ii.hbmMask);
             }
 
-            NativeMethods.BITMAPINFO bmi = new() { biSize = sizeof(NativeMethods.BITMAPINFO), biWidth = targetSize, biHeight = -targetSize, biPlanes = 1, biBitCount = 32, biCompression = 0 };
+            NativeMethods.BITMAPINFO bmi = new() { biSize = sizeof(NativeMethods.BITMAPINFO), biWidth = actualWidth, biHeight = -actualHeight, biPlanes = 1, biBitCount = 32, biCompression = 0 };
             IntPtr hdcScreen = NativeMethods.GetDC(IntPtr.Zero);
             IntPtr hdcMem = NativeMethods.CreateCompatibleDC(hdcScreen);
             IntPtr hDib = NativeMethods.CreateDIBSection(hdcMem, ref bmi, 0, out IntPtr pBits, IntPtr.Zero, 0);
@@ -147,14 +163,14 @@ namespace IMEPointer {
             if (hDib == IntPtr.Zero) { NativeMethods.DeleteDC(hdcMem); NativeMethods.ReleaseDC(IntPtr.Zero, hdcScreen); return null; }
 
             IntPtr hOld = NativeMethods.SelectObject(hdcMem, hDib);
-            int byteCount = targetSize * targetSize * 4;
+            int byteCount = actualWidth * actualHeight * 4;
             new Span<byte>((void*)pBits, byteCount).Clear();
 
             const uint DI_NORMAL = 0x0003;
-            NativeMethods.DrawIconEx(hdcMem, 0, 0, hPointer, targetSize, targetSize, 0, IntPtr.Zero, DI_NORMAL);
+            NativeMethods.DrawIconEx(hdcMem, 0, 0, hPointer, actualWidth, actualHeight, 0, IntPtr.Zero, DI_NORMAL);
 
-            Bitmap bmp = new Bitmap(targetSize, targetSize, PixelFormat.Format32bppArgb);
-            var bmpData = bmp.LockBits(new Rectangle(0, 0, targetSize, targetSize), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+            Bitmap bmp = new Bitmap(actualWidth, actualHeight, PixelFormat.Format32bppArgb);
+            var bmpData = bmp.LockBits(new Rectangle(0, 0, actualWidth, actualHeight), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
             
             byte* src = (byte*)pBits;
             byte* dst = (byte*)bmpData.Scan0;

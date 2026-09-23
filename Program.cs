@@ -620,8 +620,9 @@ namespace IMEPointer
             ApplyVisualState(ImeState.Detect(_currentContextHwnd, _activeCapsMode == CapsMode.Japanese1, _activeCapsMode == CapsMode.Japanese2, _activeCapsMode == CapsMode.Japanese3));
             
             _winEventProc = new NativeMethods.WinEventDelegate(WinEventCallback);
-            _hWinEventHookForeground = NativeMethods.SetWinEventHook(NativeMethods.EVENT_SYSTEM_FOREGROUND, NativeMethods.EVENT_SYSTEM_FOREGROUND, IntPtr.Zero, _winEventProc, 0, 0, NativeMethods.WINEVENT_OUTOFCONTEXT);
-            _hWinEventHookFocus = NativeMethods.SetWinEventHook(NativeMethods.EVENT_OBJECT_FOCUS, NativeMethods.EVENT_OBJECT_FOCUS, IntPtr.Zero, _winEventProc, 0, 0, NativeMethods.WINEVENT_OUTOFCONTEXT);
+            IntPtr winEventProcPtr = Marshal.GetFunctionPointerForDelegate(_winEventProc);
+            _hWinEventHookForeground = NativeMethods.SetWinEventHook(NativeMethods.EVENT_SYSTEM_FOREGROUND, NativeMethods.EVENT_SYSTEM_FOREGROUND, IntPtr.Zero, winEventProcPtr, 0, 0, NativeMethods.WINEVENT_OUTOFCONTEXT);
+            _hWinEventHookFocus = NativeMethods.SetWinEventHook(NativeMethods.EVENT_OBJECT_FOCUS, NativeMethods.EVENT_OBJECT_FOCUS, IntPtr.Zero, winEventProcPtr, 0, 0, NativeMethods.WINEVENT_OUTOFCONTEXT);
             
             ProcessStateCheck(null, EventArgs.Empty);
         }
@@ -813,7 +814,9 @@ namespace IMEPointer
 
         private void SyncSystemHangulState(IntPtr actualHFore, bool isTaskbar, bool isTrayOrApp, bool isLayoutForm, bool isFocusChanged)
         {
-            bool isOurWindow = (isTrayOrApp || isTaskbar || isLayoutForm);
+            // 작업 표시줄(isTaskbar)은 자체적인 IME 컨텍스트를 가질 수 있으며 검색창 등에서 한영키 입력이 가능하므로
+            // 동기화 대상(isOurWindow)에서 제외하여 한영키 입력 시 상태 변화를 감지하고 LastValidHwnd로 동기화하도록 수정합니다.
+            bool isOurWindow = (isTrayOrApp || isLayoutForm);
 
             bool isCurrentHangul;
             if (isOurWindow)

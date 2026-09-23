@@ -105,13 +105,13 @@ namespace IMEPointer
             IntPtr hkl = NativeMethods.GetKeyboardLayout(threadId);
 
             uint scanCode = NativeMethods.MapVirtualKeyEx((uint)vKey, 0, hkl);
-            StringBuilder sb = new StringBuilder(5);
+            char[] buff = new char[5];
             
-            int result = NativeMethods.ToUnicodeEx((uint)vKey, scanCode, keyState, sb, sb.Capacity, 0, hkl);
+            int result = NativeMethods.ToUnicodeEx((uint)vKey, scanCode, keyState, buff, buff.Length, 0, hkl);
             
             if (result > 0)
             {
-                string ch = sb.ToString();
+                string ch = new string(buff, 0, result);
                 if (isShift && ch.Length == 1 && IsSymbolOrNumber(vKey))
                 {
                     string? shiftedFallback = GetStandardShiftedSymbol(vKey);

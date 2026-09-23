@@ -92,6 +92,7 @@ namespace IMEPointer
         [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool GetCursorInfo(ref CURSORINFO pci);
         [LibraryImport("user32.dll", EntryPoint = "GetIconInfo")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool GetIconInfo(IntPtr hIcon, out ICONINFO piconinfo);
         [LibraryImport("user32.dll")][SuppressGCTransition] public static partial IntPtr GetForegroundWindow();
+        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool SetForegroundWindow(IntPtr hWnd);
         [LibraryImport("user32.dll")][SuppressGCTransition] public static partial uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
         [LibraryImport("user32.dll")][SuppressGCTransition] public static partial IntPtr GetKeyboardLayout(uint idThread);
         [LibraryImport("user32.dll")][SuppressGCTransition] public static partial short GetKeyState(int keyCode);
@@ -106,8 +107,8 @@ namespace IMEPointer
         
         // WinEvent API
         public delegate void WinEventDelegate(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime);
-        [DllImport("user32.dll", SetLastError = true)] public static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr hmodWinEventProc, WinEventDelegate lpfnWinEventProc, uint idProcess, uint idThread, uint dwFlags);
-        [DllImport("user32.dll", SetLastError = true)] public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
+        [LibraryImport("user32.dll")] public static partial IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr hmodWinEventProc, IntPtr lpfnWinEventProc, uint idProcess, uint idThread, uint dwFlags);
+        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool UnhookWinEvent(IntPtr hWinEventHook);
         [LibraryImport("user32.dll", EntryPoint = "GetDC")] public static partial IntPtr GetDC(IntPtr hWnd);
         [LibraryImport("user32.dll", EntryPoint = "ReleaseDC")] public static partial int ReleaseDC(IntPtr hWnd, IntPtr hDC);
         [LibraryImport("user32.dll", EntryPoint = "DrawIconEx")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool DrawIconEx(IntPtr hdc, int xLeft, int yTop, IntPtr hIcon, int cxWidth, int cyWidth, uint istepIfAniCur, IntPtr hbrFlickerFreeDraw, uint diFlags);
@@ -117,17 +118,17 @@ namespace IMEPointer
         [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui);
         
         // [수정: Lang.cs, ImeNativeCore.cs에서 이동된 키보드 배열 및 이벤트 관련 API]
-        [DllImport("user32.dll", SetLastError = true)] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int ToUnicodeEx(uint wVirtKey, uint wScanCode, byte[] lpKeyState, [Out, MarshalAs(UnmanagedType.LPWStr, SizeConst = 64)] StringBuilder pwszBuff, int cchBuff, uint wFlags, IntPtr dwhkl);
+        [LibraryImport("user32.dll")] public static partial void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+        [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16)] public static partial int ToUnicodeEx(uint wVirtKey, uint wScanCode, byte[] lpKeyState, [Out] char[] pwszBuff, int cchBuff, uint wFlags, IntPtr dwhkl);
         [LibraryImport("user32.dll")] public static partial uint MapVirtualKeyEx(uint uCode, uint uMapType, IntPtr dwhkl);
         [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool GetKeyboardState(byte[] lpKeyState);
         
         // Clipboard APIs
-        [DllImport("user32.dll", SetLastError = true)] public static extern bool OpenClipboard(IntPtr hWndNewOwner);
-        [DllImport("user32.dll", SetLastError = true)] public static extern bool CloseClipboard();
-        [DllImport("user32.dll", SetLastError = true)] public static extern bool EmptyClipboard();
-        [DllImport("user32.dll", SetLastError = true)] public static extern IntPtr GetClipboardData(uint uFormat);
-        [DllImport("user32.dll", SetLastError = true)] public static extern bool IsClipboardFormatAvailable(uint format);
+        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool OpenClipboard(IntPtr hWndNewOwner);
+        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool CloseClipboard();
+        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool EmptyClipboard();
+        [LibraryImport("user32.dll")] public static partial IntPtr GetClipboardData(uint uFormat);
+        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool IsClipboardFormatAvailable(uint format);
         #endregion
 
         #region Gdi32
