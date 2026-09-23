@@ -13,7 +13,22 @@ namespace IMEPointer
     internal static unsafe partial class NativeMethods
     {
         #region Constants
+        // Window Styles & Extended Styles
+        public const int WS_MINIMIZEBOX = 0x00020000;
+        public const int WS_SYSMENU = 0x00080000;
+        public const int WS_EX_APPWINDOW = 0x00040000;
+        public const int WS_EX_TOOLWINDOW = 0x00000080;
+        public const int WS_EX_TRANSPARENT = 0x00000020;
+        public const int WS_EX_LAYERED = 0x00080000;
+        public const int WS_EX_NOACTIVATE = 0x08000000;
+        public const int WS_EX_TOPMOST = 0x00000008;
+
+        // Virtual Keys
         public const int VK_CAPITAL = 0x14;                 // Caps Lock 키의 가상 키 코드
+        public const int VK_SHIFT = 0x10;
+        public const int VK_LWIN = 0x5B;
+        public const int VK_RWIN = 0x5C;
+        
         public const int WM_IME_CONTROL = 0x0283;           // IME 제어 메시지
         public const int IMC_GETCONVERSIONMODE = 0x0001;    // IME 변환 모드 가져오기
         public const int IMC_SETCONVERSIONMODE = 0x0002;    // IME 변환 모드 설정
@@ -43,6 +58,11 @@ namespace IMEPointer
         // Mouse Messages
         public const int WM_LBUTTONDOWN = 0x0201;
         public const int WM_RBUTTONDOWN = 0x0204;
+        
+        // WinEvent Constants
+        public const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
+        public const uint EVENT_OBJECT_FOCUS = 0x8005;
+        public const uint WINEVENT_OUTOFCONTEXT = 0;
         #endregion
 
         #region Structs
@@ -81,9 +101,13 @@ namespace IMEPointer
         [LibraryImport("user32.dll")] public static partial IntPtr CopyIcon(IntPtr hIcon);
         [LibraryImport("user32.dll")] public static partial IntPtr CreateIconIndirect(ref ICONINFO iconinfo);
         [LibraryImport("user32.dll", EntryPoint = "GetClassNameW", StringMarshalling = StringMarshalling.Utf16)] public static partial int GetClassName(IntPtr hWnd, char* lpClassName, int nMaxCount);
-        [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool SetForegroundWindow(IntPtr hWnd);
         [LibraryImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool UpdateLayeredWindow(IntPtr hwnd, IntPtr hdcDst, ref POINT pptDst, ref SIZE psize, IntPtr hdcSrc, ref POINT pptSrc, uint crKey, ref BLENDFUNCTION pblend, uint dwFlags);
         [LibraryImport("user32.dll")] public static partial int GetSystemMetrics(int nIndex);
+        
+        // WinEvent API
+        public delegate void WinEventDelegate(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime);
+        [DllImport("user32.dll", SetLastError = true)] public static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr hmodWinEventProc, WinEventDelegate lpfnWinEventProc, uint idProcess, uint idThread, uint dwFlags);
+        [DllImport("user32.dll", SetLastError = true)] public static extern bool UnhookWinEvent(IntPtr hWinEventHook);
         [LibraryImport("user32.dll", EntryPoint = "GetDC")] public static partial IntPtr GetDC(IntPtr hWnd);
         [LibraryImport("user32.dll", EntryPoint = "ReleaseDC")] public static partial int ReleaseDC(IntPtr hWnd, IntPtr hDC);
         [LibraryImport("user32.dll", EntryPoint = "DrawIconEx")][return: MarshalAs(UnmanagedType.Bool)] public static partial bool DrawIconEx(IntPtr hdc, int xLeft, int yTop, IntPtr hIcon, int cxWidth, int cyWidth, uint istepIfAniCur, IntPtr hbrFlickerFreeDraw, uint diFlags);

@@ -51,6 +51,7 @@ namespace IMEPointer
         }
 
         public static bool IsLoaded { get; private set; } = false;
+        private static readonly object _loadLock = new object();
 
         private static short[]? _transitionMatrix;
         private static int _matrixSize;
@@ -58,40 +59,43 @@ namespace IMEPointer
 
         public static void LoadDictionary()
         {
-            if (IsLoaded) return;
-
-            try
+            lock (_loadLock)
             {
-                string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mozc_dict_connect.db");
-                if (!File.Exists(dbPath))
+                if (IsLoaded) return;
+
+                try
                 {
-                    if (AppConfig.LogLevel >= 1) Debug.WriteLine($"[MozcDictionary] DB 파일을 찾을 수 없습니다. 경로: {dbPath}");
-                    return;
+                    string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mozc_dict_connect.db");
+                    if (!File.Exists(dbPath))
+                    {
+                        if (AppConfig.LogLevel >= 1) Debug.WriteLine($"[MozcDictionary] DB 파일을 찾을 수 없습니다. 경로: {dbPath}");
+                        return;
+                    }
+
+                    string connectionString = $"Data Source={dbPath}";
+                    _connection = new SqliteConnection(connectionString);
+                    _connection.Open();
+
+                    using (var pragmaCmd = _connection.CreateCommand())
+                    {
+                        pragmaCmd.CommandText = @"
+                            PRAGMA mmap_size = 268435456; 
+                            PRAGMA cache_size = -10000; 
+                            PRAGMA temp_store = MEMORY; 
+                            PRAGMA synchronous = OFF;
+                            PRAGMA journal_mode = OFF;";
+                        pragmaCmd.ExecuteNonQuery();
+                    }
+
+                    LoadConnectionMatrix(_connection);
+
+                    IsLoaded = true;
+                    DictionaryLoaded?.Invoke();
                 }
-
-                string connectionString = $"Data Source={dbPath}";
-                _connection = new SqliteConnection(connectionString);
-                _connection.Open();
-
-                using (var pragmaCmd = _connection.CreateCommand())
+                catch (Exception ex)
                 {
-                    pragmaCmd.CommandText = @"
-                        PRAGMA mmap_size = 268435456; 
-                        PRAGMA cache_size = -10000; 
-                        PRAGMA temp_store = MEMORY; 
-                        PRAGMA synchronous = OFF;
-                        PRAGMA journal_mode = OFF;";
-                    pragmaCmd.ExecuteNonQuery();
+                    if (AppConfig.LogLevel >= 1) Debug.WriteLine($"[MozcDictionary] 사전 로드 중 오류 발생: {ex}");
                 }
-
-                LoadConnectionMatrix(_connection);
-
-                IsLoaded = true;
-                DictionaryLoaded?.Invoke();
-            }
-            catch (Exception ex)
-            {
-                if (AppConfig.LogLevel >= 1) Debug.WriteLine($"[MozcDictionary] 사전 로드 중 오류 발생: {ex}");
             }
         }
 

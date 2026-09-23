@@ -633,14 +633,14 @@ dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=
 > 📌 [NOTE]
 > 이 앱은 백그라운드에서 365일 실행되어도 시스템에 전혀 무리를 주지 않도록, 초경량·고성능을 목표로 가혹하게 최적화되었습니다.
 
-### 1️⃣ 다중 입력 상태 관리 (Multi-State IME Engine) & 모듈형 구조 (Modular Architecture)
+### 1️⃣ 다중 입력 상태 관리 (Multi-State IME Engine)
 
 * **9가지 입력 상태 추적**: 기존의 5가지 상태(영어/한글/Pali)에서 9가지로 확장
   - 기본 상태: 영어 소/대문자, 한글, Pali IME, 일본어 IME
   - 한글CAPS 모드: 공학용, Pali/Sanskrit, 일본어1, 일본어3
 * **상태 전환 엔진**: 언어 변경, Caps Lock, 한자키 입력을 감지하여 자동 상태 전환
 * **컨텍스트 동기화**: 창 전환 시에도 입력 상태를 정확히 유지
-* **코드 모듈화**: `Program.cs`, `Lang.cs` 등 단일 대형 파일 구조에서 기능별(UI 컴포넌트, 레지스트리 관리, 포인터 그래픽, 키맵 처리, 한자 변환 등)로 깔끔하게 분리된 모듈 구조로 개편하여 유지보수성을 극대화함.
+
 
 ### 2️⃣ 해상도 및 배율에 반응하는 반응형 시각화 (Dynamic Scaling)
 

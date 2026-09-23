@@ -2,6 +2,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -112,7 +113,9 @@ namespace IMEPointer
         private static readonly RectangleF TrayIconTextRectUpper = new RectangleF(-2.0f, -3.5f, 36f, 36f);
 
         private readonly Dictionary<ImeState.State, StateAssets> _assetCache = new();
-        private readonly System.Windows.Forms.Timer _stateCheckTimer;
+        private IntPtr _hWinEventHookForeground;
+        private IntPtr _hWinEventHookFocus;
+        private NativeMethods.WinEventDelegate _winEventProc = null!;
         private readonly NotifyIcon _sysTrayIcon;
         private readonly ContextMenuStrip _trayContextMenu;
         private readonly ToolStripMenuItem _menuItemStatus;
@@ -234,7 +237,7 @@ namespace IMEPointer
             get
             {
                 CreateParams cp = base.CreateParams;
-                cp.ExStyle |= 0x00000080 | 0x00000020 | 0x00080000 | 0x08000000 | 0x00000008;
+                cp.ExStyle |= NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_TRANSPARENT | NativeMethods.WS_EX_LAYERED | NativeMethods.WS_EX_NOACTIVATE | NativeMethods.WS_EX_TOPMOST;
                 return cp;
             }
         }
@@ -250,6 +253,7 @@ namespace IMEPointer
         public MainForm()
         {
             Instance = this;
+            AppConfig.LoadFromRegistry();
             this.Size = new Size(HiddenFormSize, HiddenFormSize);
             this.FormBorderStyle = FormBorderStyle.None;
             this.ShowInTaskbar = false;
@@ -277,9 +281,6 @@ namespace IMEPointer
 
             RebuildStateAssets();
 
-            _stateCheckTimer = new System.Windows.Forms.Timer { Interval = AppConfig.PollingInterval };
-            _stateCheckTimer.Tick += ProcessStateCheck;
-
             MozcDictionary.DictionaryLoaded += OnMozcDictionaryLoaded;
             if (MozcDictionary.IsLoaded)
             {
@@ -289,6 +290,8 @@ namespace IMEPointer
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            if (_hWinEventHookForeground != IntPtr.Zero) NativeMethods.UnhookWinEvent(_hWinEventHookForeground);
+            if (_hWinEventHookFocus != IntPtr.Zero) NativeMethods.UnhookWinEvent(_hWinEventHookFocus);
             GlobalInputHook.Uninstall();
             MozcDictionary.Dispose();
             base.OnFormClosing(e);
@@ -413,7 +416,7 @@ namespace IMEPointer
 
         private void BuildTrayMenu()
         {
-            var titleMenuItem = new ToolStripMenuItem("IMEPointer", null, (s, e) =>
+            var titleMenuItem = new ToolStripMenuItem($"{UiText.AppName} {UiText.VersionInfo}", null, (s, e) =>
             {
                 try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = UiText.GithubUrl, UseShellExecute = true }); }
                 catch (Exception ex) { MessageBox.Show($"웹페이지를 열 수 없습니다.\n{ex.Message}", UiText.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error); }
@@ -516,6 +519,8 @@ namespace IMEPointer
             _menuItemToggleKeyboardLayout = AddMenuToggle("한글CAPS 키보드 배열창", AppConfig.ShowKeyboardlayoutMenu, (s, e) =>
             {
                 _isKeyboardLayoutOverlayEnabled = _menuItemToggleKeyboardLayout.Checked;
+                AppConfig.DefaultShowKeyboardLayout = _isKeyboardLayoutOverlayEnabled;
+                AppConfig.SaveToRegistry();
                 if (!_isKeyboardLayoutOverlayEnabled) CloseAllLayoutForms();
                 else RefreshKeyboardLayoutOverlay();
             });
@@ -525,6 +530,8 @@ namespace IMEPointer
             _menuItemToggleTextOverlay = AddMenuToggle("한글CAPS 입력문자 표시창", AppConfig.ShowTextOverlayMenu, (s, e) =>
             {
                 _isTextOverlayEnabled = _menuItemToggleTextOverlay.Checked;
+                AppConfig.DefaultShowTextOverlay = _isTextOverlayEnabled;
+                AppConfig.SaveToRegistry();
                 if (!_isTextOverlayEnabled) _frmTextOverlay?.Clear();
             });
             _menuItemToggleTextOverlay.CheckOnClick = true;
@@ -533,6 +540,8 @@ namespace IMEPointer
             _menuItemToggleIndicator = AddMenuToggle("엑셀/한글 작은원 표시", AppConfig.ShowSmallCircleMenu, (s, e) =>
             {
                 _isMiniIndicatorEnabled = _menuItemToggleIndicator.Checked;
+                AppConfig.DefaultEnableMiniIndicator = _isMiniIndicatorEnabled;
+                AppConfig.SaveToRegistry();
                 if (!_isMiniIndicatorEnabled)
                     UpdateLayeredIndicator(Color.Transparent, -10000, -10000);
             });
@@ -609,7 +618,19 @@ namespace IMEPointer
             }
 
             ApplyVisualState(ImeState.Detect(_currentContextHwnd, _activeCapsMode == CapsMode.Japanese1, _activeCapsMode == CapsMode.Japanese2, _activeCapsMode == CapsMode.Japanese3));
-            _stateCheckTimer.Start();
+            
+            _winEventProc = new NativeMethods.WinEventDelegate(WinEventCallback);
+            _hWinEventHookForeground = NativeMethods.SetWinEventHook(NativeMethods.EVENT_SYSTEM_FOREGROUND, NativeMethods.EVENT_SYSTEM_FOREGROUND, IntPtr.Zero, _winEventProc, 0, 0, NativeMethods.WINEVENT_OUTOFCONTEXT);
+            _hWinEventHookFocus = NativeMethods.SetWinEventHook(NativeMethods.EVENT_OBJECT_FOCUS, NativeMethods.EVENT_OBJECT_FOCUS, IntPtr.Zero, _winEventProc, 0, 0, NativeMethods.WINEVENT_OUTOFCONTEXT);
+            
+            ProcessStateCheck(null, EventArgs.Empty);
+        }
+
+        private void WinEventCallback(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
+        {
+            if (this.IsHandleCreated) {
+                this.BeginInvoke(new Action(() => ProcessStateCheck(null, EventArgs.Empty)));
+            }
         }
 
         private void OnDisplaySettingsChanged(object? sender, EventArgs e)
@@ -628,10 +649,13 @@ namespace IMEPointer
         }
 
         public void RequestLayoutRefresh() => this.BeginInvoke(new Action(RefreshKeyboardLayoutOverlay));
+        public void RequestStateCheck() => this.BeginInvoke(new Action(() => ProcessStateCheck(null, EventArgs.Empty)));
 
         private void UpdateCapsMode(CapsMode mode)
         {
             _activeCapsMode = mode;
+            AppConfig.DefaultCapsMode = (int)mode;
+            AppConfig.SaveToRegistry();
             SyncCapsMenuChecks();
             _previousImeState = (ImeState.State)(-1);
             RefreshKeyboardLayoutOverlay();
@@ -675,12 +699,14 @@ namespace IMEPointer
         private void UpdatePointerMode(PointerMode mode)
         {
             _activePointerMode = mode;
+            AppConfig.DefaultPointerMode = (int)mode;
+            AppConfig.SaveToRegistry();
             SyncPointerMenuChecks();
             _previousImeState = (ImeState.State)(-1);
             // WinColor 모드는 색상 커서 생성이 필요하므로 에셋을 다시 빌드합니다.
             if (mode == PointerMode.WinColor)
             {
-                _stateCheckTimer.Stop(); RebuildStateAssets(); _stateCheckTimer.Start();
+                RebuildStateAssets();
             }
         }
 
@@ -854,7 +880,8 @@ namespace IMEPointer
             
             try 
             { 
-                string n = System.Diagnostics.Process.GetProcessById((int)pid).ProcessName; 
+                using var proc = System.Diagnostics.Process.GetProcessById((int)pid);
+                string n = proc.ProcessName; 
                 foreach (string a in AppConfig.IndicatorTargetApps) 
                 {
                     if (n.Equals(a, StringComparison.OrdinalIgnoreCase)) return true; 
@@ -945,10 +972,10 @@ namespace IMEPointer
 
         private void RebuildAssetsWithRetry(int retryDelayMs)
         {
-            _stateCheckTimer.Stop(); RebuildStateAssets(); _stateCheckTimer.Start();
+            RebuildStateAssets();
             if (retryDelayMs > 0)
             {
-                Task.Delay(retryDelayMs).ContinueWith(_ => this.BeginInvoke(new Action(() => { _stateCheckTimer.Stop(); RebuildStateAssets(); _stateCheckTimer.Start(); })));
+                Task.Delay(retryDelayMs).ContinueWith(_ => this.BeginInvoke(new Action(RebuildStateAssets)));
             }
         }
 
@@ -970,8 +997,7 @@ namespace IMEPointer
             else { uint sysDpi = NativeMethods.GetDpiForSystem(); if (sysDpi > 0) dpi = sysDpi; }
 
             _currentDpiScale = dpi / 96f;
-            int sysCursorWidth = NativeMethods.GetSystemMetrics(NativeMethods.SM_CXCURSOR);
-            _pointerPhysicalSize = sysCursorWidth > 0 ? sysCursorWidth : Math.Max(32, (int)Math.Round(32 * _currentDpiScale));
+            _pointerPhysicalSize = Math.Max(32, (int)Math.Round(32 * _currentDpiScale));
             _physIndicatorOffsetX = _pointerPhysicalSize * 0.5f;
 
             bool winColorFailed = false;
@@ -1081,8 +1107,8 @@ namespace IMEPointer
             if (!_isKeyboardLayoutOverlayEnabled) { CloseAllLayoutForms(); return; }
 
             var processor = GlobalInputHook.ActiveProcessor;
-            bool isPhyShift = (NativeMethods.GetKeyState(0x10) & 0x8000) != 0;
-            if (AppConfig.EnableCopilotMap && ((NativeMethods.GetKeyState(0x5B) & 0x8000) != 0 || (NativeMethods.GetKeyState(0x5C) & 0x8000) != 0)) isPhyShift = false;
+            bool isPhyShift = (NativeMethods.GetKeyState(NativeMethods.VK_SHIFT) & 0x8000) != 0;
+            if (AppConfig.EnableCopilotMap && ((NativeMethods.GetKeyState(NativeMethods.VK_LWIN) & 0x8000) != 0 || (NativeMethods.GetKeyState(NativeMethods.VK_RWIN) & 0x8000) != 0)) isPhyShift = false;
 
             bool isVirtShift = processor != null ? processor.IsVirtualShift : _isShiftVisualInverted;
             string suffix = (isPhyShift ^ isVirtShift) ? "2" : "1";

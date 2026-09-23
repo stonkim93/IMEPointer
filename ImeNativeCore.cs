@@ -2,6 +2,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,7 +29,7 @@ namespace IMEPointer
 
         // [수정: 캐시 메모리 누수 방지] 핸들(IntPtr) 누적을 방지하기 위한 최대 캐시 크기 설정
         private const int MaxCacheSize = 100;
-        private static readonly Dictionary<IntPtr, bool> _hangulStateCache = new Dictionary<IntPtr, bool>();
+        private static readonly ConcurrentDictionary<IntPtr, bool> _hangulStateCache = new ConcurrentDictionary<IntPtr, bool>();
 
         /// <summary>
         /// 주어진 상태가 한글 입력 기반인지 확인합니다.
@@ -422,6 +423,7 @@ namespace IMEPointer
                     {
                         ActiveProcessor?.OnMouseClick();
                         ClearCompositionBuffer();
+                        MainForm.Instance?.RequestStateCheck();
                     }
                 }
             }
@@ -555,6 +557,18 @@ namespace IMEPointer
                 int vkCode = Marshal.ReadInt32(lParam);
                 int msg = wParam.ToInt32();
                 if (AppConfig.LogLevel >= 2) Debug.WriteLine($"KbdHookCallback: vkCode={vkCode} wParam={wParam}");
+
+                if (msg == NativeMethods.WM_KEYUP || msg == NativeMethods.WM_SYSKEYUP)
+                {
+                    if (vkCode == 0x15 || vkCode == 0x19 || 
+                        vkCode == 0x10 || vkCode == 0xA0 || vkCode == 0xA1 || 
+                        vkCode == 0x11 || vkCode == 0xA2 || vkCode == 0xA3 || 
+                        vkCode == 0x12 || vkCode == 0xA4 || vkCode == 0xA5 || 
+                        vkCode == 0x14)
+                    {
+                        MainForm.Instance?.RequestStateCheck();
+                    }
+                }
 
                 if (KanjiCandidateOverlay.IsActive)
                 {

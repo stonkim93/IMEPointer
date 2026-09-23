@@ -22,75 +22,165 @@
 
 <br>
 
-## 2. 프로그램 핵심 구조 및 역할 분담 (코드 구조 분석)
+## 2. Program.cs 각 부분의 기능과 역할 (코드 구조 분석)
 
-코드는 역할에 따라 여러 파일(모듈)로 나뉘어 있습니다. 각 파일이 어떤 역할을 하는지 설명해 드립니다.
+코드는 역할에 따라 크게 여러 구역(`region`)으로 나뉘어 있습니다. 각 구역이 어떤 역할을 하는지 설명해 드립니다.
 
-### 2.1. 사용자 설정 및 텍스트 영역 (`Config.cs`)
+### 2.1. 사용자 설정 및 텍스트 영역 (`AppConfig`, `UiText`)
 
-* **`AppConfig` (설정 저장소):** 프로그램의 뼈대가 되는 설정값을 모아둔 곳입니다. 상태 확인 주기, 특정 앱 표시 설정 등을 담고 있습니다.
-* **`Theme` (테마):** 영어 소문자, 한글, 특수기호 등 각 상태별로 마우스 포인터의 색상, 트레이 아이콘의 배경색, 안내 텍스트 등을 관리합니다.
-* **`UiText`:** 프로그램 화면에 표시될 텍스트(알림, 메뉴 등)를 모아둔 곳입니다.
+* **`AppConfig` (설정 저장소):** 프로그램의 뼈대가 되는 설정값을 모아둔 곳입니다.
 
-### 2.2. 프로그램 시작점 및 메인 컨트롤러 (`Program.cs`)
 
-* **`Program` 클래스:** 윈도우 프로그램이 가장 먼저 실행되는 출발점(`Main` 함수)입니다. 중복 실행 방지(Mutex) 로직과 비정상 종료 시 커서 복구 로직이 있습니다.
-* **`MainForm` 클래스:** 화면에는 보이지 않는 숨겨진 창으로, 트레이 아이콘 관리, 상태 폴링 루프 타이머 작동, 미니 인디케이터 표시 등 프로그램의 전체 흐름을 지휘하는 핵심 컨트롤러입니다.
+* 상태 확인 주기(`PollingInterval`), 엑셀이나 한글 프로그램 등 특정 앱에서만 동작하도록 하는 설정(`IndicatorTargetApps`)을 담고 있습니다.
 
-### 2.3. 마우스 포인터 그래픽 공장 (`PointerGraphicsFactory.cs`)
 
-* 기본 윈도우 마우스 포인터나 텍스트 입력 커서(I-Beam)를 설정된 테마 색상으로 새롭게 그려내는 역할을 합니다.
-* 커서의 크기와 색상, 고해상도(DPI) 등을 고려하여 비트맵을 조작하고 시스템 포인터를 생성합니다.
+* 트레이 아이콘 메뉴를 보여줄지 말지 결정하는 스위치 역할도 합니다.
 
-### 2.4. 화면 표시창 (`UIComponents.cs`)
 
-* **`KeyboardLayoutForm`:** 현재 입력 모드에 맞는 키보드 배열 이미지를 화면에 띄워줍니다.
-* **`TextOverlayForm`:** 입력모드 전환 시 "한글CAPS 모드" 같은 글자를 화면 중앙이나 커서 근처에 잠시 띄워주는 오버레이 창입니다.
+* **`Theme` (테마):** 영어 소문자, 한글, 특수기호 등 각 상태별로 마우스 포인터의 색상, 트레이 아이콘의 배경색, 안내 텍스트 등을 딕셔너리 형태로 묶어 관리합니다.
 
-### 2.5. 입력 가로채기 및 시스템 감지 (`ImeNativeCore.cs`)
 
-* **`GlobalInputHook`:** 윈도우 시스템 깊숙한 곳에서 사용자의 키보드 누름이나 마우스 클릭을 가로채서 확인하는 역할을 합니다. 언어 변환키, 특수 동작 등을 처리합니다.
-* **`ImeState`:** 현재 사용자가 타이핑하는 창의 언어 상태(한글, 영문 등)와 입력 모드를 감지하는 탐정 역할을 합니다.
+* **`UiText`:** 프로그램 이름, 오류 메시지, "현재 상태: 확인 중..."과 같은 화면에 표시될 글자들을 모아둔 곳입니다.
 
-### 2.6. 윈도우 핵심 기능 대여소 (`NativeMethods.cs`)
 
-* C# 언어만으로는 윈도우 운영체제의 깊은 곳을 제어하기 어렵기 때문에, 윈도우가 제공하는 시스템 함수들(`user32.dll`, `gdi32.dll` 등)을 가져다 쓰기 위해 선언해 둔 공간입니다 (P/Invoke).
 
-### 2.7. 시스템 설정 관리 (`RegistryManager.cs`)
+### 2.2. 프로그램 시작점 (`Program`)
 
-* 삼성 갤럭시북 Copilot 키를 한자키로 매핑하기 위해 윈도우 레지스트리를 읽거나 수정하는 역할을 담당합니다.
+* 윈도우 프로그램이 가장 먼저 실행되는 출발점(`Main` 함수)입니다.
+
+
+* **중복 실행 방지:** `Mutex`라는 기술을 사용해 프로그램이 이미 켜져 있다면 "이미 실행 중입니다."라는 메시지를 띄우고 추가 실행을 막습니다.
+
+
+* 프로그램에 예상치 못한 에러가 나서 꺼지더라도, 마우스 포인터를 원래 윈도우 기본 상태로 복구해 주는 안전장치가 마련되어 있습니다.
+
+
+
+### 2.3. 마우스 포인터 그래픽 공장 (`WinColorPointerFactory`)
+
+* 기본 윈도우 마우스 포인터 화살표나 텍스트 입력 커서(I-Beam)의 색상을 설정된 테마 색상으로 새롭게 그려내는(렌더링) 역할을 합니다.
+
+
+* 특히 글자를 입력할 때 깜빡이는 커서(I-Beam)의 경우, 색상이 너무 밝거나 어두우면 안 보일 수 있으므로 명도를 계산하여 자동으로 검은색이나 흰색 테두리를 입혀주는 똑똑한 기능이 포함되어 있습니다.
+
+
+
+### 2.4. 화면 표시창 (`KeyboardLayoutForm`, `TextOverlayForm`)
+
+이 부분은 사용자 화면에 무언가를 띄워주는 역할을 하는 '창(Form)'들입니다.
+
+* **`KeyboardLayoutForm` (자판 배열창):** 현재 입력 모드에 맞는 키보드 배열 이미지를 화면에 띄워줍니다. 더블 클릭하면 창을 제어할 수 있고, 실행 파일 내부에 포함된 이미지를 메모리로 직접 불러와 투명도를 유지하며 보여줍니다.
+
+
+* **`TextOverlayForm` (입력문자 표시창):** 한/영 전환이나 특수 모드로 바뀔 때 화면 중앙이나 커서 근처에 "한글CAPS 모드" 같은 글자를 잠시 띄웠다가 일정 시간(기본 1500ms)이 지나면 스르륵 사라지게 만드는 알림창입니다.
+
+
+
+### 2.5. 프로그램의 심장 / 메인 컨트롤러 (`MainForm`)
+
+이 코드에서 가장 길고 핵심적인 역할을 하는 부분입니다.
+
+* 화면에는 보이지 않는 숨겨진 창(`HiddenFormSize`)으로 존재하면서 전체 흐름을 지휘합니다.
+
+
+* **트레이 아이콘 관리:** 화면 우측 하단 시계 옆에 표시되는 아이콘을 만들고, 우클릭 시 나타나는 메뉴(포인터 모드 변경, 한글CAPS 모드 변경 등)를 구성합니다.
+
+
+* **타이머(`_stateTimer`):** 설정된 시간마다 지속적으로 윈도우의 현재 상태(어떤 창이 활성화되었는지, 포커스가 어디 있는지)를 확인합니다.
+
+
+* 마우스 커서 옆에 작은 원을 그려주는 기능(Mini Indicator)도 여기서 마우스의 위치를 추적하여 화면에 덧그립니다.
+
+
+
+### 2.6. 언어 상태 감지기 (`ImeState`)
+
+* 현재 사용자가 글자를 입력하는 창의 언어 상태를 알아내는 탐정 역할을 합니다.
+
+
+* 키보드 배열 아이디(예: `0x0409`는 영어, `0x0412`는 한국어)를 확인하고, Caps Lock이 켜져 있는지, 한글 입력 상태인지 세밀하게 판단하여 결과를 메인 컨트롤러에 보고합니다.
+
+
+* 윈도우마다 한글 상태가 다른 것을 방지하기 위해 각 윈도우의 상태를 기억(캐싱)해 두고 상태를 동기화하는 역할도 수행합니다.
+
+
+
+### 2.7. 키보드/마우스 입력 가로채기 (`GlobalInputHook`)
+
+* 윈도우 시스템 깊숙한 곳에서 사용자의 키보드 누름이나 마우스 클릭을 가장 먼저 가로채서(Hooking) 확인하는 역할을 합니다.
+
+
+* 예를 들어 사용자가 한자 키(`0x19`)를 눌렀을 때, 일반적인 한자 변환이 아니라 프로그램이 지정한 특수한 기능(예: 언어 모드 변경 알림 띄우기)이 작동하도록 신호를 바꿔치기하거나 윈도우에 전달합니다.
+
+
+
+### 2.8. 윈도우 핵심 기능 대여소 (`NativeMethods`)
+
+* C# 언어만으로는 윈도우 운영체제의 깊은 곳(마우스 포인터 모양 강제 변경, 다른 프로그램의 입력 상태 확인 등)을 건드리기 어렵습니다.
+
+
+* 이 부분은 윈도우가 기본적으로 제공하는 강력한 시스템 함수들(`user32.dll`, `gdi32.dll` 등)을 C#에서 가져다 쓸 수 있도록 이름표를 달아 선언해 둔 공간입니다.
 
 <br>
 
-## 3. Keymaps.cs 및 다국어 입력 처리 구조
 
-기존 `Lang.cs`가 `Keymaps.cs` 등으로 분리 및 고도화되었습니다. 이 영역은 크게 '공통 규칙(인터페이스)'과 그 규칙을 따르는 '개별 언어 번역기(프로세서)'로 나뉩니다.
+## 3. Lang.cs 전체 구조 및 작동 원리
 
-### 3.1 인터페이스 및 팩토리
+- Lang.cs 파일은 크게 '공통 규칙(인터페이스)'과 그 규칙을 따르는 '개별 언어 번역기(프로세서)'로 나뉘어 있습니다.  
 
-* **`IKeyProcessor`:** 모든 언어 번역기가 공통으로 가져야 할 기능(`ProcessKeyDown`, `ProcessHanjaKey` 등)을 정의한 설계도입니다.
-* **`KeyProcessorFactory`:** 각 언어별 번역기(프로세서)를 미리 생성해 두고 관리하는 창고 역할입니다.
+- 사용자가 키보드를 누르면 프로그램은 현재 설정된 언어 모드가 무엇인지 확인합니다.  
 
-### 3.2 개별 언어 프로세서 (Language Processors)
+- 선택된 언어 모드(예: 일본어, 공학용 기호 등)에 맞는 '프로세서'를 공장(Factory)에서 가져옵니다.  
 
-* **`PaliProcessor` & `PaliMap`:** Pali어 및 산스크리트어 입력을 담당하며 특정 키 조합에 따라 문자를 변환(예: a -> ā)합니다.
-* **`EngineerProcessor` & `EngineerMap`:** 공학 계산, 모델링 등에 쓰이는 그리스 문자나 수학 기호(σ, ε, ∞) 입력을 담당합니다.
-* **`Japanese1Processor` & `Japanese1Map`:** 로마자 기반 대표 자음+모음 조합으로 일본어 문자를 입력하는 조합형 처리기입니다.
-* **`Japanese3Processor` & `Japanese3Map`:** 3개의 가상 키보드 레이어를 오가며 일본어를 입력하는 고급 모드 처리기입니다. (일본어2가 일본어3으로 확장 발전함)
+- 해당 프로세서는 사용자가 누른 키를 미리 정의된 '지도(Map)'와 대조하여 알맞은 특수 문자나 외국어로 변환한 뒤 화면에 출력합니다.  
 
-### 3.3 일본어 심화 처리 모듈
+- 화면에 입력된 글자를 다른 형태로 바꿔야 할 때는, 클립보드 기능을 이용해 텍스트를 복사하고 변환한 뒤 다시 붙여넣는 방식을 사용합니다.  
 
-* **`JapaneseCharacter.cs`:** 일본어 청음, 탁음, 요음 등을 3자리 코드 시스템을 통해 빠르게 변환하고 관리하는 로직입니다.
-* **`KanjiConversion.cs` & `MozcGoogleDictionary.cs`:** 일본어 입력 중 스페이스바를 눌러 히라가나를 한자로 변환(오프라인 Mozc DB 또는 온라인 Google API)하는 역할을 담당합니다.
+### 3.1 인터페이스 및 팩토리 (Interfaces & Factories)
+
+- IKeyProcessor: 모든 언어 번역기가 공통으로 가져야 할 기능을 정의한 설계도입니다.  
+
+- 키가 눌렸을 때의 동작(ProcessKeyDown), 한자 키를 눌렀을 때의 동작(ProcessHanjaKey) 등을 필수로 구현하도록 강제합니다.  
+
+- KeyProcessorFactory: 각 언어별 번역기(프로세서)를 미리 하나씩 만들어두고 보관하는 창고 역할입니다.  
+
+- Pali어, 공학용, 일본어1, 일본어2 프로세서를 고정(readonly)으로 가지고 있어 프로그램 속도를 높입니다.  
+
+### 3.2 유틸리티 및 공용 기능 (Utilities & Shared)
+
+- InputVk: Shift, Ctrl, Enter 처럼 자주 쓰는 키보드 키의 고유 번호(가상 키 코드)를 알아보기 쉬운 영어 이름으로 저장해 둔 곳입니다.  
+
+- TextSelectionUtils: 사용자가 입력한 글자를 마우스나 키보드로 드래그하여 선택한 것처럼 읽어오고, 변환된 글자로 바꿔치기하는 자동화 도구입니다.  
+
+- JapaneseShared: 일본어 입력기들이 공통으로 사용하는 히라가나 ↔ 가타카나 변환 공식과 요음(작은 글자) 변환 공식이 들어있는 데이터 사전입니다.  
+
+### 3.3 개별 언어 프로세서 (Language Processors)
+
+- PaliProcessor & PaliMap: 명상이나 초기 불교 경전 연구 등에 쓰이는 Pali어 입력을 담당합니다.  
+
+- a를 누르고 특정 변환 키를 누르면 ā로 바뀌는 식의 문자 형태 변환 규칙을 포함하고 있습니다. 
+
+- EngineerProcessor & EngineerMap: 공학 계산, FEA 모델링, 금속 야금학 등에서 쓰이는 특수 기호 입력을 
+담당합니다.  
+
+- 응력(σ), 변형률(ε) 같은 그리스 문자나 수학 기호(∞, √)를 일반 키보드 알파벳 위치에 1:1로 매핑해 두었습니다.  
+
+- Japanese1Processor & Japanese1Map: 로마자(영어) 발음을 쳐서 일본어를 조합하는 방식의 입력기입니다.  
+
+- 자음(예: K)을 치면 모음이 들어오기를 기다렸다가, 모음(예: A)이 들어오면 '카(か)'로 합쳐서 출력하는 조합 대기 기능을 수행합니다.  
+
+- Japanese2Processor & Japanese2Map: 영어 발음 조합 없이 키보드 자판 자체를 일본어 자판처럼 쓰는 직접 입력 방식입니다.  
+
+- 키보드 자리가 부족하므로 한자 키를 눌러 3개의 레이어(층)를 오가며 글자를 입력하도록 설계되어 있습니다.  
 
 ### 3.4 프로세서 기능 요약 비교표
 
 |프로세서 클래스명|주요 용도|입력 및 작동 방식|
 |:--|:--|:--|
-|PaliProcessor |Pali어 및 산스크리트어 |특정 변환키 규칙을 통한 다국어 문자 치환 |
-|EngineerProcessor |공학 기호 및 그리스 문자 |일반 키보드 입력 시 해당 기호로 즉시 치환 |
-|Japanese1Processor |일본어 1 조합형 |자음+모음 조합 방식을 통한 일본어 입력 |
-|Japanese3Processor |일본어 3 레이어형 |3단계 레이어를 활용해 한정된 키로 다양한 글자 입력 |
+|PaliProcessor |Pali어 및 산스크리트어 |입력매핑된 키를 누르거나 변환 규칙을 통해 특수 기호 입력 |
+|EngineerProcessor |공학용 수학 기호 및 그리스 문자 |알파벳 키와 Shift 키 조합으로 1:1 매핑된 기호 즉시 출력 |
+|Japanese1Processor |일본어 발음 기호 기반 입력 |자음 입력 후 모음을 기다렸다가 문자를 완성하는 조합형 |
+|Japanese2Processor |일본어 자판 직접 입력 |3개의 가상 키보드 레이어를 전환하며 직접 매핑된 문자 출력 |  
 ---
 
 <br>
@@ -128,7 +218,7 @@
 
 ### 4.3 기술적 특징 요약
 
-- **GDI+ 활용**: `PointerGraphicsFactory`에서 `CreateDIBSection`과 `LockBits`를 사용하여 커서 이미지를 메모리 상에서 직접 픽셀 단위로 수정(Recolor)합니다.
+- **GDI+ 활용**: `WinColorPointerFactory`에서 `CreateDIBSection`과 `LockBits`를 사용하여 커서 이미지를 메모리 상에서 직접 픽셀 단위로 수정(Recolor)합니다.
 
 - **저수준 훅(Low-Level Hook)**: `SetWindowsHookEx`를 사용하여 키보드와 마우스 이벤트를 OS 수준에서 가로챕니다. `UnmanagedCallersOnly`를 사용하여 효율적인 고성능 처리를 구현했습니다.
 
@@ -139,16 +229,14 @@
 
 | 클래스명 | 역할 및 주요 메소드 |
 | --- | --- |
-| **`Program` / `MainForm`** | 프로그램 시작점, 메인 컨트롤러. 트레이 아이콘 관리, 상태 폴링 루프 실행. |
-| **`ImeState`** | 현재 윈도우의 IME 상태를 감지하고 설정. (`ImeNativeCore.cs`) |
-| **`GlobalInputHook`** | 저수준 키보드/마우스 훅을 설치하여 입력 신호를 가로채고 처리. (`ImeNativeCore.cs`) |
-| **`PointerGraphicsFactory`** | 커서를 비트맵으로 렌더링하고 사용자 설정 색상으로 재채색. (`PointerGraphicsFactory.cs`) |
-| **`KeyboardLayoutForm`** | 현재 입력 모드에 따른 키보드 배열을 시각적으로 보여주는 창. (`UIComponents.cs`) |
-| **`TextOverlayForm`** | 입력 상태나 텍스트를 잠시 화면에 띄우는 오버레이 창. (`UIComponents.cs`) |
-| **`AppConfig`** | 프로그램 설정값 및 테마 보관. (`Config.cs`) |
-| **`NativeMethods`** | 윈도우 API P/Invoke 선언부. (`NativeMethods.cs`) |
-| **`RegistryManager`** | 레지스트리 수정(예: Copilot키 매핑 등) 관리. (`RegistryManager.cs`) |
-| **`KanjiConversion`** | 일본어 한자 변환 모듈. (`KanjiConversion.cs`) |
+| **`MainForm`** | 프로그램의 메인 컨트롤러. 트레이 아이콘 관리, 상태 폴링 루프 실행, UI 폼 제어. |
+| **`ImeState`** | 현재 윈도우의 IME 상태를 감지하고 설정(`IsHangulModeSystemWide`, `SetHangulState`). |
+| **`GlobalInputHook`** | 저수준 키보드/마우스 훅을 설치하여 입력 신호를 가로채고 처리(`KbdHookCallback`, `MouseHookCallback`). |
+| **`WinColorPointerFactory`** | 커서를 비트맵으로 렌더링하고 사용자가 설정한 색상으로 재채색하는 그래픽 처리(`CreateColoredSystemPointer`). |
+| **`KeyboardLayoutForm`** | 현재 입력 모드에 따른 키보드 배열을 시각적으로 보여주는 창. |
+| **`TextOverlayForm`** | 입력 상태나 텍스트를 잠시 화면에 띄우는 오버레이 창. |
+| **`AppConfig`** | 프로그램 설정값(상태별 테마, 메뉴 표시 옵션 등) 보관. |
+| **`NativeMethods`** | 윈도우 API(User32, Gdi32 등) P/Invoke 선언부. |
 ---
 
 <br>
@@ -372,10 +460,10 @@ else
 
 포인터 렌더링 크기를 32로 하드코딩하지 말고, 시스템이 요구하는 실제 커서 크기(System Metrics)를 런타임에 동적으로 가져와 렌더링 캔버스 크기로 사용해야 합니다.
 
-1. **`PointerGraphicsFactory`의 렌더링 크기 동적화:**
+1. **`WinColorPointerFactory`의 렌더링 크기 동적화:**
 상수 `PointerRenderSize`를 삭제하고, `CreateColoredSystemPointer` 메서드가 `int size`를 매개변수로 받도록 수정하세요.
 ```csharp
-// PointerGraphicsFactory.cs 내부
+// WinColorPointerFactory.cs 내부
 public static IntPtr CreateColoredSystemPointer(uint ocrId, Color targetColor, int renderSize)
 {
     // renderSize 변수를 사용하여 LoadImage 및 렌더링 비트맵의 폭/높이를 결정
@@ -407,7 +495,7 @@ private void RebuildStateAssets()
     _physIndicatorOffsetX = _pointerPhysicalSize * 0.5f;
 
     // 이후 팩토리 호출 시 해당 크기를 전달
-    IntPtr hArrowNew = PointerGraphicsFactory.CreateColoredSystemPointer(NativeMethods.OCR_NORMAL, theme.PointerColor, _pointerPhysicalSize);
+    IntPtr hArrowNew = WinColorPointerFactory.CreateColoredSystemPointer(NativeMethods.OCR_NORMAL, theme.PointerColor, _pointerPhysicalSize);
     // ...
 }
 ```
@@ -602,7 +690,7 @@ COM 기반 Windows API(UI Automation, 클립보드)는 **STA 스레드에서만 
 **효과**: Windows의 응답성 완벽 유지 + 글자 전환/교체 안정적 작동 ✅
 
 
-**Reference**: `Keymaps.cs` - `TextSelectionUtils` 클래스, `TransformAndReplaceText()` 메서드
+**Reference**: `Lang.cs` - `TextSelectionUtils` 클래스, `TransformAndReplaceText()` 메서드
 
 <br>
 

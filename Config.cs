@@ -159,6 +159,53 @@ namespace IMEPointer
         /// <summary>단어 분할 과정에서 각 서브스트링에 대해 추출할 후보 단어 제한</summary>
         public static int MaxCandidatesPerSubstring = 5;
 
+        #region [ Settings Persistence ]
+        private const string RegistryKeyPath = @"Software\IMEPointer";
+
+        public static void LoadFromRegistry()
+        {
+            try
+            {
+                using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(RegistryKeyPath);
+                if (key != null)
+                {
+                    DefaultCapsMode = (int)key.GetValue("CapsMode", DefaultCapsMode);
+                    DefaultShowKeyboardLayout = System.Convert.ToBoolean(key.GetValue("ShowKeyboardLayout", DefaultShowKeyboardLayout));
+                    DefaultShowTextOverlay = System.Convert.ToBoolean(key.GetValue("ShowTextOverlay", DefaultShowTextOverlay));
+                    DefaultPointerMode = (int)key.GetValue("PointerMode", DefaultPointerMode);
+                    DefaultEnableMiniIndicator = System.Convert.ToBoolean(key.GetValue("EnableMiniIndicator", DefaultEnableMiniIndicator));
+                    DefaultEnableCopilotMap = System.Convert.ToBoolean(key.GetValue("EnableCopilotMap", DefaultEnableCopilotMap));
+                    EnableCopilotMap = DefaultEnableCopilotMap;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                if (LogLevel >= 1) System.Diagnostics.Debug.WriteLine($"[Config] LoadFromRegistry Error: {ex.Message}");
+            }
+        }
+
+        public static void SaveToRegistry()
+        {
+            try
+            {
+                using var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(RegistryKeyPath);
+                if (key != null)
+                {
+                    key.SetValue("CapsMode", DefaultCapsMode);
+                    key.SetValue("ShowKeyboardLayout", DefaultShowKeyboardLayout);
+                    key.SetValue("ShowTextOverlay", DefaultShowTextOverlay);
+                    key.SetValue("PointerMode", DefaultPointerMode);
+                    key.SetValue("EnableMiniIndicator", DefaultEnableMiniIndicator);
+                    key.SetValue("EnableCopilotMap", DefaultEnableCopilotMap);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                if (LogLevel >= 1) System.Diagnostics.Debug.WriteLine($"[Config] SaveToRegistry Error: {ex.Message}");
+            }
+        }
+        #endregion
+
         public struct Theme
         {
             public Color PointerColor;   // 화살표(기본) 커서에 적용할 색상
@@ -189,6 +236,7 @@ namespace IMEPointer
     internal static class UiText
     {
         public const string AppName = "IMEPointer";
+        public static string VersionInfo => $"v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}";
         public const string AlreadyRunningMessage = "이미 실행 중입니다.";
         public const string FatalErrorPrefix = "치명적 오류:\n";
         public const string StatusChecking = "현재 상태: 확인 중...";

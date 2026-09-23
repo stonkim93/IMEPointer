@@ -24,10 +24,10 @@ namespace IMEPointer
             get
             {
                 CreateParams cp = base.CreateParams;
-                cp.Style |= 0x00020000;
-                cp.Style |= 0x00080000;
-                cp.ExStyle |= 0x00040000;
-                cp.ExStyle |= 0x08000000;
+                cp.Style |= NativeMethods.WS_MINIMIZEBOX;
+                cp.Style |= NativeMethods.WS_SYSMENU;
+                cp.ExStyle |= NativeMethods.WS_EX_APPWINDOW;
+                cp.ExStyle |= NativeMethods.WS_EX_NOACTIVATE;
                 return cp;
             }
         }
