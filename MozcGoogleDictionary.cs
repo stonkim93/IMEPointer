@@ -2,18 +2,21 @@
 using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
-using System.Collections.Concurrent; // [최적화 추가] 인메모리 캐싱을 위한 네임스페이스
+using System.Collections.Concurrent;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 // KanjiCandidateOverlay.cs
-//using System.Drawing;
+using System.Drawing;
 using System.Linq;
-//using System.Windows.Forms;
+using System.Windows.Forms;
 using System.Diagnostics;
 // GoogleJapaneseInputApi.cs
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
+using System.Reflection;
 
 namespace IMEPointer
 {
@@ -21,7 +24,78 @@ namespace IMEPointer
     {
         public static event Action? DictionaryLoaded;
 
-        private static readonly ConcurrentLruCache<string, List<KanjiEntry>> _entryCache = new(5000);
+        public class LruCache<TKey, TValue> where TKey : notnull
+        {
+            private readonly int _capacity;
+            private readonly ConcurrentDictionary<TKey, LinkedListNode<KeyValuePair<TKey, TValue>>> _cache;
+            private readonly LinkedList<KeyValuePair<TKey, TValue>> _list;
+            private readonly object _lock = new object();
+
+            public LruCache(int capacity)
+            {
+                _capacity = capacity;
+                _cache = new ConcurrentDictionary<TKey, LinkedListNode<KeyValuePair<TKey, TValue>>>();
+                _list = new LinkedList<KeyValuePair<TKey, TValue>>();
+            }
+
+            public bool TryGetValue(TKey key, out TValue? value)
+            {
+                lock (_lock)
+                {
+                    if (_cache.TryGetValue(key, out var node))
+                    {
+                        _list.Remove(node);
+                        _list.AddFirst(node);
+                        value = node.Value.Value;
+                        return true;
+                    }
+                }
+                value = default;
+                return false;
+            }
+
+            public void Set(TKey key, TValue value)
+            {
+                lock (_lock)
+                {
+                    if (_cache.TryGetValue(key, out var node))
+                    {
+                        _list.Remove(node);
+                        node.Value = new KeyValuePair<TKey, TValue>(key, value);
+                        _list.AddFirst(node);
+                    }
+                    else
+                    {
+                        if (_cache.Count >= _capacity)
+                        {
+                            var last = _list.Last;
+                            if (last != null)
+                            {
+                                _cache.TryRemove(last.Value.Key, out _);
+                                _list.RemoveLast();
+                            }
+                        }
+                        var newNode = new LinkedListNode<KeyValuePair<TKey, TValue>>(new KeyValuePair<TKey, TValue>(key, value));
+                        _list.AddFirst(newNode);
+                        _cache[key] = newNode;
+                    }
+                }
+            }
+
+            public void Clear()
+            {
+                lock (_lock)
+                {
+                    _cache.Clear();
+                    _list.Clear();
+                }
+            }
+
+            public int Count => _cache.Count;
+        }
+
+        private const int MaxCacheSize = 5000;
+        private static readonly LruCache<string, List<KanjiEntry>> _entryCache = new(MaxCacheSize);
 
         public class KanjiEntry
         {
@@ -50,51 +124,127 @@ namespace IMEPointer
         }
 
         public static bool IsLoaded { get; private set; } = false;
-        private static readonly object _loadLock = new object();
+
+        // [수정 #3] LoadDictionary 중복 실행 방지: 동시에 여러 Task.Run에서 호출될 때
+        // SqliteConnection이 중복 생성되는 경주 조건 차단
+        private static readonly SemaphoreSlim _loadSemaphore = new SemaphoreSlim(1, 1);
 
         private static short[]? _transitionMatrix;
         private static int _matrixSize;
         private static SqliteConnection? _connection;
 
+/// <summary>
+        /// Store 빌드 여부에 따라 쓰기 가능한 사전 DB 경로를 반환합니다.
+        /// </summary>
+        public static string GetDictionaryPath()
+        {
+#if STORE_BUILD
+            string localAppDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "IMEJapanese");
+            if (!Directory.Exists(localAppDataDir))
+            {
+                Directory.CreateDirectory(localAppDataDir);
+            }
+            return Path.Combine(localAppDataDir, "mozc_dict_connect.db");
+#else
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mozc_dict_connect.db");
+#endif
+        }
+
+#if STORE_BUILD
+        /// <summary>
+        /// Store 빌드 시 임베디드 리소스(mozc_dict_connect.db.gz)를 LocalAppData 경로로 자동 해제합니다.
+        /// </summary>
+        public static bool EnsureStoreDictionaryExtracted(string dbPath)
+        {
+            if (File.Exists(dbPath)) return true;
+
+            try
+            {
+                string? dir = Path.GetDirectoryName(dbPath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+
+                var assembly = Assembly.GetExecutingAssembly();
+                string resourceName = assembly.GetManifestResourceNames()
+                    .FirstOrDefault(n => n.EndsWith("mozc_dict_connect.db.gz", StringComparison.OrdinalIgnoreCase))
+                    ?? "IMEJapanese.mozc_dict_connect.db.gz";
+
+                using var resourceStream = assembly.GetManifestResourceStream(resourceName);
+                if (resourceStream == null)
+                {
+                    if (AppConfig.LogLevel >= 1) Debug.WriteLine($"[MozcDictionary] Embedded Resource '{resourceName}'를 찾을 수 없습니다.");
+                    return false;
+                }
+
+                using var gzipStream = new GZipStream(resourceStream, CompressionMode.Decompress);
+                using var fileStream = File.Create(dbPath);
+                gzipStream.CopyTo(fileStream);
+
+                if (AppConfig.LogLevel >= 1) Debug.WriteLine($"[MozcDictionary] Store 사전 해제 완료: {dbPath}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                if (AppConfig.LogLevel >= 1) Debug.WriteLine($"[MozcDictionary] Store 사전 해제 중 오류 발생: {ex}");
+                return false;
+            }
+        }
+#endif
+
         public static void LoadDictionary()
         {
-            lock (_loadLock)
+            if (IsLoaded) return;
+
+            // [수정 #3] 세마포어로 진입 시도 (로드 중이면 즉시 리턴)
+            if (!_loadSemaphore.Wait(0)) return;
+            try
             {
-                if (IsLoaded) return;
+                if (IsLoaded) return; // double-check inside lock
 
-                try
+                string dbPath = GetDictionaryPath();
+
+#if STORE_BUILD
+                if (!File.Exists(dbPath))
                 {
-                    string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mozc_dict_connect.db");
-                    if (!File.Exists(dbPath))
-                    {
-                        if (AppConfig.LogLevel >= 1) Debug.WriteLine($"[MozcDictionary] DB 파일을 찾을 수 없습니다. 경로: {dbPath}");
-                        return;
-                    }
-
-                    string connectionString = $"Data Source={dbPath}";
-                    _connection = new SqliteConnection(connectionString);
-                    _connection.Open();
-
-                    using (var pragmaCmd = _connection.CreateCommand())
-                    {
-                        pragmaCmd.CommandText = @"
-                            PRAGMA mmap_size = 268435456; 
-                            PRAGMA cache_size = -10000; 
-                            PRAGMA temp_store = MEMORY; 
-                            PRAGMA synchronous = OFF;
-                            PRAGMA journal_mode = OFF;";
-                        pragmaCmd.ExecuteNonQuery();
-                    }
-
-                    LoadConnectionMatrix(_connection);
-
-                    IsLoaded = true;
-                    DictionaryLoaded?.Invoke();
+                    EnsureStoreDictionaryExtracted(dbPath);
                 }
-                catch (Exception ex)
+#endif
+
+                if (!File.Exists(dbPath))
                 {
-                    if (AppConfig.LogLevel >= 1) Debug.WriteLine($"[MozcDictionary] 사전 로드 중 오류 발생: {ex}");
+                    throw new FileNotFoundException($"[MozcDictionary] DB 파일을 찾을 수 없습니다. 경로: {dbPath}");
                 }
+
+                string connectionString = $"Data Source={dbPath}";
+                _connection = new SqliteConnection(connectionString);
+                _connection.Open();
+
+                using (var pragmaCmd = _connection.CreateCommand())
+                {
+                    pragmaCmd.CommandText = @"
+                        PRAGMA mmap_size = 268435456; 
+                        PRAGMA cache_size = -10000; 
+                        PRAGMA temp_store = MEMORY; 
+                        PRAGMA synchronous = OFF;
+                        PRAGMA journal_mode = OFF;";
+                    pragmaCmd.ExecuteNonQuery();
+                }
+
+                LoadConnectionMatrix(_connection);
+
+                IsLoaded = true;
+                DictionaryLoaded?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                if (AppConfig.LogLevel >= 1) Debug.WriteLine($"[MozcDictionary] 사전 로드 중 오류 발생: {ex}");
+                MessageBox.Show($"DB 로드 실패:\n{ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                _loadSemaphore.Release();
             }
         }
 
@@ -181,7 +331,7 @@ namespace IMEPointer
                 string prefix = text.Substring(startIndex, i);
                 if (_entryCache.TryGetValue(prefix, out var cachedEntries))
                 {
-                    cachedMatches.Add((i, prefix, cachedEntries));
+                    cachedMatches.Add((i, prefix, cachedEntries!));
                 }
                 else
                 {
@@ -254,7 +404,7 @@ namespace IMEPointer
 
             if (_entryCache.TryGetValue(reading, out var cached))
             {
-                if (cached.Count <= MozcConfig.MaxDisplayCandidates) return new List<KanjiEntry>(cached);
+                if (cached!.Count <= MozcConfig.MaxDisplayCandidates) return new List<KanjiEntry>(cached);
                 return cached.GetRange(0, MozcConfig.MaxDisplayCandidates);
             }
 
@@ -313,7 +463,7 @@ namespace IMEPointer
 
                 if (_entryCache.TryGetValue(r, out var cached))
                 {
-                    results[r] = cached;
+                    results[r] = cached!;
                 }
                 else
                 {
@@ -454,8 +604,9 @@ namespace IMEPointer
             try
             {
                 string encodedText = Uri.EscapeDataString(text);
-                //string url = $"[http://www.google.com/transliterate?langpair=ja-Hira](http://www.google.com/transliterate?langpair=ja-Hira)|ja&text={encodedText}";
+                // [수정 #16] http → https 보안 강화 (MITM 공격 방지)
                 string url = $"https://www.google.com/transliterate?langpair=ja-Hira|ja&text={encodedText}";
+
                 using var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
                 response.EnsureSuccessStatusCode();
 
