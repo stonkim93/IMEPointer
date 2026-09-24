@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCopyrightAttribute("Copyright (c) 2024 stonkim93")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("Mouse Pointer and IME state indicator for Windows")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0.0+19fb6a445363121be76319b2096d83c215df2199")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0.0+f02155667203f66a38785a7af51ee41ccc4b4dfa")]
 [assembly: System.Reflection.AssemblyProductAttribute("IMEPointer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("IMEPointer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

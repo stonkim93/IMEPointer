@@ -7,12 +7,95 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
-//using System.Windows.Forms;
-//using System.Windows.Automation;
 using System.Linq;
 
 namespace IMEPointer
 {
+    /// <summary>
+    /// 간단한 스레드 안전 LRU 캐시
+    /// </summary>
+    public class ConcurrentLruCache<TKey, TValue> where TKey : notnull
+    {
+        private readonly int _capacity;
+        private readonly Dictionary<TKey, LinkedListNode<CacheItem>> _cacheMap;
+        private readonly LinkedList<CacheItem> _lruList;
+        private readonly object _lock = new object();
+
+        private class CacheItem
+        {
+            public TKey Key;
+            public TValue Value;
+            public CacheItem(TKey k, TValue v) { Key = k; Value = v; }
+        }
+
+        public ConcurrentLruCache(int capacity)
+        {
+            _capacity = capacity > 0 ? capacity : 100;
+            _cacheMap = new Dictionary<TKey, LinkedListNode<CacheItem>>(_capacity);
+            _lruList = new LinkedList<CacheItem>();
+        }
+
+        public bool TryGetValue(TKey key, out TValue value)
+        {
+            lock (_lock)
+            {
+                if (_cacheMap.TryGetValue(key, out var node))
+                {
+                    _lruList.Remove(node);
+                    _lruList.AddFirst(node);
+                    value = node.Value.Value;
+                    return true;
+                }
+            }
+#pragma warning disable CS8601
+            value = default;
+#pragma warning restore CS8601
+            return false;
+        }
+
+        public void Set(TKey key, TValue value)
+        {
+            lock (_lock)
+            {
+                if (_cacheMap.TryGetValue(key, out var node))
+                {
+                    node.Value.Value = value;
+                    _lruList.Remove(node);
+                    _lruList.AddFirst(node);
+                }
+                else
+                {
+                    if (_cacheMap.Count >= _capacity)
+                    {
+                        var lastNode = _lruList.Last;
+                        if (lastNode != null)
+                        {
+                            _cacheMap.Remove(lastNode.Value.Key);
+                            _lruList.RemoveLast();
+                        }
+                    }
+                    var newNode = new LinkedListNode<CacheItem>(new CacheItem(key, value));
+                    _lruList.AddFirst(newNode);
+                    _cacheMap.Add(key, newNode);
+                }
+            }
+        }
+
+        public void Clear()
+        {
+            lock (_lock)
+            {
+                _cacheMap.Clear();
+                _lruList.Clear();
+            }
+        }
+
+        public int Count
+        {
+            get { lock (_lock) return _cacheMap.Count; }
+        }
+    }
+
     // =======================================================================================
     // [수정: 클래스 역할 및 캐시 관리 로직 최적화]
     // 5. 감지 및 입력 훅 모듈 (ImeState)
@@ -27,9 +110,9 @@ namespace IMEPointer
             EnglishLower, EnglishUpper, Hangul, PaliUS, PaliHangul, JapaneseIME, JapaneseHangul1, JapaneseHangul2, JapaneseHangul3, Engineer
         }
 
-        // [수정: 캐시 메모리 누수 방지] 핸들(IntPtr) 누적을 방지하기 위한 최대 캐시 크기 설정
-        private const int MaxCacheSize = 100;
-        private static readonly ConcurrentDictionary<IntPtr, bool> _hangulStateCache = new ConcurrentDictionary<IntPtr, bool>();
+        // [최적화: LRU 캐시 및 Time-based 캐싱(TTL) 적용]
+        private static readonly ConcurrentLruCache<IntPtr, (bool State, long Timestamp)> _hangulStateCache = new(100);
+        private const long CacheTtlTicks = TimeSpan.TicksPerMillisecond * 100; // 100ms 캐시 유지
 
         /// <summary>
         /// 주어진 상태가 한글 입력 기반인지 확인합니다.
@@ -108,9 +191,14 @@ namespace IMEPointer
         {
             if (hWnd == IntPtr.Zero) return false;
 
-            if (_hangulStateCache.Count > MaxCacheSize)
+            long currentTicks = DateTime.UtcNow.Ticks;
+            if (_hangulStateCache.TryGetValue(hWnd, out var cached))
             {
-                _hangulStateCache.Clear();
+                // 100ms 이내의 요청이면 즉시 캐시 반환 (키보드 렉 방지)
+                if (currentTicks - cached.Timestamp < CacheTtlTicks)
+                {
+                    return cached.State;
+                }
             }
 
             IntPtr hImeWnd = GetTargetImeWindow(hWnd);
@@ -120,7 +208,7 @@ namespace IMEPointer
                 if (res != IntPtr.Zero)
                 {
                     bool isHangul = ((uint)result.ToInt64() & NativeMethods.IME_CMODE_NATIVE) != 0;
-                    _hangulStateCache[hWnd] = isHangul;
+                    _hangulStateCache.Set(hWnd, (isHangul, currentTicks));
                     return isHangul;
                 }
             }
@@ -133,12 +221,12 @@ namespace IMEPointer
                 if (success)
                 {
                     bool isHangul = (conv & NativeMethods.IME_CMODE_NATIVE) != 0;
-                    _hangulStateCache[hWnd] = isHangul;
+                    _hangulStateCache.Set(hWnd, (isHangul, currentTicks));
                     return isHangul;
                 }
             }
             
-            return _hangulStateCache.TryGetValue(hWnd, out bool cachedState) ? cachedState : false;
+            return cached.State; // 실패 시 기존 캐시된 상태(없을 경우 false)를 반환
         }
 
         /// <summary>
@@ -159,7 +247,7 @@ namespace IMEPointer
                     else mode &= ~NativeMethods.IME_CMODE_NATIVE;
                     NativeMethods.SendMessageTimeout(hImeWnd, NativeMethods.WM_IME_CONTROL, (IntPtr)NativeMethods.IMC_SETCONVERSIONMODE, (IntPtr)mode, NativeMethods.SMTO_ABORTIFHUNG, 20, out _);
                     
-                    _hangulStateCache[hWnd] = setHangul;
+                    _hangulStateCache.Set(hWnd, (setHangul, DateTime.UtcNow.Ticks));
                 }
             }
         }

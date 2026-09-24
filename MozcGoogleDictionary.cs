@@ -21,8 +21,7 @@ namespace IMEPointer
     {
         public static event Action? DictionaryLoaded;
 
-        private static readonly ConcurrentDictionary<string, List<KanjiEntry>> _entryCache = new(StringComparer.Ordinal);
-        private const int MaxCacheSize = 5000; // [최적화 추가] 무한 메모리 증가 방지
+        private static readonly ConcurrentLruCache<string, List<KanjiEntry>> _entryCache = new(5000);
 
         public class KanjiEntry
         {
@@ -164,11 +163,7 @@ namespace IMEPointer
 
         private static void AddToCache(string key, List<KanjiEntry> entries)
         {
-            if (_entryCache.Count >= MaxCacheSize)
-            {
-                _entryCache.Clear(); // [최적화] 메모리 누수 방지
-            }
-            _entryCache[key] = entries;
+            _entryCache.Set(key, entries);
         }
 
         public static List<ReadingMatch> GetEntriesForReadingAt(string text, int startIndex, int maxPerSubstring = 5)

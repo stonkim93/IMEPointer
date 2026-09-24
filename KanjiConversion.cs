@@ -98,6 +98,13 @@ namespace IMEPointer
     /// </summary>
     public static class KanjiConverter
     {
+        public struct DpNode
+        {
+            public ushort RightId;
+            public int Cost;
+            public string Kanji;
+        }
+
         /// <summary>
         /// 히라가나 입력 문자열에 대해 가장 적합한 한자 변환 후보(KanjiEntry) 리스트를 추출합니다.
         /// 형태소 분석 및 형태소 간 연결 비용(Transition Cost)을 고려하여 최적 경로를 찾습니다.
@@ -112,31 +119,41 @@ namespace IMEPointer
             string normalized = JapaneseCharacterProcessor.ToHiragana(text);
             int n = normalized.Length;
             
+            // 메모리 최적화: Substring 길이 상한을 20에서 10으로 줄여 쓰레기 객체 생성 급감
+            int maxSearchLen = 10;
             var allSubstrings = new HashSet<string>();
             for (int i = 0; i < n; i++) {
-                for (int len = 1; len <= Math.Min(20, n - i); len++) {
+                int maxLen = Math.Min(maxSearchLen, n - i);
+                for (int len = 1; len <= maxLen; len++) {
                     allSubstrings.Add(normalized.Substring(i, len));
                 }
             }
             var dictMatches = MozcDictionary.GetEntriesForReadingsBatch(allSubstrings);
 
-            int beamWidth = 50; 
-            var dp = new Dictionary<ushort, List<(int cost, string kanji)>>[n + 1];
+            int beamWidth = 20; // DP 가지치기 최적화 
+            var dp = new List<DpNode>[n + 1];
             for (int i = 0; i <= n; i++) 
-                dp[i] = new Dictionary<ushort, List<(int cost, string kanji)>>();
+                dp[i] = new List<DpNode>(beamWidth * 2);
             
-            dp[0][0] = new List<(int cost, string kanji)> { (0, "") };
+            dp[0].Add(new DpNode { RightId = 0, Cost = 0, Kanji = "" });
 
             for (int i = 0; i < n; i++)
             {
                 if (dp[i].Count == 0) continue;
 
-                foreach (var kvp in dp[i].ToList()) {
-                    dp[i][kvp.Key] = kvp.Value.OrderBy(x => x.cost).Take(beamWidth).ToList();
-                }
+                // Beam Search: 정렬 및 가지치기 (Dictionary 할당 제거)
+                var currentNodes = dp[i]
+                    .GroupBy(x => x.Kanji)
+                    .Select(g => g.OrderBy(x => x.Cost).First())
+                    .OrderBy(x => x.Cost)
+                    .Take(beamWidth)
+                    .ToList();
+                
+                dp[i] = currentNodes; // 최적화된 노드 리스트로 교체
 
                 var matches = new List<MozcDictionary.ReadingMatch>();
-                for (int len = 1; len <= Math.Min(20, n - i); len++)
+                int maxLen = Math.Min(maxSearchLen, n - i);
+                for (int len = 1; len <= maxLen; len++)
                 {
                     string subText = normalized.Substring(i, len);
                     
@@ -179,43 +196,27 @@ namespace IMEPointer
                     if (nextIdx > n) continue;
 
                     var cand = match.Entry;
-                    foreach (var kvp in dp[i])
+                    foreach (var path in currentNodes)
                     {
-                        int prevRightId = kvp.Key;
-                        int transitionCost = MozcDictionary.GetTransitionCost(prevRightId, cand.LeftId);
+                        int transitionCost = MozcDictionary.GetTransitionCost(path.RightId, cand.LeftId);
+                        int totalCost = path.Cost + transitionCost + cand.Cost;
 
-                        foreach (var path in kvp.Value)
-                        {
-                            int totalCost = path.cost + transitionCost + cand.Cost;
-                            if (!dp[nextIdx].ContainsKey(cand.RightId))
-                                dp[nextIdx][cand.RightId] = new List<(int cost, string kanji)>();
-
-                            dp[nextIdx][cand.RightId].Add((totalCost, path.kanji + cand.Kanji));
-                        }
+                        dp[nextIdx].Add(new DpNode { RightId = cand.RightId, Cost = totalCost, Kanji = path.Kanji + cand.Kanji });
                     }
                 }
             }
 
-            var finalCandidates = new List<(int cost, string kanji)>();
-            foreach (var kvp in dp[n])
-            {
-                int lastRightId = kvp.Key;
-                int eosTransitionCost = MozcDictionary.GetTransitionCost(lastRightId, 0);
-
-                foreach (var path in kvp.Value) {
-                    finalCandidates.Add((path.cost + eosTransitionCost, path.kanji));
-                }
-            }
-
-            var finalPaths = finalCandidates
-                                .OrderBy(p => p.cost)
-                                .GroupBy(p => p.kanji)
-                                .Select(g => g.First())
-                                .Take(9).ToList();
+            var finalPaths = dp[n]
+                .Select(path => new { path.Kanji, Cost = path.Cost + MozcDictionary.GetTransitionCost(path.RightId, 0) })
+                .OrderBy(p => p.Cost)
+                .GroupBy(p => p.Kanji)
+                .Select(g => g.First())
+                .Take(9)
+                .ToList();
 
             var results = new List<MozcDictionary.KanjiEntry>();
             foreach (var path in finalPaths) {
-                results.Add(new MozcDictionary.KanjiEntry(normalized, path.kanji, 0, 0, path.cost));
+                results.Add(new MozcDictionary.KanjiEntry(normalized, path.Kanji, 0, 0, path.Cost));
             }
             return results;
         }

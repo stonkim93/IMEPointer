@@ -75,7 +75,7 @@
     
     <!-- 일본어1A, 1B 분리 및 리소스 매핑 반영 -->
     <EmbeddedResource Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese1)' == 'true'" Include="images\Japan1Key1.png" />
-    <EmbeddedResource Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese1)' == 'true'" Include="images\Japan1key2.png" />
+    <EmbeddedResource Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese1)' == 'true'" Include="images\Japan1Key2.png" />
     
     <EmbeddedResource Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese2)' == 'true'" Include="images\Japan2Key1.png" />
     <EmbeddedResource Condition="'$(EnableKeyboardLayout)' == 'true' And '$(EnableCapsJapanese2)' == 'true'" Include="images\Japan2Key2.png" />
