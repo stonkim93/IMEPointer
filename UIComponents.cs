@@ -129,6 +129,7 @@ namespace IMEPointer
         private readonly System.Windows.Forms.Timer _hideTimer;
         private string _displayText = "";
         private float _displayFontSize = 22f;
+        private Font? _cachedFont;
 
         protected override CreateParams CreateParams
         {
@@ -142,6 +143,16 @@ namespace IMEPointer
             }
         }
         protected override bool ShowWithoutActivation => true;
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _cachedFont?.Dispose();
+                _hideTimer?.Dispose();
+            }
+            base.Dispose(disposing);
+        }
 
         public TextOverlayForm()
         {
@@ -161,7 +172,14 @@ namespace IMEPointer
         public void ShowOverlay(string text, bool useTimer, float fontSize, int width, int height, int x, int y)
         {
             _displayText = text;
-            _displayFontSize = fontSize;
+            
+            // 폰트 크기가 변경되거나 폰트가 없는 경우 캐시 업데이트
+            if (fontSize != _displayFontSize || _cachedFont == null)
+            {
+                _cachedFont?.Dispose();
+                _cachedFont = new Font("Malgun Gothic", fontSize, FontStyle.Bold, GraphicsUnit.Pixel);
+                _displayFontSize = fontSize;
+            }
 
             this.Size = new Size(width, height);
             this.Location = new Point(x, y);
@@ -175,8 +193,10 @@ namespace IMEPointer
 
         private void RenderOverlayText(object? sender, PaintEventArgs e)
         {
-            using Font f = new Font("Malgun Gothic", _displayFontSize, FontStyle.Bold, GraphicsUnit.Pixel);
-            TextRenderer.DrawText(e.Graphics, _displayText, f, this.ClientRectangle, Color.White, Color.Black, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            if (_cachedFont != null)
+            {
+                TextRenderer.DrawText(e.Graphics, _displayText, _cachedFont, this.ClientRectangle, Color.White, Color.Black, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            }
         }
 
         public void Clear()
